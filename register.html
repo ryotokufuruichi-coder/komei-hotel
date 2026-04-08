@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>本登録 ｜ Komei Hotel 光明荘</title>
+<meta name="description" content="Komei Hotel 光明荘の本登録フォーム。承認後の宿泊者情報入力ページです。">
+<meta name="robots" content="noindex">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
+  .lang-en { display: none; }
+  html[lang="en"] .lang-ja { display: none; }
+  html[lang="en"] .lang-en { display: inline; }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+  .guest-card { transition: all 0.2s; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- Header -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2">
+      <span class="w-9 h-9 rounded-full bg-slate-800 text-white grid place-items-center font-bold">K</span>
+      <span class="font-bold text-lg tracking-wide">Komei Hotel</span>
+      <span class="hidden sm:inline text-xs text-slate-500">光明荘</span>
+    </a>
+    <button onclick="toggleLang()" class="text-xs px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100" id="langBtn">EN</button>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white pt-28 pb-12 px-4">
+  <div class="max-w-4xl mx-auto text-center">
+    <p class="text-emerald-100 font-semibold tracking-widest text-sm mb-2">STEP 3 / 4 &middot; GUEST DETAILS</p>
+    <h1 class="text-3xl md:text-5xl font-bold mb-3">
+      <span class="lang-ja">本登録</span>
+      <span class="lang-en">Guest Registration</span>
+    </h1>
+    <p class="text-emerald-50 text-sm md:text-base">
+      <span class="lang-ja">旅館業法に基づく宿泊者情報のご登録をお願いします</span>
+      <span class="lang-en">Please register all guests' details (required by Japanese Inn Business Act)</span>
+    </p>
+  </div>
+  <!-- Step indicator -->
+  <div class="max-w-3xl mx-auto mt-8 flex items-center justify-between text-xs text-emerald-50">
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-emerald-200/40 text-white grid place-items-center font-bold">✓</div><div class="mt-1"><span class="lang-ja">仮予約</span><span class="lang-en">Request</span></div></div>
+    <div class="flex-1 h-0.5 bg-emerald-200/60"></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-emerald-200/40 text-white grid place-items-center font-bold">✓</div><div class="mt-1"><span class="lang-ja">承認</span><span class="lang-en">Approval</span></div></div>
+    <div class="flex-1 h-0.5 bg-white"></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-white text-emerald-600 grid place-items-center font-bold">3</div><div class="mt-1"><span class="lang-ja">本登録</span><span class="lang-en">Details</span></div></div>
+    <div class="flex-1 h-0.5 bg-emerald-200/40"></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-emerald-200/40 text-white grid place-items-center font-bold">4</div><div class="mt-1"><span class="lang-ja">お支払</span><span class="lang-en">Payment</span></div></div>
+  </div>
+</section>
+
+<!-- Reservation summary -->
+<div class="max-w-3xl mx-auto px-4 -mt-4 relative z-10">
+  <div id="resSummary" class="bg-white border border-emerald-200 rounded-2xl shadow-lg p-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">予約番号</span><span class="lang-en">Reservation ID</span></div>
+        <div id="rsId" class="font-bold text-slate-800 font-mono">—</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">日程</span><span class="lang-en">Dates</span></div>
+        <div id="rsDates" class="font-bold text-slate-800">—</div>
+        <div id="rsNights" class="text-xs text-slate-500"></div>
+      </div>
+      <div class="text-right">
+        <div class="text-xs text-slate-500"><span class="lang-ja">確定金額（税込）</span><span class="lang-en">Total (tax incl.)</span></div>
+        <div id="rsTotal" class="text-2xl font-bold text-amber-600">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Form -->
+<section class="py-8 px-4">
+  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-8 md:p-10">
+    <form id="registerForm" onsubmit="return submitRegister(event)" class="space-y-8">
+
+      <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm">
+        <p class="font-bold mb-1">
+          <span class="lang-ja">⚠️ 旅館業法に基づく必須情報のお願い</span>
+          <span class="lang-en">⚠️ Required by Japanese Inn Business Act</span>
+        </p>
+        <p class="text-xs text-slate-600">
+          <span class="lang-ja">宿泊される方<strong>全員</strong>の氏名・住所・職業のご登録が必須です。日本国籍を持たない方は<strong>パスポートの画像（顔写真ページ）</strong>のアップロードが法令で義務付けられています。これらの情報は3年間安全に保管され、保健所等の行政機関の請求時にのみ開示されます。</span>
+          <span class="lang-en">We are required to record name, address, and occupation for <strong>every guest</strong>. Non-Japanese guests must upload a photo of their passport's identification page. This data is securely stored for 3 years and only disclosed to authorized government agencies upon request.</span>
+        </p>
+      </div>
+
+      <!-- Step 1: Representative -->
+      <div>
+        <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
+          <span class="w-7 h-7 rounded-full bg-emerald-500 text-white grid place-items-center text-sm">A</span>
+          <span class="lang-ja">代表者情報の確認</span><span class="lang-en">Representative Confirmation</span>
+        </h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">代表者氏名</span><span class="lang-en">Name</span></label>
+            <input type="text" id="repName" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" readonly>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">メールアドレス</span><span class="lang-en">Email</span></label>
+            <input type="email" id="repEmail" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" readonly>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">電話番号</span><span class="lang-en">Phone</span><span class="text-red-500">*</span></label>
+            <input type="tel" id="repPhone" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">到着予定時刻</span><span class="lang-en">Estimated arrival</span><span class="text-red-500">*</span></label>
+            <input type="time" id="arrivalTime" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">直前連絡先（緊急時）</span><span class="lang-en">Emergency contact (24h)</span><span class="text-red-500">*</span></label>
+            <input type="text" id="emergencyContact" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="例: WhatsApp +81-90-XXXX-XXXX / ご家族の連絡先など">
+          </div>
+        </div>
+      </div>
+
+      <hr class="border-slate-200">
+
+      <!-- Step 2: All guests -->
+      <div>
+        <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-2">
+          <span class="w-7 h-7 rounded-full bg-emerald-500 text-white grid place-items-center text-sm">B</span>
+          <span class="lang-ja">宿泊者全員の情報</span><span class="lang-en">All Guests' Information</span>
+        </h2>
+        <p class="text-xs text-slate-500 mb-4">
+          <span class="lang-ja">宿泊される方全員分（代表者含む）の情報を入力してください。0歳〜のお子様も対象です。</span>
+          <span class="lang-en">Enter info for every guest including children. Children under 0 are also required.</span>
+        </p>
+        <div id="guestList" class="space-y-4"></div>
+        <div class="mt-3 flex justify-between items-center">
+          <p class="text-xs text-slate-500">
+            <span class="lang-ja">宿泊人数: </span><span class="lang-en">Total guests: </span>
+            <span id="guestCount" class="font-bold">0</span>
+          </p>
+          <button type="button" onclick="addGuest()" class="text-sm px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300">
+            + <span class="lang-ja">宿泊者を追加</span><span class="lang-en">Add guest</span>
+          </button>
+        </div>
+      </div>
+
+      <hr class="border-slate-200">
+
+      <!-- Step 3: Cancellation policy & consent -->
+      <div>
+        <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
+          <span class="w-7 h-7 rounded-full bg-emerald-500 text-white grid place-items-center text-sm">C</span>
+          <span class="lang-ja">キャンセルポリシーと同意事項</span><span class="lang-en">Cancellation Policy &amp; Consent</span>
+        </h2>
+        <div class="rounded-lg bg-slate-50 border border-slate-200 p-4 text-sm space-y-2">
+          <p class="font-bold">
+            <span class="lang-ja">📅 キャンセル規定</span>
+            <span class="lang-en">📅 Cancellation rules</span>
+          </p>
+          <ul class="text-xs text-slate-600 space-y-1 list-disc pl-5">
+            <li>
+              <span class="lang-ja">予約確定後 24時間以内のキャンセル：無料</span>
+              <span class="lang-en">Within 24 hours of confirmation: free cancellation</span>
+            </li>
+            <li>
+              <span class="lang-ja">チェックイン7日前まで：50%返金</span>
+              <span class="lang-en">Up to 7 days before check-in: 50% refund</span>
+            </li>
+            <li>
+              <span class="lang-ja">チェックイン7日前以降：返金なし（100%キャンセル料）</span>
+              <span class="lang-en">Within 7 days of check-in: no refund (100% charge)</span>
+            </li>
+          </ul>
+        </div>
+        <div class="mt-4 space-y-2 text-sm">
+          <label class="flex items-start gap-2">
+            <input type="checkbox" id="agreeCancel" required class="w-4 h-4 mt-1">
+            <span><span class="lang-ja">上記キャンセルポリシーに同意します</span><span class="lang-en">I agree to the cancellation policy</span><span class="text-red-500">*</span></span>
+          </label>
+          <label class="flex items-start gap-2">
+            <input type="checkbox" id="agreeRules" required class="w-4 h-4 mt-1">
+            <span><span class="lang-ja"><a href="terms.html" target="_blank" class="text-amber-600 hover:underline">利用規約・館内ルール</a>を確認し同意します（騒音・喫煙・追加宿泊者の禁止等）</span><span class="lang-en">I have read and accept the <a href="terms.html" target="_blank" class="text-amber-600 hover:underline">house rules</a> (no noise, no smoking, no extra guests)</span><span class="text-red-500">*</span></span>
+          </label>
+          <label class="flex items-start gap-2">
+            <input type="checkbox" id="agreePrivacy" required class="w-4 h-4 mt-1">
+            <span><span class="lang-ja">提出した情報が旅館業法に基づき3年間保管されることに同意します</span><span class="lang-en">I consent to my information being retained for 3 years per Japanese Inn Business Act</span><span class="text-red-500">*</span></span>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn" class="w-full py-4 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="lang-ja">入力内容を送信してお支払へ進む →</span>
+        <span class="lang-en">Submit &amp; proceed to payment →</span>
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- Error Modal -->
+<div id="errModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center">
+    <div class="text-5xl mb-3">⚠️</div>
+    <h3 class="text-xl font-bold mb-2">
+      <span class="lang-ja">エラーが発生しました</span>
+      <span class="lang-en">An error occurred</span>
+    </h3>
+    <p class="text-sm text-slate-600 mb-5" id="errMsg"></p>
+    <button onclick="document.getElementById('errModal').classList.add('hidden');document.getElementById('errModal').classList.remove('flex');" class="px-6 py-2 rounded-full bg-slate-900 text-white font-semibold">OK</button>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-slate-900 text-slate-400 py-10 px-4 text-sm text-center">
+  <p>Komei Hotel 光明荘 ｜ 〒130-0005 東京都墨田区東駒形20-5 ｜ ✉ komei.hotel@gmail.com</p>
+  <p class="mt-2 text-xs">&copy; 2026 Komei Hotel / 株式会社光建商事</p>
+</footer>
+
+<script>
+const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx6JO_l8Hhb5pQCIZkBTgEkChylOcD4e32JuCcCG-XtvuaQ6I5qacd7UuyeHQ8fnOZR/exec';
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per passport image
+const DEMO = new URLSearchParams(location.search).get('demo') === '1';
+
+let reservationData = null;
+
+function toggleLang() {
+  const html = document.documentElement;
+  const isJa = html.lang === 'ja';
+  html.lang = isJa ? 'en' : 'ja';
+  document.getElementById('langBtn').textContent = isJa ? 'JA' : 'EN';
+}
+
+function yen(n){ return '¥' + Number(n).toLocaleString('ja-JP'); }
+
+let guestIdCounter = 0;
+function addGuest(prefill) {
+  guestIdCounter++;
+  const idx = guestIdCounter;
+  const div = document.createElement('div');
+  div.className = 'guest-card border border-slate-200 rounded-xl p-5 bg-slate-50';
+  div.dataset.guest = idx;
+  div.innerHTML = `
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-bold text-slate-800">
+        <span class="lang-ja">宿泊者 ${idx}</span><span class="lang-en">Guest ${idx}</span>
+      </h3>
+      <button type="button" onclick="removeGuest(this)" class="text-xs text-red-500 hover:underline">
+        <span class="lang-ja">削除</span><span class="lang-en">Remove</span>
+      </button>
+    </div>
+    <div class="grid md:grid-cols-2 gap-3">
+      <div>
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">氏名（フルネーム）</span><span class="lang-en">Full name</span><span class="text-red-500">*</span></label>
+        <input type="text" name="g_name" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">国籍</span><span class="lang-en">Nationality</span><span class="text-red-500">*</span></label>
+        <select name="g_nationality" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white g_nationality">
+          <option value="">---</option>
+          <option value="JP">日本 / Japan</option>
+          <option value="US">United States</option>
+          <option value="CN">中国 / China</option>
+          <option value="KR">韓国 / Korea</option>
+          <option value="TW">台湾 / Taiwan</option>
+          <option value="HK">香港 / Hong Kong</option>
+          <option value="SG">Singapore</option>
+          <option value="TH">Thailand</option>
+          <option value="MY">Malaysia</option>
+          <option value="ID">Indonesia</option>
+          <option value="PH">Philippines</option>
+          <option value="VN">Vietnam</option>
+          <option value="IN">India</option>
+          <option value="AU">Australia</option>
+          <option value="NZ">New Zealand</option>
+          <option value="GB">United Kingdom</option>
+          <option value="FR">France</option>
+          <option value="DE">Germany</option>
+          <option value="IT">Italy</option>
+          <option value="ES">Spain</option>
+          <option value="CA">Canada</option>
+          <option value="OTHER">その他 / Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">住所</span><span class="lang-en">Address</span><span class="text-red-500">*</span></label>
+        <input type="text" name="g_address" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="〒XXX / City, Country">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">職業</span><span class="lang-en">Occupation</span><span class="text-red-500">*</span></label>
+        <input type="text" name="g_occupation" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+      </div>
+      <div class="g_passport_field hidden md:col-span-2">
+        <label class="block text-xs font-semibold mb-1">
+          <span class="lang-ja">パスポート画像（顔写真ページ）</span><span class="lang-en">Passport photo page</span>
+          <span class="text-red-500">*</span>
+        </label>
+        <input type="file" name="g_passport" accept="image/jpeg,image/png,image/heic" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white g_passport">
+        <p class="text-xs text-slate-500 mt-1">
+          <span class="lang-ja">JPG/PNG/HEIC・5MB以下。氏名・国籍・旅券番号が読み取れる画像をアップしてください</span>
+          <span class="lang-en">JPG/PNG/HEIC up to 5MB. Photo must be readable.</span>
+        </p>
+        <div class="g_passport_preview mt-2"></div>
+      </div>
+      <div class="g_passport_field hidden">
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">旅券番号</span><span class="lang-en">Passport number</span><span class="text-red-500">*</span></label>
+        <input type="text" name="g_passport_no" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+      </div>
+    </div>
+  `;
+  document.getElementById('guestList').appendChild(div);
+  // Wire up nationality → passport field toggle
+  const natSel = div.querySelector('.g_nationality');
+  const passFields = div.querySelectorAll('.g_passport_field');
+  const passInput = div.querySelector('.g_passport');
+  natSel.addEventListener('change', () => {
+    const isForeign = natSel.value && natSel.value !== 'JP';
+    passFields.forEach(f => f.classList.toggle('hidden', !isForeign));
+    div.querySelectorAll('input[name="g_passport_no"]').forEach(i => i.required = isForeign);
+    passInput.required = isForeign;
+  });
+  // File preview
+  passInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    const preview = div.querySelector('.g_passport_preview');
+    preview.innerHTML = '';
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) {
+      alert('ファイルサイズは5MB以下にしてください / File must be under 5MB');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      preview.innerHTML = `<img src="${ev.target.result}" class="max-h-32 rounded border border-slate-300">`;
+    };
+    reader.readAsDataURL(file);
+  });
+  if (prefill) {
+    div.querySelector('input[name="g_name"]').value = prefill.name || '';
+  }
+  updateGuestCount();
+}
+
+function removeGuest(btn) {
+  btn.closest('.guest-card').remove();
+  updateGuestCount();
+}
+
+function updateGuestCount() {
+  document.getElementById('guestCount').textContent = document.querySelectorAll('.guest-card').length;
+}
+
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function submitRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerText = '送信中… / Sending…';
+
+  try {
+    const guests = [];
+    for (const card of document.querySelectorAll('.guest-card')) {
+      const g = {
+        name: card.querySelector('input[name="g_name"]').value,
+        nationality: card.querySelector('select[name="g_nationality"]').value,
+        address: card.querySelector('input[name="g_address"]').value,
+        occupation: card.querySelector('input[name="g_occupation"]').value,
+      };
+      const isForeign = g.nationality && g.nationality !== 'JP';
+      if (isForeign) {
+        g.passport_no = card.querySelector('input[name="g_passport_no"]').value;
+        const file = card.querySelector('input[name="g_passport"]').files[0];
+        if (!file) throw new Error('外国籍の方はパスポート画像が必須です / Passport image required');
+        g.passport_image = await fileToBase64(file);
+        g.passport_image_name = file.name;
+        g.passport_image_type = file.type;
+      }
+      guests.push(g);
+    }
+    if (guests.length === 0) throw new Error('宿泊者を1名以上登録してください / Add at least one guest');
+
+    const payload = {
+      type: 'guest_registration',
+      reservation_id: reservationData.reservation_id,
+      token: reservationData.token,
+      representative: {
+        phone: document.getElementById('repPhone').value,
+        arrival_time: document.getElementById('arrivalTime').value,
+        emergency_contact: document.getElementById('emergencyContact').value,
+      },
+      guests: guests,
+      consents: {
+        cancellation: document.getElementById('agreeCancel').checked,
+        rules: document.getElementById('agreeRules').checked,
+        privacy: document.getElementById('agreePrivacy').checked,
+      },
+      submitted_at: new Date().toISOString(),
+    };
+
+    let data;
+    if (DEMO) {
+      // === DEMO MODE: bypass GAS, mark as registered, redirect ===
+      const store = JSON.parse(sessionStorage.getItem('demo_reservations') || '{}');
+      if (store[reservationData.reservation_id]) {
+        store[reservationData.reservation_id].status = 'registered';
+        store[reservationData.reservation_id].guests = guests.length;
+        sessionStorage.setItem('demo_reservations', JSON.stringify(store));
+      }
+      data = { ok:true, demo:true };
+    } else {
+      const res = await fetch(GAS_ENDPOINT, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      });
+      data = await res.json();
+    }
+    if (data.ok && data.payment_url) {
+      window.location.href = data.payment_url;
+    } else if (data.ok) {
+      const suffix = DEMO ? '&demo=1' : '';
+      window.location.href = `payment.html?id=${reservationData.reservation_id}&token=${reservationData.token}${suffix}`;
+    } else {
+      throw new Error(data.error || 'Unknown error');
+    }
+  } catch (err) {
+    document.getElementById('errMsg').textContent = err.message;
+    document.getElementById('errModal').classList.remove('hidden');
+    document.getElementById('errModal').classList.add('flex');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="lang-ja">入力内容を送信してお支払へ進む →</span><span class="lang-en">Submit &amp; proceed to payment →</span>';
+  }
+  return false;
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  const token = params.get('token');
+  const lang = params.get('lang');
+  if (lang === 'en') toggleLang();
+
+  if (!id || !token) {
+    document.getElementById('errMsg').textContent = '無効なURLです。承認メールから再度アクセスしてください。 / Invalid URL. Please use the link from your approval email.';
+    document.getElementById('errModal').classList.remove('hidden');
+    document.getElementById('errModal').classList.add('flex');
+    return;
+  }
+
+  // Fetch reservation context from GAS (or demo store)
+  try {
+    let r;
+    if (DEMO) {
+      const store = JSON.parse(sessionStorage.getItem('demo_reservations') || '{}');
+      const rsv = store[id];
+      if (!rsv || rsv.token !== token) throw new Error('demo reservation not found');
+      r = rsv;
+    } else {
+      const res = await fetch(`${GAS_ENDPOINT}?action=get_reservation&id=${id}&token=${token}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      r = data.reservation || data;
+    }
+    // Normalize to support both flat and nested representative shapes
+    const rep = {
+      name:  r.representative_name  || (r.representative && r.representative.name)  || '',
+      email: r.representative_email || (r.representative && r.representative.email) || '',
+      phone: r.representative_phone || (r.representative && r.representative.phone) || ''
+    };
+    const total = r.final_total || r.estimated_total || r.total || 0;
+    reservationData = { reservation_id: r.reservation_id || id, token: token, adults: r.adults, children: r.children, representative: rep, total: total };
+
+    document.getElementById('rsId').textContent = reservationData.reservation_id;
+    document.getElementById('rsDates').textContent = `${r.checkin} → ${r.checkout}`;
+    const nights = Math.round((new Date(r.checkout)-new Date(r.checkin))/86400000);
+    document.getElementById('rsNights').innerHTML = `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span>`;
+    document.getElementById('rsTotal').textContent = yen(total);
+    document.getElementById('repName').value = rep.name;
+    document.getElementById('repEmail').value = rep.email;
+    document.getElementById('repPhone').value = rep.phone;
+
+    // Pre-add guest cards based on adults+children count
+    const totalGuests = (r.adults || 1) + (r.children || 0);
+    addGuest({name: rep.name});
+    for (let i = 1; i < totalGuests; i++) addGuest();
+  } catch (err) {
+    document.getElementById('errMsg').textContent = '予約情報が取得できません: ' + err.message;
+    document.getElementById('errModal').classList.remove('hidden');
+    document.getElementById('errModal').classList.add('flex');
+  }
+});
+</script>
+</body>
+</html>

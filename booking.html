@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>直接予約 ｜ Komei Hotel 光明荘</title>
+<meta name="description" content="Komei Hotel 光明荘の直接予約フォーム。OTAより最大10%お得な特別価格でご案内。">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
+  .lang-en { display: none; }
+  html[lang="en"] .lang-ja { display: none; }
+  html[lang="en"] .lang-en { display: inline; }
+  html[lang="en"] .lang-en-block { display: block; }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- Header -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2">
+      <span class="w-9 h-9 rounded-full bg-slate-800 text-white grid place-items-center font-bold">K</span>
+      <span class="font-bold text-lg tracking-wide">Komei Hotel</span>
+      <span class="hidden sm:inline text-xs text-slate-500">光明荘</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-6 text-sm">
+      <a href="index.html" class="hover:text-amber-600">
+        <span class="lang-ja">← トップへ戻る</span><span class="lang-en">← Back to home</span>
+      </a>
+      <a href="mailto:komei.hotel@gmail.com" class="text-slate-600 hover:text-amber-600">✉ komei.hotel@gmail.com</a>
+    </nav>
+    <button onclick="toggleLang()" class="md:ml-4 text-xs px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100" id="langBtn">EN</button>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="bg-gradient-to-r from-amber-500 to-orange-500 text-white pt-28 pb-12 px-4">
+  <div class="max-w-4xl mx-auto text-center">
+    <p class="text-amber-100 font-semibold tracking-widest text-sm mb-2">STEP 1 / 4 &middot; REQUEST</p>
+    <h1 class="text-3xl md:text-5xl font-bold mb-3">
+      <span class="lang-ja">仮予約申込</span>
+      <span class="lang-en">Reservation Request</span>
+    </h1>
+    <p class="text-amber-50 text-sm md:text-base">
+      <span class="lang-ja">代表者情報をご記入ください ｜ 24時間以内に運営から承認のご連絡をお送りします</span>
+      <span class="lang-en">Enter your contact details &middot; We confirm availability within 24 hours</span>
+    </p>
+  </div>
+  <!-- Step indicator -->
+  <div class="max-w-3xl mx-auto mt-8 flex items-center justify-between text-xs text-amber-50">
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-white text-amber-600 grid place-items-center font-bold">1</div><div class="mt-1"><span class="lang-ja">仮予約</span><span class="lang-en">Request</span></div></div>
+    <div class="flex-1 h-0.5 bg-amber-200/40"></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-amber-200/40 text-white grid place-items-center font-bold">2</div><div class="mt-1"><span class="lang-ja">承認</span><span class="lang-en">Approval</span></div></div>
+    <div class="flex-1 h-0.5 bg-amber-200/40"></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-amber-200/40 text-white grid place-items-center font-bold">3</div><div class="mt-1"><span class="lang-ja">本登録</span><span class="lang-en">Details</span></div></div>
+    <div class="flex-1 h-0.5 bg-amber-200/40"></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-amber-200/40 text-white grid place-items-center font-bold">4</div><div class="mt-1"><span class="lang-ja">お支払</span><span class="lang-en">Payment</span></div></div>
+  </div>
+</section>
+
+<!-- Price summary (filled from URL params) -->
+<div id="priceSummaryWrap" class="hidden max-w-3xl mx-auto px-4 -mt-4 relative z-10">
+  <div class="bg-white border border-amber-200 rounded-2xl shadow-lg p-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">選択された日程</span><span class="lang-en">Selected dates</span></div>
+        <div id="psDates" class="font-bold text-slate-800"></div>
+        <div id="psNights" class="text-xs text-slate-500"></div>
+      </div>
+      <div class="text-right">
+        <div class="text-xs text-slate-500"><span class="lang-ja">概算料金（税込）</span><span class="lang-en">Estimated total</span></div>
+        <div id="psTotal" class="text-2xl font-bold text-amber-600"></div>
+        <div class="text-xs text-slate-400"><span class="lang-ja">承認時に最終確定</span><span class="lang-en">Final on approval</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Form -->
+<section class="py-12 px-4">
+  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-8 md:p-10">
+    <form id="bookingForm" onsubmit="return submitForm(event)" class="space-y-6">
+
+      <!-- Step 1: Stay info -->
+      <div>
+        <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
+          <span class="w-7 h-7 rounded-full bg-amber-500 text-white grid place-items-center text-sm">1</span>
+          <span class="lang-ja">ご滞在情報</span><span class="lang-en">Stay Information</span>
+        </h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-1">
+              <span class="lang-ja">チェックイン日</span><span class="lang-en">Check-in date</span>
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="date" id="checkin" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1">
+              <span class="lang-ja">チェックアウト日</span><span class="lang-en">Check-out date</span>
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="date" id="checkout" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1">
+              <span class="lang-ja">宿泊人数（大人）</span><span class="lang-en">Adults</span>
+              <span class="text-red-500">*</span>
+            </label>
+            <select id="adults" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white">
+              <option value="1">1</option><option value="2" selected>2</option>
+              <option value="3">3</option><option value="4">4</option>
+              <option value="5">5</option><option value="6">6</option>
+              <option value="7">7</option><option value="8">8</option>
+              <option value="9">9</option><option value="10">10</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1">
+              <span class="lang-ja">お子様（12歳以下）</span><span class="lang-en">Children (12 &amp; under)</span>
+            </label>
+            <select id="children" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white">
+              <option value="0" selected>0</option><option value="1">1</option>
+              <option value="2">2</option><option value="3">3</option><option value="4">4+</option>
+            </select>
+          </div>
+          <div class="md:col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-slate-700">
+            <p class="font-semibold mb-1">
+              <span class="lang-ja">📍 一棟まるごと貸切（最大10名様まで）</span>
+              <span class="lang-en">📍 Whole house rental (sleeps up to 10)</span>
+            </p>
+            <p class="text-xs text-slate-600">
+              <span class="lang-ja">1階：ダブル1・シングル2・ソファーベッド(ダブル)1 / 2階：ダブル2・シングル2。最大10名様までご宿泊可能。各階にキッチン・バスルーム・トイレ・洗面台完備。</span>
+              <span class="lang-en">1F: 1 double + 2 singles + 1 double sofa bed / 2F: 2 doubles + 2 singles. Sleeps up to 10 guests. Each floor has its own kitchen, bathroom, toilet and washbasin.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <hr class="border-slate-200">
+
+      <!-- Step 2: Guest info -->
+      <div>
+        <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
+          <span class="w-7 h-7 rounded-full bg-amber-500 text-white grid place-items-center text-sm">2</span>
+          <span class="lang-ja">お客様情報</span><span class="lang-en">Guest Information</span>
+        </h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-1">
+              <span class="lang-ja">お名前</span><span class="lang-en">Full name</span>
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="山田 太郎 / Taro Yamada">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1">
+              <span class="lang-ja">国・地域</span><span class="lang-en">Country / Region</span>
+            </label>
+            <input type="text" id="country" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="日本 / Japan">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1">
+              <span class="lang-ja">メールアドレス</span><span class="lang-en">Email</span>
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="email" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="example@example.com">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-1">
+              <span class="lang-ja">電話番号</span><span class="lang-en">Phone</span>
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="tel" id="phone" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="090-0000-0000">
+          </div>
+        </div>
+      </div>
+
+      <hr class="border-slate-200">
+
+      <!-- Step 3: Notes -->
+      <div>
+        <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
+          <span class="w-7 h-7 rounded-full bg-amber-500 text-white grid place-items-center text-sm">3</span>
+          <span class="lang-ja">ご要望・備考</span><span class="lang-en">Requests &amp; Notes</span>
+        </h2>
+        <textarea id="notes" rows="4" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="到着予定時刻、追加の寝具、特別なご要望など / Arrival time, extra bedding, special requests..."></textarea>
+        <div class="mt-4 space-y-2 text-sm">
+          <label class="flex items-start gap-2">
+            <input type="checkbox" id="agree" required class="w-4 h-4 mt-1">
+            <span>
+              <a href="terms.html" target="_blank" class="text-amber-600 hover:underline">
+                <span class="lang-ja">利用規約・キャンセルポリシー・プライバシーポリシー</span>
+                <span class="lang-en">Terms, Cancellation Policy &amp; Privacy Policy</span>
+              </a>
+              <span class="lang-ja">に同意します</span>
+              <span class="lang-en"> — I agree</span>
+              <span class="text-red-500">*</span>
+            </span>
+          </label>
+          <label class="flex items-start gap-2">
+            <input type="checkbox" id="agreeFlow" required class="w-4 h-4 mt-1">
+            <span>
+              <span class="lang-ja">承認後に宿泊者全員の本人確認情報の提出と事前決済が必要なことを承知しました</span>
+              <span class="lang-en">I understand that after approval, all guests' ID information and prepayment will be required</span>
+              <span class="text-red-500">*</span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn" class="w-full py-4 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+        <span class="lang-ja">仮予約を申し込む</span>
+        <span class="lang-en">Submit Reservation Request</span>
+      </button>
+
+      <div class="rounded-lg bg-slate-50 border border-slate-200 p-4 text-xs text-slate-600 space-y-1">
+        <p class="font-semibold text-slate-700">
+          <span class="lang-ja">📋 この後の流れ</span>
+          <span class="lang-en">📋 What happens next</span>
+        </p>
+        <p>
+          <span class="lang-ja">1. 運営が24時間以内に承認/却下のメールをお送りします</span>
+          <span class="lang-en">1. We confirm or decline within 24 hours via email</span>
+        </p>
+        <p>
+          <span class="lang-ja">2. 承認後、本登録ページのURLと最終金額をメールでご案内</span>
+          <span class="lang-en">2. After approval, you'll receive a registration URL and final price</span>
+        </p>
+        <p>
+          <span class="lang-ja">3. 宿泊者全員の情報を入力（外国籍の方はパスポート画像が必要です）</span>
+          <span class="lang-en">3. Enter all guests' details (passport image required for non-Japanese guests)</span>
+        </p>
+        <p>
+          <span class="lang-ja">4. オンライン決済（クレジットカード）または銀行振込でお支払い → 予約確定</span>
+          <span class="lang-en">4. Pay by credit card or bank transfer to confirm your reservation</span>
+        </p>
+      </div>
+    </form>
+  </div>
+
+  <!-- Why Direct -->
+  <div class="max-w-3xl mx-auto mt-10 grid sm:grid-cols-3 gap-4">
+    <div class="bg-white rounded-xl p-5 shadow text-center">
+      <div class="text-3xl mb-2">💰</div>
+      <h3 class="font-bold mb-1"><span class="lang-ja">最安値保証</span><span class="lang-en">Best price</span></h3>
+      <p class="text-xs text-slate-500"><span class="lang-ja">OTAより最大10%お得</span><span class="lang-en">Up to 10% less than OTAs</span></p>
+    </div>
+    <div class="bg-white rounded-xl p-5 shadow text-center">
+      <div class="text-3xl mb-2">🤝</div>
+      <h3 class="font-bold mb-1"><span class="lang-ja">柔軟な対応</span><span class="lang-en">Flexible</span></h3>
+      <p class="text-xs text-slate-500"><span class="lang-ja">連泊・長期割引相談可</span><span class="lang-en">Long-stay discounts</span></p>
+    </div>
+    <div class="bg-white rounded-xl p-5 shadow text-center">
+      <div class="text-3xl mb-2">⏱️</div>
+      <h3 class="font-bold mb-1"><span class="lang-ja">24時間以内返信</span><span class="lang-en">24-hour reply</span></h3>
+      <p class="text-xs text-slate-500"><span class="lang-ja">運営から直接ご連絡</span><span class="lang-en">Directly from the host</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- Confirmation Modal -->
+<div id="modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center">
+    <div class="text-5xl mb-3">✅</div>
+    <h3 class="text-xl font-bold mb-2">
+      <span class="lang-ja">仮予約を受け付けました</span>
+      <span class="lang-en">Request received</span>
+    </h3>
+    <p class="text-sm text-slate-600 mb-3">
+      <span class="lang-ja">ご記入のメールアドレスに受付確認メールを送信しました。運営が承認次第、24時間以内に本登録ページのご案内をお送りします。</span>
+      <span class="lang-en">A confirmation email has been sent. We will email you the registration link within 24 hours.</span>
+    </p>
+    <p class="text-xs text-slate-400 mb-5" id="modalRefId"></p>
+    <a href="index.html" class="inline-block px-6 py-2 rounded-full bg-slate-900 text-white font-semibold">
+      <span class="lang-ja">トップへ戻る</span><span class="lang-en">Back to home</span>
+    </a>
+  </div>
+</div>
+
+<!-- Error Modal -->
+<div id="errModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center">
+    <div class="text-5xl mb-3">⚠️</div>
+    <h3 class="text-xl font-bold mb-2">
+      <span class="lang-ja">送信に失敗しました</span>
+      <span class="lang-en">Submission failed</span>
+    </h3>
+    <p class="text-sm text-slate-600 mb-5" id="errMsg"></p>
+    <button onclick="document.getElementById('errModal').classList.add('hidden');document.getElementById('errModal').classList.remove('flex');" class="px-6 py-2 rounded-full bg-slate-900 text-white font-semibold">OK</button>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-slate-900 text-slate-400 py-10 px-4 text-sm text-center">
+  <p>Komei Hotel 光明荘 ｜ 〒130-0005 東京都墨田区東駒形20-5 ｜ ✉ komei.hotel@gmail.com</p>
+  <p class="mt-2 text-xs">&copy; 2026 Komei Hotel / 株式会社光建商事</p>
+</footer>
+
+<script>
+// === Configuration ===
+// TODO: GAS デプロイ後にここを書き換える
+const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx6JO_l8Hhb5pQCIZkBTgEkChylOcD4e32JuCcCG-XtvuaQ6I5qacd7UuyeHQ8fnOZR/exec';
+// === Demo mode (?demo=1) ===
+const DEMO = new URLSearchParams(location.search).get('demo') === '1';
+function demoReservationId(){ return 'R' + new Date().toISOString().slice(0,10).replace(/-/g,'') + Math.floor(Math.random()*9000+1000); }
+
+function toggleLang() {
+  const html = document.documentElement;
+  const isJa = html.lang === 'ja';
+  html.lang = isJa ? 'en' : 'ja';
+  document.getElementById('langBtn').textContent = isJa ? 'JA' : 'EN';
+}
+
+function yen(n){ return '¥' + Number(n).toLocaleString('ja-JP'); }
+
+async function submitForm(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerText = '送信中… / Sending…';
+
+  const f = id => document.getElementById(id).value;
+  const params = new URLSearchParams(window.location.search);
+  const payload = {
+    type: 'reservation_request',
+    checkin: f('checkin'),
+    checkout: f('checkout'),
+    adults: parseInt(f('adults')),
+    children: parseInt(f('children')),
+    representative: {
+      name: f('name'),
+      country: f('country'),
+      email: f('email'),
+      phone: f('phone'),
+    },
+    notes: f('notes') || '',
+    estimated_total: parseInt(params.get('total') || '0'),
+    source: 'lp_direct',
+    submitted_at: new Date().toISOString(),
+    user_agent: navigator.userAgent,
+    locale: document.documentElement.lang,
+  };
+
+  try {
+    let data;
+    if (DEMO) {
+      // === DEMO MODE: simulate GAS request + auto-approve ===
+      const id = demoReservationId();
+      const token = 'demo' + Math.random().toString(36).slice(2,12);
+      const demoStore = JSON.parse(sessionStorage.getItem('demo_reservations') || '{}');
+      demoStore[id] = {
+        reservation_id: id,
+        status: 'approved',
+        checkin: payload.checkin,
+        checkout: payload.checkout,
+        adults: payload.adults,
+        children: payload.children,
+        representative_name: payload.representative.name,
+        representative_email: payload.representative.email,
+        representative_phone: payload.representative.phone,
+        estimated_total: payload.estimated_total,
+        final_total: payload.estimated_total,
+        token: token
+      };
+      sessionStorage.setItem('demo_reservations', JSON.stringify(demoStore));
+      data = { ok:true, reservation_id: id, token: token, demo:true };
+      // Show modal but auto-redirect to register after 1.5s
+      document.getElementById('modalRefId').textContent = '【DEMO】受付番号: ' + id + ' — 自動承認しました。本登録に進みます…';
+      document.getElementById('modal').classList.remove('hidden');
+      document.getElementById('modal').classList.add('flex');
+      setTimeout(() => {
+        location.href = `register.html?id=${id}&token=${token}&demo=1`;
+      }, 1500);
+      return false;
+    }
+    // GAS WebApp accepts text/plain to avoid CORS preflight
+    const res = await fetch(GAS_ENDPOINT, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      redirect: 'follow',
+    });
+    data = await res.json();
+    if (data.ok) {
+      document.getElementById('modalRefId').textContent = '受付番号 / Ref: ' + (data.reservation_id || '');
+      document.getElementById('modal').classList.remove('hidden');
+      document.getElementById('modal').classList.add('flex');
+    } else {
+      throw new Error(data.error || 'Unknown error');
+    }
+  } catch (err) {
+    document.getElementById('errMsg').textContent = err.message + ' — ' +
+      (document.documentElement.lang === 'en'
+        ? 'Please try again or email komei.hotel@gmail.com directly.'
+        : '時間をおいて再送信するか、komei.hotel@gmail.com に直接ご連絡ください。');
+    document.getElementById('errModal').classList.remove('hidden');
+    document.getElementById('errModal').classList.add('flex');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="lang-ja">仮予約を申し込む</span><span class="lang-en">Submit Reservation Request</span>';
+  }
+  return false;
+}
+
+function fmtDateLabel(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return `${y}/${m}/${d}`;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date();
+  const fourDays = new Date(); fourDays.setDate(today.getDate()+4);
+  const fmt = d => d.toISOString().split('T')[0];
+  const params = new URLSearchParams(window.location.search);
+  const qci = params.get('checkin');
+  const qco = params.get('checkout');
+  const qtotal = parseInt(params.get('total') || '0');
+  const isValid = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+  document.getElementById('checkin').min = fmt(today);
+  document.getElementById('checkout').min = fmt(fourDays);
+  if (isValid(qci) && isValid(qco) && qci < qco) {
+    document.getElementById('checkin').value = qci;
+    document.getElementById('checkout').value = qco;
+    // Show price summary card
+    if (qtotal > 0) {
+      const wrap = document.getElementById('priceSummaryWrap');
+      wrap.classList.remove('hidden');
+      document.getElementById('psDates').textContent = `${fmtDateLabel(qci)} → ${fmtDateLabel(qco)}`;
+      const nights = Math.round((new Date(qco)-new Date(qci))/86400000);
+      document.getElementById('psNights').innerHTML =
+        `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span>`;
+      document.getElementById('psTotal').textContent = yen(qtotal);
+    }
+  } else {
+    document.getElementById('checkin').value = fmt(today);
+    document.getElementById('checkout').value = fmt(fourDays);
+  }
+  // Enforce 3-night minimum on date change
+  const ci = document.getElementById('checkin');
+  const co = document.getElementById('checkout');
+  function enforceMin(){
+    if (!ci.value) return;
+    const min = new Date(ci.value);
+    min.setDate(min.getDate()+3);
+    co.min = fmt(min);
+    if (co.value && new Date(co.value) < min) co.value = fmt(min);
+  }
+  ci.addEventListener('change', enforceMin);
+  enforceMin();
+});
+</script>
+</body>
+</html>

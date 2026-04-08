@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[DEMO] Stripe Checkout — Komei Hotel</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, 'Helvetica Neue', sans-serif; }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<div class="max-w-md mx-auto pt-10 pb-20 px-4">
+
+  <!-- Stripe-like header -->
+  <div class="text-center mb-6">
+    <div class="inline-flex items-center gap-2 text-slate-500 text-xs">
+      <svg viewBox="0 0 60 25" width="48" fill="#635bff"><path d="M59.64 14.28h-8.06c.19 1.93 1.6 2.55 3.2 2.55 1.64 0 2.96-.37 4.05-.95v3.32a8.33 8.33 0 0 1-4.56 1.1c-4.01 0-6.83-2.5-6.83-7.48 0-4.19 2.39-7.52 6.3-7.52 3.92 0 5.96 3.28 5.96 7.5 0 .4-.04 1.26-.06 1.48zm-5.92-5.62c-1.03 0-2.17.73-2.17 2.58h4.25c0-1.85-1.07-2.58-2.08-2.58zM40.95 20.3c-1.44 0-2.32-.6-2.91-1.04l-.02 4.63-4.24.9V5.57h3.74l.22 1.05a4.7 4.7 0 0 1 3.23-1.36c2.9 0 5.62 2.6 5.62 7.4 0 5.23-2.7 7.65-5.64 7.65zM39.96 9.01c-.95 0-1.54.34-1.97.81l.02 6.12c.4.44.98.78 1.95.78 1.52 0 2.54-1.65 2.54-3.87 0-2.15-1.04-3.84-2.54-3.84zM28.24 5.57h4.26v14.42h-4.26V5.57zm0-4.7L32.5 0v3.45l-4.26.85V.87zm-4.43 9.4v9.7H19.6V5.57h3.7l.3 1.65c1-1.83 3-1.92 3.55-1.94v3.91c-.52-.08-2.78-.3-3.34 1.08zm-8.55 4.72c0 2.43 2.6 1.68 3.12 1.46v3.43c-.55.3-1.54.55-2.89.55a4.07 4.07 0 0 1-4.4-4.36L11.1 7.84H8.66V5.57h2.43V2.55l4.16-.88v3.9h2.86v2.27h-2.86v6.1zM5.96 11.34a7 7 0 0 0-2.86-.7c-.99 0-1.58.27-1.58.92 0 .87 1.51 1.06 3.13 1.86 2.05.94 3 2.4 3 4.13 0 2.74-2.16 4.65-5.16 4.65-1.84 0-3.6-.43-5.04-1.13v-4.09c1.4.78 3.18 1.36 4.6 1.36 1.05 0 1.78-.17 1.78-.85 0-.92-1.65-1.16-3.4-2C-.65 13.6 0 12.32 0 10.55 0 7.86 2.05 6.1 5.04 6.1c1.83 0 3.34.45 4.95 1.04l-.13 3.84c-1.55-.71-3.59-1.16-4.96-1.16a3 3 0 0 0-1.34.27c0 .58.86.79 2 1.25z"/></svg>
+      <span>checkout.stripe.com — DEMO</span>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+
+    <!-- Merchant banner -->
+    <div class="px-6 pt-6 pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="w-12 h-12 rounded-xl bg-slate-800 text-white grid place-items-center font-bold text-lg">K</span>
+        <div>
+          <p class="text-xs text-slate-500">Komei Hotel</p>
+          <p class="font-semibold">光明荘 直予約</p>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mb-1">合計</p>
+      <p class="text-3xl font-bold">¥<span id="total">0</span></p>
+      <p class="text-xs text-slate-500 mt-1">予約ID: <span id="rid" class="font-mono">-</span></p>
+    </div>
+
+    <!-- Card form (mock) -->
+    <div class="px-6 py-5 space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">メールアドレス</label>
+        <input type="email" placeholder="you@example.com" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">カード情報</label>
+        <div class="border border-slate-300 rounded-lg overflow-hidden">
+          <input type="text" placeholder="4242 4242 4242 4242" class="w-full px-3 py-2.5 text-sm border-b border-slate-200 focus:outline-none">
+          <div class="grid grid-cols-2">
+            <input type="text" placeholder="MM / YY" class="px-3 py-2.5 text-sm border-r border-slate-200 focus:outline-none">
+            <input type="text" placeholder="CVC" class="px-3 py-2.5 text-sm focus:outline-none">
+          </div>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">カード名義</label>
+        <input type="text" placeholder="TARO YAMADA" class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">国/地域</label>
+        <select class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm bg-white">
+          <option>日本</option>
+        </select>
+      </div>
+
+      <button onclick="alert('【DEMO】本番環境では Stripe が決済を処理し、success_url に戻ります。')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition">
+        ¥<span id="total2">0</span> を支払う
+      </button>
+
+      <p class="text-center text-[10px] text-slate-400 pt-2">
+        Powered by <span class="font-semibold">stripe</span> &nbsp;|&nbsp; 利用規約 &nbsp;|&nbsp; プライバシー
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800">
+    <p class="font-bold mb-1">🧪 これはデモ画面です</p>
+    <p>本番環境では、GASが Stripe API でCheckout Session を作成し、ここで実際の <code>checkout.stripe.com</code> にリダイレクトされます。決済完了後、Webhook 経由で予約が「paid」に更新され、確定メールが送信されます。</p>
+  </div>
+
+  <div class="mt-4 text-center">
+    <a href="payment.html?id=" id="backLink" class="text-xs text-slate-500 underline">← 決済選択に戻る</a>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const rid = params.get('id') || '-';
+const total = parseInt(params.get('total') || '0');
+document.getElementById('rid').textContent = rid;
+document.getElementById('total').textContent = total.toLocaleString('ja-JP');
+document.getElementById('total2').textContent = total.toLocaleString('ja-JP');
+// reconstruct back link with token
+const store = JSON.parse(sessionStorage.getItem('demo_reservations') || '{}');
+const r = store[rid];
+if (r) document.getElementById('backLink').href = `payment.html?id=${rid}&token=${r.token}&demo=1`;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /images/floorplan_*.png
+
+Sitemap: https://komei-hotel.example.com/sitemap.xml
