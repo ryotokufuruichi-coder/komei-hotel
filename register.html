@@ -238,6 +238,24 @@ function toggleLang() {
 
 function yen(n){ return '¥' + Number(n).toLocaleString('ja-JP'); }
 
+/** Normalize date value to 'YYYY-MM-DD' regardless of input format */
+function toYMD(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (m) return m[1];
+  const d = new Date(s);
+  if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  return s;
+}
+function fmtDate(v) {
+  const ymd = toYMD(v);
+  if (!ymd) return '-';
+  const [y, mo, d] = ymd.split('-');
+  return `${y}/${parseInt(mo)}/${parseInt(d)}`;
+}
+
 let guestIdCounter = 0;
 function addGuest(prefill) {
   guestIdCounter++;
@@ -485,8 +503,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     reservationData = { reservation_id: r.reservation_id || id, token: token, adults: r.adults, children: r.children, representative: rep, total: total };
 
     document.getElementById('rsId').textContent = reservationData.reservation_id;
-    document.getElementById('rsDates').textContent = `${r.checkin} → ${r.checkout}`;
-    const nights = Math.round((new Date(r.checkout)-new Date(r.checkin))/86400000);
+    document.getElementById('rsDates').textContent = `${fmtDate(r.checkin)} → ${fmtDate(r.checkout)}`;
+    const nights = Math.round((new Date(toYMD(r.checkout)+'T00:00:00Z')-new Date(toYMD(r.checkin)+'T00:00:00Z'))/86400000);
     document.getElementById('rsNights').innerHTML = `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span>`;
     document.getElementById('rsTotal').textContent = yen(total);
     document.getElementById('repName').value = rep.name;

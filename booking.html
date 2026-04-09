@@ -320,6 +320,63 @@ function toggleLang() {
 }
 
 function yen(n){ return '¥' + Number(n).toLocaleString('ja-JP'); }
+function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+// --- Nightly rates (same source as index.html calendar) ---
+const RATES = {"2026-04-06":37000,"2026-04-07":37000,"2026-04-09":50000,"2026-04-12":40000,"2026-04-17":40000,"2026-04-18":40000,"2026-04-19":40000,"2026-04-20":40000,"2026-04-21":40000,"2026-04-28":38000,"2026-04-29":38000,"2026-04-30":38000,"2026-05-01":38000,"2026-05-02":38000,"2026-05-03":38000,"2026-05-04":38000,"2026-05-05":38000,"2026-05-06":38000,"2026-05-07":38000,"2026-05-08":38000,"2026-05-09":38000,"2026-05-10":38000,"2026-05-11":38000,"2026-05-12":38000,"2026-05-13":38000,"2026-05-14":48000,"2026-05-15":51000,"2026-05-16":60000,"2026-05-17":47000,"2026-05-18":47000,"2026-05-19":46000,"2026-05-20":45000,"2026-05-21":47000,"2026-05-22":50000,"2026-05-23":59000,"2026-05-24":49000,"2026-05-25":38000,"2026-05-26":38000,"2026-05-27":38000,"2026-06-04":41000,"2026-06-05":44000,"2026-06-06":47000,"2026-06-14":39000,"2026-06-15":38000,"2026-06-16":37000,"2026-06-22":40000,"2026-06-23":40000,"2026-06-24":40000,"2026-06-25":40000,"2026-06-26":40000,"2026-07-04":42000,"2026-07-05":42000,"2026-07-06":42000,"2026-07-07":49000,"2026-07-08":47000,"2026-07-09":49000,"2026-07-10":51000,"2026-07-11":55000,"2026-07-12":50000,"2026-07-13":49000,"2026-07-14":48000,"2026-07-15":46000,"2026-07-16":50000,"2026-07-17":56000,"2026-07-18":61000,"2026-07-19":55000,"2026-07-20":47000,"2026-07-21":48000,"2026-07-22":51000,"2026-07-23":49000,"2026-07-24":53000,"2026-07-25":64000,"2026-07-26":47000,"2026-07-27":45000,"2026-07-28":44000,"2026-07-29":44000,"2026-07-30":46000,"2026-07-31":49000,"2026-08-01":59000,"2026-08-10":54000,"2026-08-11":46000,"2026-08-12":44000,"2026-08-13":44000,"2026-08-14":48000,"2026-08-15":49000,"2026-08-16":43000,"2026-08-17":41000,"2026-08-18":41000,"2026-08-19":40000,"2026-08-20":42000,"2026-09-06":43000,"2026-09-07":39000,"2026-09-08":38000,"2026-09-09":37000,"2026-09-10":39000,"2026-09-11":43000,"2026-09-12":48000,"2026-09-13":43000,"2026-09-14":38000,"2026-09-15":36000,"2026-09-16":47000,"2026-09-17":47000,"2026-09-18":54000,"2026-09-30":49000};
+const DEFAULT_RATE = 40000;
+const CLEANING_FEE = 27000;
+const CLEANING_FEE_YEAREND = 35000;
+const DIRECT_DISCOUNT = 0.05;
+
+function isYearEnd(key) {
+  const md = key.slice(5); // "MM-DD"
+  return (md >= '12-29' || md <= '01-03');
+}
+
+function computePrice(ci, co) {
+  let room = 0;
+  const d = new Date(ci + 'T00:00:00Z');
+  const end = new Date(co + 'T00:00:00Z');
+  let anyYearEnd = false;
+  while (d < end) {
+    const key = d.getUTCFullYear() + '-' + pad(d.getUTCMonth()+1) + '-' + pad(d.getUTCDate());
+    if (isYearEnd(key)) anyYearEnd = true;
+    room += (RATES[key] || DEFAULT_RATE);
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  const cleaning = anyYearEnd ? CLEANING_FEE_YEAREND : CLEANING_FEE;
+  const discount = Math.round(room * DIRECT_DISCOUNT);
+  const total = room - discount + cleaning;
+  return { room, cleaning, discount, total };
+}
+
+// Track current calculated total (updated on date change)
+let currentEstimatedTotal = 0;
+
+function updatePriceSummary() {
+  const ciVal = document.getElementById('checkin').value;
+  const coVal = document.getElementById('checkout').value;
+  if (!ciVal || !coVal || ciVal >= coVal) {
+    currentEstimatedTotal = 0;
+    document.getElementById('priceSummaryWrap').classList.add('hidden');
+    return;
+  }
+  const nights = Math.round((new Date(coVal) - new Date(ciVal)) / 86400000);
+  if (nights < 3) {
+    currentEstimatedTotal = 0;
+    document.getElementById('priceSummaryWrap').classList.add('hidden');
+    return;
+  }
+  const p = computePrice(ciVal, coVal);
+  currentEstimatedTotal = p.total;
+  const wrap = document.getElementById('priceSummaryWrap');
+  wrap.classList.remove('hidden');
+  document.getElementById('psDates').textContent = `${fmtDateLabel(ciVal)} → ${fmtDateLabel(coVal)}`;
+  document.getElementById('psNights').innerHTML =
+    `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span>`;
+  document.getElementById('psTotal').textContent = yen(p.total);
+}
 
 async function submitForm(e) {
   e.preventDefault();
@@ -342,7 +399,7 @@ async function submitForm(e) {
       phone: f('phone'),
     },
     notes: f('notes') || '',
-    estimated_total: parseInt(params.get('total') || '0'),
+    estimated_total: currentEstimatedTotal || parseInt(params.get('total') || '0'),
     source: 'lp_direct',
     submitted_at: new Date().toISOString(),
     user_agent: navigator.userAgent,
@@ -428,16 +485,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if (isValid(qci) && isValid(qco) && qci < qco) {
     document.getElementById('checkin').value = qci;
     document.getElementById('checkout').value = qco;
-    // Show price summary card
-    if (qtotal > 0) {
-      const wrap = document.getElementById('priceSummaryWrap');
-      wrap.classList.remove('hidden');
-      document.getElementById('psDates').textContent = `${fmtDateLabel(qci)} → ${fmtDateLabel(qco)}`;
-      const nights = Math.round((new Date(qco)-new Date(qci))/86400000);
-      document.getElementById('psNights').innerHTML =
-        `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span>`;
-      document.getElementById('psTotal').textContent = yen(qtotal);
-    }
   } else {
     document.getElementById('checkin').value = fmt(today);
     document.getElementById('checkout').value = fmt(fourDays);
@@ -452,8 +499,11 @@ window.addEventListener('DOMContentLoaded', () => {
     co.min = fmt(min);
     if (co.value && new Date(co.value) < min) co.value = fmt(min);
   }
-  ci.addEventListener('change', enforceMin);
+  ci.addEventListener('change', () => { enforceMin(); updatePriceSummary(); });
+  co.addEventListener('change', updatePriceSummary);
   enforceMin();
+  // Initial price calculation (works with or without URL params)
+  updatePriceSummary();
 });
 </script>
 </body>

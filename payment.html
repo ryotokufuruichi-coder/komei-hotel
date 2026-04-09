@@ -271,9 +271,31 @@ function toggleLang(){
 
 function fmt(n){ return Number(n||0).toLocaleString('ja-JP'); }
 
+/** Normalize date value to 'YYYY-MM-DD' regardless of input format */
+function toYMD(v) {
+  if (!v) return '';
+  const s = String(v);
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // ISO datetime like 2026-04-22T15:00:00.000Z → extract date part
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (m) return m[1];
+  // Date object or other parseable string
+  const d = new Date(s);
+  if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  return s;
+}
+
+function fmtDate(v) {
+  const ymd = toYMD(v);
+  if (!ymd) return '-';
+  const [y, m, d] = ymd.split('-');
+  return `${y}/${parseInt(m)}/${parseInt(d)}`;
+}
+
 function nightsBetween(ci, co){
-  const a = new Date(ci+'T00:00:00Z');
-  const b = new Date(co+'T00:00:00Z');
+  const a = new Date(toYMD(ci)+'T00:00:00Z');
+  const b = new Date(toYMD(co)+'T00:00:00Z');
   return Math.round((b-a)/86400000);
 }
 
@@ -305,8 +327,8 @@ function renderReservation(){
   document.getElementById('content').classList.remove('hidden');
   document.getElementById('r-id').textContent = reservation.reservation_id || RID;
   document.getElementById('r-name').textContent = reservation.representative_name || '-';
-  document.getElementById('r-ci').textContent = reservation.checkin || '-';
-  document.getElementById('r-co').textContent = reservation.checkout || '-';
+  document.getElementById('r-ci').textContent = fmtDate(reservation.checkin);
+  document.getElementById('r-co').textContent = fmtDate(reservation.checkout);
   document.getElementById('r-nights').textContent = nightsBetween(reservation.checkin, reservation.checkout) + (initialLang==='ja'?'泊':' nights');
   document.getElementById('r-guests').textContent = `${reservation.adults||0} + ${reservation.children||0}`;
   document.getElementById('r-total').textContent = fmt(reservation.final_total || reservation.estimated_total || 0);
