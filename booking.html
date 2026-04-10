@@ -75,7 +75,7 @@
         <div id="psNights" class="text-xs text-slate-500"></div>
       </div>
       <div class="text-right">
-        <div class="text-xs text-slate-500"><span class="lang-ja">概算料金（税込）</span><span class="lang-en">Estimated total</span></div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">榁算料金（税込）</span><span class="lang-en">Estimated total</span></div>
         <div id="psTotal" class="text-2xl font-bold text-amber-600"></div>
         <div class="text-xs text-slate-400"><span class="lang-ja">承認時に最終確定</span><span class="lang-en">Final on approval</span></div>
       </div>
@@ -198,7 +198,7 @@
           <span class="w-7 h-7 rounded-full bg-amber-500 text-white grid place-items-center text-sm">3</span>
           <span class="lang-ja">ご要望・備考</span><span class="lang-en">Requests &amp; Notes</span>
         </h2>
-        <textarea id="notes" rows="4" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="到着予定時刻、追加の寝具。特別なご要望など / Arrival time, extra bedding, special requests..."></textarea>
+        <textarea id="notes" rows="4" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="到着予定時刻。追加の寝具、特別なご要望など / Arrival time, extra bedding, special requests..."></textarea>
         <div class="mt-4 space-y-2 text-sm">
           <label class="flex items-start gap-2">
             <input type="checkbox" id="agree" required class="w-4 h-4 mt-1">
@@ -438,7 +438,7 @@ async function submitForm(e) {
       sessionStorage.setItem('demo_reservations', JSON.stringify(demoStore));
       data = { ok:true, reservation_id: id, token: token, demo:true };
       // Show modal but auto-redirect to register after 1.5s
-      document.getElementById('modalRefId').textContent = '【DEMO】受付番可: ' + id + ' — 自動承認しました。本登録に進みます…';
+      document.getElementById('modalRefId').textContent = '【DEMO】受付番号: ' + id + ' — 自動承認しました。本登録に進みます…';
       document.getElementById('modal').classList.remove('hidden');
       document.getElementById('modal').classList.add('flex');
       setTimeout(() => {
