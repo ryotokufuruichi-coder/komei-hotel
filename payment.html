@@ -407,15 +407,4 @@ async function proceed(){
     throw new Error('unexpected response');
   } catch (err) {
     console.error(err);
-    alert(initialLang === 'ja'
-      ? 'エラーが発生しました。時間をおいて再度お試しください。\n' + err.message
-      : 'An error occurred. Please try again later.\n' + err.message);
-    btn.disabled = false;
-    btn.innerHTML = '<span class="lang-ja">お支払いに進む →</span><span class="lang-en">Proceed to payment →</span>';
-  }
-}
-
-loadReservation();
-</script>
-</body>
-</html>
+    ale

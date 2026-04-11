@@ -516,20 +516,4 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   // Enforce 3-night minimum on date change
   const ci = document.getElementById('checkin');
-  const co = document.getElementById('checkout');
-  function enforceMin(){
-    if (!ci.value) return;
-    const min = new Date(ci.value);
-    min.setDate(min.getDate()+3);
-    co.min = fmt(min);
-    if (co.value && new Date(co.value) < min) co.value = fmt(min);
-  }
-  ci.addEventListener('change', () => { enforceMin(); updatePriceSummary(); });
-  co.addEventListener('change', updatePriceSummary);
-  enforceMin();
-  // Initial price calculation (works with or without URL params)
-  updatePriceSummary();
-});
-</script>
-</body>
-</html>
+  const co = docu
