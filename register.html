@@ -13,6 +13,11 @@
   .lang-en { display: none; }
   html[lang="en"] .lang-ja { display: none; }
   html[lang="en"] .lang-en { display: inline; }
+  .lang-zh, .lang-ko { display: none; }
+  html[lang="zh"] .lang-ja { display: none; }
+  html[lang="zh"] .lang-zh { display: inline; }
+  html[lang="ko"] .lang-ja { display: none; }
+  html[lang="ko"] .lang-ko { display: inline; }
   input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: #f59e0b;
@@ -31,7 +36,7 @@
       <span class="font-bold text-lg tracking-wide">Komei Hotel</span>
       <span class="hidden sm:inline text-xs text-slate-500">光明荘</span>
     </a>
-    <button onclick="toggleLang()" class="text-xs px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100" id="langBtn">EN</button>
+    <select onchange="setLang(this.value)" id="langSel" class="text-sm px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer"><option value="ja" selected>日本語</option><option value="en">EN</option><option value="zh">中文</option><option value="ko">한국어</option></select>
   </div>
 </header>
 
@@ -42,21 +47,25 @@
     <h1 class="text-3xl md:text-5xl font-bold mb-3">
       <span class="lang-ja">本登録</span>
       <span class="lang-en">Guest Registration</span>
+      <span class="lang-zh">正式登记</span>
+      <span class="lang-ko">본등록</span>
     </h1>
     <p class="text-emerald-50 text-sm md:text-base">
       <span class="lang-ja">旅館業法に基づく宿泊者情報のご登録をお願いします</span>
       <span class="lang-en">Please register all guests' details (required by Japanese Inn Business Act)</span>
+      <span class="lang-zh">请根据日本《旅馆业法》登记所有住客信息</span>
+      <span class="lang-ko">여관업법에 따라 숙박자 정보를 등록해 주세요</span>
     </p>
   </div>
   <!-- Step indicator -->
   <div class="max-w-3xl mx-auto mt-8 flex items-center justify-between text-xs text-emerald-50">
-    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-emerald-200/40 text-white grid place-items-center font-bold">✓</div><div class="mt-1"><span class="lang-ja">仮予約</span><span class="lang-en">Request</span></div></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-emerald-200/40 text-white grid place-items-center font-bold">✓</div><div class="mt-1"><span class="lang-ja">仮予約</span><span class="lang-en">Request</span><span class="lang-zh">预订申请</span><span class="lang-ko">예약 신청</span></div></div>
     <div class="flex-1 h-0.5 bg-emerald-200/60"></div>
-    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-emerald-200/40 text-white grid place-items-center font-bold">✓</div><div class="mt-1"><span class="lang-ja">承認</span><span class="lang-en">Approval</span></div></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-emerald-200/40 text-white grid place-items-center font-bold">✓</div><div class="mt-1"><span class="lang-ja">承認</span><span class="lang-en">Approval</span><span class="lang-zh">审批</span><span class="lang-ko">승인</span></div></div>
     <div class="flex-1 h-0.5 bg-white"></div>
-    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-white text-emerald-600 grid place-items-center font-bold">3</div><div class="mt-1"><span class="lang-ja">本登録</span><span class="lang-en">Details</span></div></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-white text-emerald-600 grid place-items-center font-bold">3</div><div class="mt-1"><span class="lang-ja">本登録</span><span class="lang-en">Details</span><span class="lang-zh">正式登记</span><span class="lang-ko">본등록</span></div></div>
     <div class="flex-1 h-0.5 bg-emerald-200/40"></div>
-    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-emerald-200/40 text-white grid place-items-center font-bold">4</div><div class="mt-1"><span class="lang-ja">お支払</span><span class="lang-en">Payment</span></div></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-emerald-200/40 text-white grid place-items-center font-bold">4</div><div class="mt-1"><span class="lang-ja">お支払</span><span class="lang-en">Payment</span><span class="lang-zh">支付</span><span class="lang-ko">결제</span></div></div>
   </div>
 </section>
 
@@ -65,16 +74,16 @@
   <div id="resSummary" class="bg-white border border-emerald-200 rounded-2xl shadow-lg p-5">
     <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
-        <div class="text-xs text-slate-500"><span class="lang-ja">予約番号</span><span class="lang-en">Reservation ID</span></div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">予約番号</span><span class="lang-en">Reservation ID</span><span class="lang-zh">预订编号</span><span class="lang-ko">예약 번호</span></div>
         <div id="rsId" class="font-bold text-slate-800 font-mono">—</div>
       </div>
       <div>
-        <div class="text-xs text-slate-500"><span class="lang-ja">日程</span><span class="lang-en">Dates</span></div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">日程</span><span class="lang-en">Dates</span><span class="lang-zh">日期</span><span class="lang-ko">일정</span></div>
         <div id="rsDates" class="font-bold text-slate-800">—</div>
         <div id="rsNights" class="text-xs text-slate-500"></div>
       </div>
       <div class="text-right">
-        <div class="text-xs text-slate-500"><span class="lang-ja">確定金額（税込）</span><span class="lang-en">Total (tax incl.)</span></div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">確定金額（税込）</span><span class="lang-en">Total (tax incl.)</span><span class="lang-zh">确定金额（含税）</span><span class="lang-ko">확정 금액（세금 포함）</span></div>
         <div id="rsTotal" class="text-2xl font-bold text-amber-600">—</div>
       </div>
     </div>
@@ -90,10 +99,14 @@
         <p class="font-bold mb-1">
           <span class="lang-ja">⚠️ 旅館業法に基づく必須情報のお願い</span>
           <span class="lang-en">⚠️ Required by Japanese Inn Business Act</span>
+          <span class="lang-zh">⚠️ 依据日本《旅馆业法》的必要信息</span>
+          <span class="lang-ko">⚠️ 일본 여관업법에 따른 필수 정보 안내</span>
         </p>
         <p class="text-xs text-slate-600">
           <span class="lang-ja">宿泊される方<strong>全員</strong>の氏名・住所・職業のご登録が必須です。日本国籍を持たない方は<strong>パスポートの画像（顔写真ページ）</strong>のアップロードが法令で義務付けられています。これらの情報は3年間安全に保管され、保健所等の行政機関の請求時にのみ開示されます。</span>
           <span class="lang-en">We are required to record name, address, and occupation for <strong>every guest</strong>. Non-Japanese guests must upload a photo of their passport's identification page. This data is securely stored for 3 years and only disclosed to authorized government agencies upon request.</span>
+          <span class="lang-zh">所有住客的姓名、地址、职业为必填项。非日本国籍的住客必须上传护照身份页照片，这是法律要求。这些信息将安全保存3年，仅在行政机关依法要求时提供。</span>
+          <span class="lang-ko">숙박하시는 분 전원의 성명·주소·직업 등록이 필수입니다. 일본 국적이 아닌 분은 여권 사진 페이지 업로드가 법령으로 의무화되어 있습니다. 이 정보는 3년간 안전하게 보관되며, 보건소 등 행정기관의 요청 시에만 공개됩니다.</span>
         </p>
       </div>
 
@@ -101,31 +114,31 @@
       <div>
         <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
           <span class="w-7 h-7 rounded-full bg-emerald-500 text-white grid place-items-center text-sm">A</span>
-          <span class="lang-ja">代表者情報の確認</span><span class="lang-en">Representative Confirmation</span>
+          <span class="lang-ja">代表者情報の確認</span><span class="lang-en">Representative Confirmation</span><span class="lang-zh">代表人信息确认</span><span class="lang-ko">대표자 정보 확인</span>
         </h2>
         <div class="grid md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">姓</span><span class="lang-en">Last name</span></label>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">姓</span><span class="lang-en">Last name</span><span class="lang-zh">姓</span><span class="lang-ko">성</span></label>
             <input type="text" id="repLastName" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" readonly>
           </div>
           <div>
-            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">名</span><span class="lang-en">First name</span></label>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">名</span><span class="lang-en">First name</span><span class="lang-zh">名</span><span class="lang-ko">이름</span></label>
             <input type="text" id="repFirstName" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" readonly>
           </div>
           <div>
-            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">メールアドレス</span><span class="lang-en">Email</span></label>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">メールアドレス</span><span class="lang-en">Email</span><span class="lang-zh">电子邮箱</span><span class="lang-ko">이메일</span></label>
             <input type="email" id="repEmail" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" readonly>
           </div>
           <div>
-            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">電話番号</span><span class="lang-en">Phone</span><span class="text-red-500">*</span></label>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">電話番号</span><span class="lang-en">Phone</span><span class="lang-zh">电话号码</span><span class="lang-ko">전화번호</span><span class="text-red-500">*</span></label>
             <input type="tel" id="repPhone" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
           </div>
           <div>
-            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">到着予定時刻</span><span class="lang-en">Estimated arrival</span><span class="text-red-500">*</span></label>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">到着予定時刻</span><span class="lang-en">Estimated arrival</span><span class="lang-zh">预计到达时间</span><span class="lang-ko">도착 예정 시간</span><span class="text-red-500">*</span></label>
             <input type="time" id="arrivalTime" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
           </div>
           <div class="md:col-span-2">
-            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">直前連絡先（緊急時）</span><span class="lang-en">Emergency contact (24h)</span><span class="text-red-500">*</span></label>
+            <label class="block text-sm font-semibold mb-1"><span class="lang-ja">直前連絡先（緊急時）</span><span class="lang-en">Emergency contact (24h)</span><span class="lang-zh">紧急联系方式（24小时）</span><span class="lang-ko">긴급 연락처（24시간）</span><span class="text-red-500">*</span></label>
             <input type="text" id="emergencyContact" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="例: WhatsApp +81-90-XXXX-XXXX / ご家族の連絡先など">
           </div>
         </div>
@@ -137,20 +150,22 @@
       <div>
         <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-2">
           <span class="w-7 h-7 rounded-full bg-emerald-500 text-white grid place-items-center text-sm">B</span>
-          <span class="lang-ja">宿泊者全員の情報</span><span class="lang-en">All Guests' Information</span>
+          <span class="lang-ja">宿泊者全員の情報</span><span class="lang-en">All Guests' Information</span><span class="lang-zh">所有住客信息</span><span class="lang-ko">모든 숙박자 정보</span>
         </h2>
         <p class="text-xs text-slate-500 mb-4">
           <span class="lang-ja">宿泊される方全員分（代表者含む）の情報を入力してください。0歳〜のお子様も対象です。</span>
           <span class="lang-en">Enter info for every guest including children. Children under 0 are also required.</span>
+          <span class="lang-zh">请填写所有住客（含代表人）的信息。婴幼儿也需登记。</span>
+          <span class="lang-ko">숙박하시는 모든 분（대표자 포함）의 정보를 입력해 주세요. 영유아도 대상입니다.</span>
         </p>
         <div id="guestList" class="space-y-4"></div>
         <div class="mt-3 flex justify-between items-center">
           <p class="text-xs text-slate-500">
-            <span class="lang-ja">宿泊人数: </span><span class="lang-en">Total guests: </span>
+            <span class="lang-ja">宿泊人数: </span><span class="lang-en">Total guests: </span><span class="lang-zh">住客人数: </span><span class="lang-ko">숙박 인원: </span>
             <span id="guestCount" class="font-bold">0</span>
           </p>
           <button type="button" onclick="addGuest()" class="text-sm px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-300">
-            + <span class="lang-ja">宿泊者を追加</span><span class="lang-en">Add guest</span>
+            + <span class="lang-ja">宿泊者を追加</span><span class="lang-en">Add guest</span><span class="lang-zh">添加住客</span><span class="lang-ko">숙박자 추가</span>
           </button>
         </div>
       </div>
@@ -161,40 +176,48 @@
       <div>
         <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
           <span class="w-7 h-7 rounded-full bg-emerald-500 text-white grid place-items-center text-sm">C</span>
-          <span class="lang-ja">キャンセルポリシーと同意事項</span><span class="lang-en">Cancellation Policy &amp; Consent</span>
+          <span class="lang-ja">キャンセルポリシーと同意事項</span><span class="lang-en">Cancellation Policy &amp; Consent</span><span class="lang-zh">退订政策与同意事项</span><span class="lang-ko">취소 정책 및 동의 사항</span>
         </h2>
         <div class="rounded-lg bg-slate-50 border border-slate-200 p-4 text-sm space-y-2">
           <p class="font-bold">
             <span class="lang-ja">📅 キャンセル規定</span>
             <span class="lang-en">📅 Cancellation rules</span>
+            <span class="lang-zh">📅 退订规定</span>
+            <span class="lang-ko">📅 취소 규정</span>
           </p>
           <ul class="text-xs text-slate-600 space-y-1 list-disc pl-5">
             <li>
               <span class="lang-ja">予約確定後 24時間以内のキャンセル：無料</span>
               <span class="lang-en">Within 24 hours of confirmation: free cancellation</span>
+              <span class="lang-zh">预订确认后24小时内取消：免费</span>
+              <span class="lang-ko">예약 확정 후 24시간 이내 취소: 무료</span>
             </li>
             <li>
               <span class="lang-ja">チェックイン7日前まで：50%返金</span>
               <span class="lang-en">Up to 7 days before check-in: 50% refund</span>
+              <span class="lang-zh">入住7天前取消：退款50%</span>
+              <span class="lang-ko">체크인 7일 전까지: 50% 환불</span>
             </li>
             <li>
               <span class="lang-ja">チェックイン7日前以降：返金なし（100%キャンセル料）</span>
               <span class="lang-en">Within 7 days of check-in: no refund (100% charge)</span>
+              <span class="lang-zh">入住7天内取消：不予退款（收取100%费用）</span>
+              <span class="lang-ko">체크인 7일 이내: 환불 불가（100% 취소 수수료）</span>
             </li>
           </ul>
         </div>
         <div class="mt-4 space-y-2 text-sm">
           <label class="flex items-start gap-2">
             <input type="checkbox" id="agreeCancel" required class="w-4 h-4 mt-1">
-            <span><span class="lang-ja">上記キャンセルポリシーに同意します</span><span class="lang-en">I agree to the cancellation policy</span><span class="text-red-500">*</span></span>
+            <span><span class="lang-ja">上記キャンセルポリシーに同意します</span><span class="lang-en">I agree to the cancellation policy</span><span class="lang-zh">我同意上述退订政策</span><span class="lang-ko">위 취소 정책에 동의합니다</span><span class="text-red-500">*</span></span>
           </label>
           <label class="flex items-start gap-2">
             <input type="checkbox" id="agreeRules" required class="w-4 h-4 mt-1">
-            <span><span class="lang-ja"><a href="terms.html" target="_blank" class="text-amber-600 hover:underline">利用規約・館内ルール</a>を確認し同意します（騒音・喫煙・追加宿泊者の禁止等）</span><span class="lang-en">I have read and accept the <a href="terms.html" target="_blank" class="text-amber-600 hover:underline">house rules</a> (no noise, no smoking, no extra guests)</span><span class="text-red-500">*</span></span>
+            <span><span class="lang-ja"><a href="terms.html" target="_blank" class="text-amber-600 hover:underline">利用規約・館内ルール</a>を確認し同意します（騒音・喫煙・追加宿泊者の禁止等）</span><span class="lang-en">I have read and accept the <a href="terms.html" target="_blank" class="text-amber-600 hover:underline">house rules</a> (no noise, no smoking, no extra guests)</span><span class="lang-zh"><a href="terms.html" target="_blank" class="text-amber-600 hover:underline">使用条款·馆内规则</a>を確認し同意します（騒音・喫煙・追加宿泊者の禁止等）</span><span class="lang-ko"><a href="terms.html" target="_blank" class="text-amber-600 hover:underline">이용약관·관내 규칙</a>을 확인하고 동의합니다（소음·흡연·추가 숙박자 금지 등）</span><span class="text-red-500">*</span></span>
           </label>
           <label class="flex items-start gap-2">
             <input type="checkbox" id="agreePrivacy" required class="w-4 h-4 mt-1">
-            <span><span class="lang-ja">提出した情報が旅館業法に基づき3年間保管されることに同意します</span><span class="lang-en">I consent to my information being retained for 3 years per Japanese Inn Business Act</span><span class="text-red-500">*</span></span>
+            <span><span class="lang-ja">提出した情報が旅館業法に基づき3年間保管されることに同意します</span><span class="lang-en">I consent to my information being retained for 3 years per Japanese Inn Business Act</span><span class="lang-zh">我同意所提交信息依据旅馆业法保存3年</span><span class="lang-ko">제출한 정보가 여관업법에 따라 3년간 보관되는 것에 동의합니다</span><span class="text-red-500">*</span></span>
           </label>
         </div>
       </div>
@@ -202,6 +225,8 @@
       <button type="submit" id="submitBtn" class="w-full py-4 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
         <span class="lang-ja">入力内容を送信してお支払へ進む →</span>
         <span class="lang-en">Submit &amp; proceed to payment →</span>
+        <span class="lang-zh">提交信息并前往支付 →</span>
+        <span class="lang-ko">정보 제출 후 결제로 이동 →</span>
       </button>
     </form>
   </div>
@@ -214,6 +239,8 @@
     <h3 class="text-xl font-bold mb-2">
       <span class="lang-ja">エラーが発生しました</span>
       <span class="lang-en">An error occurred</span>
+      <span class="lang-zh">发生错误</span>
+      <span class="lang-ko">오류가 발생했습니다</span>
     </h3>
     <p class="text-sm text-slate-600 mb-5" id="errMsg"></p>
     <button onclick="document.getElementById('errModal').classList.add('hidden');document.getElementById('errModal').classList.remove('flex');" class="px-6 py-2 rounded-full bg-slate-900 text-white font-semibold">OK</button>
@@ -233,12 +260,11 @@ const DEMO = new URLSearchParams(location.search).get('demo') === '1';
 
 let reservationData = null;
 
-function toggleLang() {
-  const html = document.documentElement;
-  const isJa = html.lang === 'ja';
-  html.lang = isJa ? 'en' : 'ja';
-  document.getElementById('langBtn').textContent = isJa ? 'JA' : 'EN';
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  document.getElementById('langSel').value = lang;
 }
+function toggleLang() { setLang(document.documentElement.lang === 'ja' ? 'en' : 'ja'); }
 
 function yen(n){ return '¥' + Number(n).toLocaleString('ja-JP'); }
 
@@ -270,19 +296,19 @@ function addGuest(prefill) {
   div.innerHTML = `
     <div class="flex justify-between items-center mb-3">
       <h3 class="font-bold text-slate-800">
-        <span class="lang-ja">宿泊者 ${idx}</span><span class="lang-en">Guest ${idx}</span>
+        <span class="lang-ja">宿泊者 ${idx}</span><span class="lang-en">Guest ${idx}</span><span class="lang-zh">住客 ${idx}</span><span class="lang-ko">숙박자 ${idx}</span>
       </h3>
       <button type="button" onclick="removeGuest(this)" class="text-xs text-red-500 hover:underline">
-        <span class="lang-ja">削除</span><span class="lang-en">Remove</span>
+        <span class="lang-ja">削除</span><span class="lang-en">Remove</span><span class="lang-zh">删除</span><span class="lang-ko">삭제</span>
       </button>
     </div>
     <div class="grid md:grid-cols-2 gap-3">
       <div>
-        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">氏名（フルネーム）</span><span class="lang-en">Full name</span><span class="text-red-500">*</span></label>
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">氏名（フルネーム）</span><span class="lang-en">Full name</span><span class="lang-zh">姓名（全名）</span><span class="lang-ko">성명（풀네임）</span><span class="text-red-500">*</span></label>
         <input type="text" name="g_name" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">国籍</span><span class="lang-en">Nationality</span><span class="text-red-500">*</span></label>
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">国籍</span><span class="lang-en">Nationality</span><span class="lang-zh">国籍</span><span class="lang-ko">국적</span><span class="text-red-500">*</span></label>
         <select name="g_nationality" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white g_nationality">
           <option value="">---</option>
           <option value="JP">日本 / Japan</option>
@@ -310,27 +336,29 @@ function addGuest(prefill) {
         </select>
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">住所</span><span class="lang-en">Address</span><span class="text-red-500">*</span></label>
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">住所</span><span class="lang-en">Address</span><span class="lang-zh">地址</span><span class="lang-ko">주소</span><span class="text-red-500">*</span></label>
         <input type="text" name="g_address" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" placeholder="〒XXX / City, Country">
       </div>
       <div>
-        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">職業</span><span class="lang-en">Occupation</span><span class="text-red-500">*</span></label>
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">職業</span><span class="lang-en">Occupation</span><span class="lang-zh">职业</span><span class="lang-ko">직업</span><span class="text-red-500">*</span></label>
         <input type="text" name="g_occupation" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
       </div>
       <div class="g_passport_field hidden md:col-span-2">
         <label class="block text-xs font-semibold mb-1">
-          <span class="lang-ja">パスポート画像（顔写真ページ）</span><span class="lang-en">Passport photo page</span>
+          <span class="lang-ja">パスポート画像（顔写真ページ）</span><span class="lang-en">Passport photo page</span><span class="lang-zh">护照照片页</span><span class="lang-ko">여권 사진 페이지</span>
           <span class="text-red-500">*</span>
         </label>
         <input type="file" name="g_passport" accept="image/jpeg,image/png,image/heic" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white g_passport">
         <p class="text-xs text-slate-500 mt-1">
           <span class="lang-ja">JPG/PNG/HEIC・5MB以下。氏名・国籍・旅券番号が読み取れる画像をアップしてください</span>
           <span class="lang-en">JPG/PNG/HEIC up to 5MB. Photo must be readable.</span>
+          <span class="lang-zh">JPG/PNG/HEIC，5MB以内。请上传可清晰读取姓名、国籍、护照号的照片</span>
+          <span class="lang-ko">JPG/PNG/HEIC·5MB 이하. 이름·국적·여권번호를 읽을 수 있는 이미지를 업로드하세요</span>
         </p>
         <div class="g_passport_preview mt-2"></div>
       </div>
       <div class="g_passport_field hidden">
-        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">旅券番号</span><span class="lang-en">Passport number</span><span class="text-red-500">*</span></label>
+        <label class="block text-xs font-semibold mb-1"><span class="lang-ja">旅券番号</span><span class="lang-en">Passport number</span><span class="lang-zh">护照号码</span><span class="lang-ko">여권 번호</span><span class="text-red-500">*</span></label>
         <input type="text" name="g_passport_no" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
       </div>
     </div>
@@ -464,7 +492,7 @@ async function submitRegister(e) {
     document.getElementById('errModal').classList.remove('hidden');
     document.getElementById('errModal').classList.add('flex');
     btn.disabled = false;
-    btn.innerHTML = '<span class="lang-ja">入力内容を送信してお支払へ進む →</span><span class="lang-en">Submit &amp; proceed to payment →</span>';
+    btn.innerHTML = '<span class="lang-ja">入力内容を送信してお支払へ進む →</span><span class="lang-en">Submit &amp; proceed to payment →</span><span class="lang-zh">提交信息并前往支付 →</span><span class="lang-ko">정보 제출 후 결제로 이동 →</span>';
   }
   return false;
 }
@@ -474,7 +502,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const id = params.get('id');
   const token = params.get('token');
   const lang = params.get('lang');
-  if (lang === 'en') toggleLang();
+  if (lang) setLang(lang);
 
   if (!id || !token) {
     document.getElementById('errMsg').textContent = '無効なURLです。承認メールから再度アクセスしてください。 / Invalid URL. Please use the link from your approval email.';
@@ -511,7 +539,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('rsId').textContent = reservationData.reservation_id;
     document.getElementById('rsDates').textContent = `${fmtDate(r.checkin)} → ${fmtDate(r.checkout)}`;
     const nights = Math.round((new Date(toYMD(r.checkout)+'T00:00:00Z')-new Date(toYMD(r.checkin)+'T00:00:00Z'))/86400000);
-    document.getElementById('rsNights').innerHTML = `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span>`;
+    document.getElementById('rsNights').innerHTML = `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span><span class="lang-zh">${nights}晚</span><span class="lang-ko">${nights}박</span>`;
     document.getElementById('rsTotal').textContent = yen(total);
     document.getElementById('repLastName').value = rep.last_name || rep.name;
     document.getElementById('repFirstName').value = rep.first_name;

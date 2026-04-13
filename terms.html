@@ -9,8 +9,13 @@
 <style>
   body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
   .lang-en { display: none; }
+  .lang-zh, .lang-ko { display: none; }
   html[lang="en"] .lang-ja { display: none; }
   html[lang="en"] .lang-en { display: inline; }
+  html[lang="zh"] .lang-ja { display: none; }
+  html[lang="zh"] .lang-zh { display: inline; }
+  html[lang="ko"] .lang-ja { display: none; }
+  html[lang="ko"] .lang-ko { display: inline; }
   h2 { scroll-margin-top: 80px; }
 </style>
 </head>
@@ -23,7 +28,7 @@
       <span class="font-bold text-lg tracking-wide">Komei Hotel</span>
       <span class="hidden sm:inline text-xs text-slate-500">光明荘</span>
     </a>
-    <button onclick="toggleLang()" class="text-xs px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100" id="langBtn">EN</button>
+    <select onchange="setLang(this.value)" id="langSel" class="text-sm px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer"><option value="ja" selected>日本語</option><option value="en">EN</option><option value="zh">中文</option><option value="ko">한국어</option></select>
   </div>
 </header>
 
@@ -31,20 +36,24 @@
   <h1 class="text-3xl font-bold mb-2">
     <span class="lang-ja">利用規約・キャンセルポリシー</span>
     <span class="lang-en">Terms &amp; Cancellation Policy</span>
+    <span class="lang-zh">使用条款·退订政策</span>
+    <span class="lang-ko">이용약관·취소 정책</span>
   </h1>
   <p class="text-sm text-slate-500 mb-8">
     <span class="lang-ja">最終更新: 2026年4月8日</span>
     <span class="lang-en">Last updated: April 8, 2026</span>
+    <span class="lang-zh">最后更新：2026年4月8日</span>
+    <span class="lang-ko">최종 업데이트: 2026년 4월 8일</span>
   </p>
 
   <nav class="bg-white rounded-2xl border border-slate-200 p-5 mb-8 text-sm">
-    <p class="font-semibold mb-2"><span class="lang-ja">目次</span><span class="lang-en">Contents</span></p>
+    <p class="font-semibold mb-2"><span class="lang-ja">目次</span><span class="lang-en">Contents</span><span class="lang-zh">目录</span><span class="lang-ko">목차</span></p>
     <ol class="list-decimal pl-5 space-y-1 text-amber-600">
-      <li><a href="#tokutei" class="hover:underline"><span class="lang-ja">特定商取引法に基づく表記</span><span class="lang-en">Specified Commercial Transaction Act</span></a></li>
-      <li><a href="#cancel" class="hover:underline"><span class="lang-ja">キャンセルポリシー</span><span class="lang-en">Cancellation Policy</span></a></li>
-      <li><a href="#house" class="hover:underline"><span class="lang-ja">ハウスルール</span><span class="lang-en">House Rules</span></a></li>
-      <li><a href="#privacy" class="hover:underline"><span class="lang-ja">個人情報の取扱い</span><span class="lang-en">Privacy Policy</span></a></li>
-      <li><a href="#liability" class="hover:underline"><span class="lang-ja">免責事項</span><span class="lang-en">Disclaimer</span></a></li>
+      <li><a href="#tokutei" class="hover:underline"><span class="lang-ja">特定商取引法に基づく表記</span><span class="lang-en">Specified Commercial Transaction Act</span><span class="lang-zh">特定商业交易法公示</span><span class="lang-ko">특정상거래법에 따른 표기</span></a></li>
+      <li><a href="#cancel" class="hover:underline"><span class="lang-ja">キャンセルポリシー</span><span class="lang-en">Cancellation Policy</span><span class="lang-zh">退订政策</span><span class="lang-ko">취소 정책</span></a></li>
+      <li><a href="#house" class="hover:underline"><span class="lang-ja">ハウスルール</span><span class="lang-en">House Rules</span><span class="lang-zh">住客须知</span><span class="lang-ko">하우스 룰</span></a></li>
+      <li><a href="#privacy" class="hover:underline"><span class="lang-ja">個人情報の取扱い</span><span class="lang-en">Privacy Policy</span><span class="lang-zh">个人信息处理</span><span class="lang-ko">개인정보 처리</span></a></li>
+      <li><a href="#liability" class="hover:underline"><span class="lang-ja">免責事項</span><span class="lang-en">Disclaimer</span><span class="lang-zh">免责声明</span><span class="lang-ko">면책 조항</span></a></li>
     </ol>
   </nav>
 
@@ -53,64 +62,78 @@
     <h2 class="text-xl font-bold mb-4">
       <span class="lang-ja">1. 特定商取引法に基づく表記</span>
       <span class="lang-en">1. Specified Commercial Transaction Act Disclosure</span>
+      <span class="lang-zh">1. 特定商业交易法公示</span>
+      <span class="lang-ko">1. 특정상거래법에 따른 표기</span>
     </h2>
     <dl class="space-y-3 text-sm">
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">販売事業者</span><span class="lang-en">Operator</span></dt>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">販売事業者</span><span class="lang-en">Operator</span><span class="lang-zh">经营者</span><span class="lang-ko">판매 사업자</span></dt>
         <dd class="sm:col-span-2">光建商事株式会社 / Koken Shoji Co., Ltd.</dd>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">運営責任者</span><span class="lang-en">Representative</span></dt>
-        <dd class="sm:col-span-2"><span class="lang-ja">請求があった場合は遅滞なく開示します</span><span class="lang-en">Disclosed upon request without delay</span></dd>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">運営責任者</span><span class="lang-en">Representative</span><span class="lang-zh">运营负责人</span><span class="lang-ko">운영 책임자</span></dt>
+        <dd class="sm:col-span-2"><span class="lang-ja">請求があった場合は遅滞なく開示します</span><span class="lang-en">Disclosed upon request without delay</span><span class="lang-zh">如有要求将立即公开</span><span class="lang-ko">요청 시 지체 없이 공개합니다</span></dd>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">所在地</span><span class="lang-en">Address</span></dt>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">所在地</span><span class="lang-en">Address</span><span class="lang-zh">地址</span><span class="lang-ko">소재지</span></dt>
         <dd class="sm:col-span-2">〒130-0005 東京都墨田区東駒形4丁目20-5</dd>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">連絡先</span><span class="lang-en">Contact</span></dt>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">連絡先</span><span class="lang-en">Contact</span><span class="lang-zh">联系方式</span><span class="lang-ko">연락처</span></dt>
         <dd class="sm:col-span-2">komei.hotel@gmail.com</dd>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">営業許可</span><span class="lang-en">License</span></dt>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">営業許可</span><span class="lang-en">License</span><span class="lang-zh">营业许可</span><span class="lang-ko">영업 허가</span></dt>
         <dd class="sm:col-span-2">
           <span class="lang-ja">旅館業法に基づく簡易宿所営業許可（保健所提出済）</span>
           <span class="lang-en">Simple Lodging License under Japanese Inn Business Act</span>
+          <span class="lang-zh">基于《旅馆业法》的简易住宿营业许可（已向保健所提交）</span>
+          <span class="lang-ko">여관업법에 따른 간이숙소 영업허가（보건소 제출 완료）</span>
         </dd>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">販売価格</span><span class="lang-en">Price</span></dt>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">販売価格</span><span class="lang-en">Price</span><span class="lang-zh">销售价格</span><span class="lang-ko">판매 가격</span></dt>
         <dd class="sm:col-span-2">
           <span class="lang-ja">予約画面にて表示（消費税・宿泊税・清掃料金込み）</span>
           <span class="lang-en">Displayed at booking (incl. tax, accommodation tax, cleaning fee)</span>
+          <span class="lang-zh">预订页面显示（含消费税·住宿税·清洁费）</span>
+          <span class="lang-ko">예약 화면에 표시（소비세·숙박세·청소 요금 포함）</span>
         </dd>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">支払方法</span><span class="lang-en">Payment</span></dt>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">支払方法</span><span class="lang-en">Payment</span><span class="lang-zh">支付方式</span><span class="lang-ko">결제 방법</span></dt>
         <dd class="sm:col-span-2">
           <span class="lang-ja">クレジットカード（Stripe）／銀行振込</span>
           <span class="lang-en">Credit Card (Stripe) / Bank Transfer</span>
+          <span class="lang-zh">信用卡（Stripe）/ 银行转账</span>
+          <span class="lang-ko">신용카드（Stripe）/ 은행 송금</span>
         </dd>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">支払時期</span><span class="lang-en">Payment Timing</span></dt>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">支払時期</span><span class="lang-en">Payment Timing</span><span class="lang-zh">支付时间</span><span class="lang-ko">결제 시기</span></dt>
         <dd class="sm:col-span-2">
           <span class="lang-ja">本登録完了後、お支払ページでの即時決済（カード）または3営業日以内のお振込</span>
           <span class="lang-en">Immediately after registration (card) or within 3 business days (transfer)</span>
+          <span class="lang-zh">正式登记完成后，支付页面即时支付（卡）或3个工作日内转账</span>
+          <span class="lang-ko">본등록 완료 후 결제 페이지에서 즉시 결제（카드）또는 3영업일 이내 송금</span>
         </dd>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">サービス提供時期</span><span class="lang-en">Service Date</span></dt>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">サービス提供時期</span><span class="lang-en">Service Date</span><span class="lang-zh">服务提供时间</span><span class="lang-ko">서비스 제공 시기</span></dt>
         <dd class="sm:col-span-2">
           <span class="lang-ja">予約画面で指定されたチェックイン日</span>
           <span class="lang-en">Check-in date specified at booking</span>
+          <span class="lang-zh">预订页面指定的入住日</span>
+          <span class="lang-ko">예약 화면에서 지정한 체크인 날짜</span>
         </dd>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <dt class="font-semibold text-slate-600"><span class="lang-ja">返品・キャンセル</span><span class="lang-en">Cancellation</span></dt>
+        <dt class="font-semibold text-slate-600"><span class="lang-ja">返品・キャンセル</span><span class="lang-en">Cancellation</span><span class="lang-zh">退款·取消</span><span class="lang-ko">반품·취소</span></dt>
         <dd class="sm:col-span-2">
           <span class="lang-ja">下記キャンセルポリシーをご参照ください</span>
           <span class="lang-en">See Cancellation Policy below</span>
+          <span class="lang-zh">请参照以下退订政策</span>
+          <span class="lang-ko">아래 취소 정책을 참조해 주세요</span>
         </dd>
       </div>
     </dl>
@@ -121,35 +144,37 @@
     <h2 class="text-xl font-bold mb-4">
       <span class="lang-ja">2. キャンセルポリシー</span>
       <span class="lang-en">2. Cancellation Policy</span>
+      <span class="lang-zh">2. 退订政策</span>
+      <span class="lang-ko">2. 취소 정책</span>
     </h2>
     <div class="overflow-x-auto">
       <table class="w-full text-sm border-collapse">
         <thead class="bg-slate-100">
           <tr>
-            <th class="p-3 text-left border border-slate-200"><span class="lang-ja">タイミング</span><span class="lang-en">Timing</span></th>
-            <th class="p-3 text-left border border-slate-200"><span class="lang-ja">返金</span><span class="lang-en">Refund</span></th>
+            <th class="p-3 text-left border border-slate-200"><span class="lang-ja">タイミング</span><span class="lang-en">Timing</span><span class="lang-zh">时间</span><span class="lang-ko">시기</span></th>
+            <th class="p-3 text-left border border-slate-200"><span class="lang-ja">返金</span><span class="lang-en">Refund</span><span class="lang-zh">退款</span><span class="lang-ko">환불</span></th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td class="p-3 border border-slate-200"><span class="lang-ja">予約確定後 24時間以内</span><span class="lang-en">Within 24 hours of confirmation</span></td>
+            <td class="p-3 border border-slate-200"><span class="lang-ja">予約確定後 24時間以内</span><span class="lang-en">Within 24 hours of confirmation</span><span class="lang-zh">预订确认后24小时内</span><span class="lang-ko">예약 확정 후 24시간 이내</span></td>
             <td class="p-3 border border-slate-200 text-emerald-600 font-semibold">100%</td>
           </tr>
           <tr class="bg-slate-50">
-            <td class="p-3 border border-slate-200"><span class="lang-ja">チェックイン7日前まで</span><span class="lang-en">Until 7 days before check-in</span></td>
+            <td class="p-3 border border-slate-200"><span class="lang-ja">チェックイン7日前まで</span><span class="lang-en">Until 7 days before check-in</span><span class="lang-zh">入住7天前</span><span class="lang-ko">체크인 7일 전까지</span></td>
             <td class="p-3 border border-slate-200 text-amber-600 font-semibold">50%</td>
           </tr>
           <tr>
-            <td class="p-3 border border-slate-200"><span class="lang-ja">チェックイン7日前以降</span><span class="lang-en">Less than 7 days before check-in</span></td>
-            <td class="p-3 border border-slate-200 text-red-600 font-semibold"><span class="lang-ja">返金不可</span><span class="lang-en">No refund</span></td>
+            <td class="p-3 border border-slate-200"><span class="lang-ja">チェックイン7日前以降</span><span class="lang-en">Less than 7 days before check-in</span><span class="lang-zh">入住7天内</span><span class="lang-ko">체크인 7일 이내</span></td>
+            <td class="p-3 border border-slate-200 text-red-600 font-semibold"><span class="lang-ja">返金不可</span><span class="lang-en">No refund</span><span class="lang-zh">不予退款</span><span class="lang-ko">환불 불가</span></td>
           </tr>
         </tbody>
       </table>
     </div>
     <ul class="mt-4 text-xs text-slate-600 space-y-1 list-disc pl-5">
-      <li><span class="lang-ja">返金時の決済手数料・送金手数料はお客様負担となります。</span><span class="lang-en">Payment processing and remittance fees for refunds are borne by the guest.</span></li>
-      <li><span class="lang-ja">無断キャンセル（No-show）は返金いたしません。</span><span class="lang-en">No-shows are non-refundable.</span></li>
-      <li><span class="lang-ja">天災・運営者都合による中止の場合は全額返金いたします。</span><span class="lang-en">Full refund in case of natural disasters or operator-side cancellation.</span></li>
+      <li><span class="lang-ja">返金時の決済手数料・送金手数料はお客様負担となります。</span><span class="lang-en">Payment processing and remittance fees for refunds are borne by the guest.</span><span class="lang-zh">退款时的支付手续费·汇款手续费由客人承担。</span><span class="lang-ko">환불 시 결제 수수료·송금 수수료는 고객 부담입니다.</span></li>
+      <li><span class="lang-ja">無断キャンセル（No-show）は返金いたしません。</span><span class="lang-en">No-shows are non-refundable.</span><span class="lang-zh">未通知取消（No-show）不予退款。</span><span class="lang-ko">무단 취소（No-show）는 환불하지 않습니다.</span></li>
+      <li><span class="lang-ja">天災・運営者都合による中止の場合は全額返金いたします。</span><span class="lang-en">Full refund in case of natural disasters or operator-side cancellation.</span><span class="lang-zh">因天灾·运营方原因取消时全额退款。</span><span class="lang-ko">천재지변·운영자 사정에 의한 취소 시 전액 환불합니다.</span></li>
     </ul>
   </section>
 
@@ -158,16 +183,18 @@
     <h2 class="text-xl font-bold mb-4">
       <span class="lang-ja">3. ハウスルール</span>
       <span class="lang-en">3. House Rules</span>
+      <span class="lang-zh">3. 住客须知</span>
+      <span class="lang-ko">3. 하우스 룰</span>
     </h2>
     <ul class="text-sm space-y-2 list-disc pl-5">
-      <li><span class="lang-ja">チェックイン: 16:00 / チェックアウト: 10:00</span><span class="lang-en">Check-in: 16:00 / Check-out: 10:00</span></li>
-      <li><span class="lang-ja">最低3泊以上のご予約となります。</span><span class="lang-en">Minimum stay: 3 nights.</span></li>
-      <li><span class="lang-ja">屋内は全面禁煙です（喫煙発覚時はクリーニング費5万円を申し受けます）。</span><span class="lang-en">Strictly no smoking indoors (¥50,000 cleaning fee if violated).</span></li>
-      <li><span class="lang-ja">深夜22時以降は近隣にご配慮いただき、お静かにお過ごしください。</span><span class="lang-en">Quiet hours after 22:00 out of consideration for neighbors.</span></li>
-      <li><span class="lang-ja">パーティー・イベント目的の利用は固くお断りします。</span><span class="lang-en">Parties and events are strictly prohibited.</span></li>
-      <li><span class="lang-ja">ペットの同伴は不可です。</span><span class="lang-en">No pets allowed.</span></li>
-      <li><span class="lang-ja">宿泊登録者以外の方の宿泊・立ち入りはできません。</span><span class="lang-en">Only registered guests may stay or enter.</span></li>
-      <li><span class="lang-ja">ゴミは指定の方法で分別してお出しください。</span><span class="lang-en">Please sort and dispose of waste as instructed.</span></li>
+      <li><span class="lang-ja">チェックイン: 16:00 / チェックアウト: 10:00</span><span class="lang-en">Check-in: 16:00 / Check-out: 10:00</span><span class="lang-zh">入住：16:00 / 退房：10:00</span><span class="lang-ko">체크인: 16:00 / 체크아웃: 10:00</span></li>
+      <li><span class="lang-ja">最低3泊以上のご予約となります。</span><span class="lang-en">Minimum stay: 3 nights.</span><span class="lang-zh">最少预订3晚。</span><span class="lang-ko">최소 3박 이상 예약이 필요합니다.</span></li>
+      <li><span class="lang-ja">屋内は全面禁煙です（喫煙発覚時はクリーニング費5万円を申し受けます）。</span><span class="lang-en">Strictly no smoking indoors (¥50,000 cleaning fee if violated).</span><span class="lang-zh">室内全面禁烟（违规将收取5万日元清洁费）。</span><span class="lang-ko">실내 전면 금연입니다（위반 시 청소비 5만엔이 부과됩니다）.</span></li>
+      <li><span class="lang-ja">深夜22時以降は近隣にご配慮いただき、お静かにお過ごしください。</span><span class="lang-en">Quiet hours after 22:00 out of consideration for neighbors.</span><span class="lang-zh">晚上22点后请保持安静，注意不影响邻居。</span><span class="lang-ko">밤 22시 이후에는 이웃을 배려하여 조용히 해 주세요.</span></li>
+      <li><span class="lang-ja">パーティー・イベント目的の利用は固くお断りします。</span><span class="lang-en">Parties and events are strictly prohibited.</span><span class="lang-zh">严禁用于派对或活动。</span><span class="lang-ko">파티·이벤트 목적의 이용은 엄격히 금지됩니다.</span></li>
+      <li><span class="lang-ja">ペットの同伴は不可です。</span><span class="lang-en">No pets allowed.</span><span class="lang-zh">禁止携带宠物。</span><span class="lang-ko">반려동물 동반 불가입니다.</span></li>
+      <li><span class="lang-ja">宿泊登録者以外の方の宿泊・立ち入りはできません。</span><span class="lang-en">Only registered guests may stay or enter.</span><span class="lang-zh">未登记人员不得住宿或进入。</span><span class="lang-ko">숙박 등록자 외의 숙박·출입은 불가합니다.</span></li>
+      <li><span class="lang-ja">ゴミは指定の方法で分別してお出しください。</span><span class="lang-en">Please sort and dispose of waste as instructed.</span><span class="lang-zh">请按规定方式分类处理垃圾。</span><span class="lang-ko">쓰레기는 지정된 방법으로 분리배출해 주세요.</span></li>
     </ul>
   </section>
 
@@ -176,12 +203,14 @@
     <h2 class="text-xl font-bold mb-4">
       <span class="lang-ja">4. 個人情報の取扱い</span>
       <span class="lang-en">4. Privacy Policy</span>
+      <span class="lang-zh">4. 个人信息处理</span>
+      <span class="lang-ko">4. 개인정보 처리</span>
     </h2>
     <div class="text-sm space-y-3">
-      <p><span class="lang-ja">当社は旅館業法第6条に基づき、宿泊者名簿（氏名・住所・職業・宿泊日・国籍・パスポート番号）を3年間保存いたします。</span><span class="lang-en">In accordance with Article 6 of the Inn Business Act, we retain guest registry data (name, address, occupation, dates, nationality, passport number) for 3 years.</span></p>
-      <p><span class="lang-ja">取得した個人情報は、ご予約・宿泊の管理、法令に基づく行政機関への提出、緊急時のご連絡以外には使用しません。</span><span class="lang-en">Personal data is used solely for reservation management, legally required submissions to authorities, and emergency contact.</span></p>
-      <p><span class="lang-ja">決済情報はStripe Inc.のサーバーで処理され、当社では保持しません。</span><span class="lang-en">Payment information is processed by Stripe Inc. and not stored on our servers.</span></p>
-      <p><span class="lang-ja">パスポート画像はGoogle Driveの限定公開フォルダに保管し、保存期間経過後に削除いたします。</span><span class="lang-en">Passport images are stored in a private Google Drive folder and deleted after the retention period.</span></p>
+      <p><span class="lang-ja">当社は旅館業法第6条に基づき、宿泊者名簿（氏名・住所・職業・宿泊日・国籍・パスポート番号）を3年間保存いたします。</span><span class="lang-en">In accordance with Article 6 of the Inn Business Act, we retain guest registry data (name, address, occupation, dates, nationality, passport number) for 3 years.</span><span class="lang-zh">本公司根据《旅馆业法》第6条，将住客名簿（姓名·地址·职业·住宿日期·国籍·护照号码）保存3年。</span><span class="lang-ko">당사는 여관업법 제6조에 따라 숙박자 명부（성명·주소·직업·숙박일·국적·여권번호）를 3년간 보존합니다.</span></p>
+      <p><span class="lang-ja">取得した個人情報は、ご予約・宿泊の管理、法令に基づく行政機関への提出、緊急時のご連絡以外には使用しません。</span><span class="lang-en">Personal data is used solely for reservation management, legally required submissions to authorities, and emergency contact.</span><span class="lang-zh">所获取的个人信息仅用于预订·住宿管理、依法向行政机关提交及紧急联络，不作他用。</span><span class="lang-ko">취득한 개인정보는 예약·숙박 관리, 법령에 따른 행정기관 제출, 긴급 연락 외에는 사용하지 않습니다.</span></p>
+      <p><span class="lang-ja">決済情報はStripe Inc.のサーバーで処理され、当社では保持しません。</span><span class="lang-en">Payment information is processed by Stripe Inc. and not stored on our servers.</span><span class="lang-zh">支付信息由Stripe Inc.服务器处理，本公司不保存。</span><span class="lang-ko">결제 정보는 Stripe Inc. 서버에서 처리되며 당사에서는 보관하지 않습니다.</span></p>
+      <p><span class="lang-ja">パスポート画像はGoogle Driveの限定公開フォルダに保管し、保存期間経過後に削除いたします。</span><span class="lang-en">Passport images are stored in a private Google Drive folder and deleted after the retention period.</span><span class="lang-zh">护照照片保存在Google Drive的私密文件夹中，保存期满后删除。</span><span class="lang-ko">여권 이미지는 Google Drive의 비공개 폴더에 보관하며, 보존 기간 경과 후 삭제합니다.</span></p>
     </div>
   </section>
 
@@ -190,11 +219,13 @@
     <h2 class="text-xl font-bold mb-4">
       <span class="lang-ja">5. 免責事項</span>
       <span class="lang-en">5. Disclaimer</span>
+      <span class="lang-zh">5. 免责声明</span>
+      <span class="lang-ko">5. 면책 조항</span>
     </h2>
     <ul class="text-sm space-y-2 list-disc pl-5">
-      <li><span class="lang-ja">館内での盗難・紛失について、当社は責任を負いかねます。</span><span class="lang-en">We are not responsible for theft or loss within the premises.</span></li>
-      <li><span class="lang-ja">天災・交通機関の遅延等による到着不可・遅延については、原則として返金いたしません。</span><span class="lang-en">Late or missed arrivals due to natural disasters or transport delays are not refundable.</span></li>
-      <li><span class="lang-ja">ハウスルール違反による退去の場合、宿泊料金の返金はいたしません。</span><span class="lang-en">No refund in case of eviction due to house rule violation.</span></li>
+      <li><span class="lang-ja">館内での盗難・紛失について、当社は責任を負いかねます。</span><span class="lang-en">We are not responsible for theft or loss within the premises.</span><span class="lang-zh">馆内的盗窃·遗失，本公司概不负责。</span><span class="lang-ko">관내에서의 도난·분실에 대해 당사는 책임을 지지 않습니다.</span></li>
+      <li><span class="lang-ja">天災・交通機関の遅延等による到着不可・遅延については、原則として返金いたしません。</span><span class="lang-en">Late or missed arrivals due to natural disasters or transport delays are not refundable.</span><span class="lang-zh">因天灾·交通延误等导致无法到达或延迟，原则上不予退款。</span><span class="lang-ko">천재지변·교통기관 지연 등으로 인한 도착 불가·지연에 대해서는 원칙적으로 환불하지 않습니다.</span></li>
+      <li><span class="lang-ja">ハウスルール違反による退去の場合、宿泊料金の返金はいたしません。</span><span class="lang-en">No refund in case of eviction due to house rule violation.</span><span class="lang-zh">因违反住客须知被要求退房时，不退还住宿费用。</span><span class="lang-ko">하우스 룰 위반으로 퇴거하는 경우 숙박 요금은 환불하지 않습니다.</span></li>
     </ul>
   </section>
 
@@ -202,12 +233,11 @@
 </main>
 
 <script>
-function toggleLang(){
-  const cur = document.documentElement.lang;
-  const next = cur === 'ja' ? 'en' : 'ja';
-  document.documentElement.lang = next;
-  document.getElementById('langBtn').textContent = next === 'ja' ? 'EN' : 'JA';
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  document.getElementById('langSel').value = lang;
 }
+function toggleLang() { setLang(document.documentElement.lang === 'ja' ? 'en' : 'ja'); }
 </script>
 </body>
 </html>

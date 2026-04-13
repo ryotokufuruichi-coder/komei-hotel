@@ -13,6 +13,13 @@
   html[lang="en"] .lang-ja { display: none; }
   html[lang="en"] .lang-en { display: inline; }
   html[lang="en"] .lang-en-block { display: block; }
+  .lang-zh, .lang-ko { display: none; }
+  html[lang="zh"] .lang-ja { display: none; }
+  html[lang="zh"] .lang-zh { display: inline; }
+  html[lang="zh"] .lang-zh-block { display: block; }
+  html[lang="ko"] .lang-ja { display: none; }
+  html[lang="ko"] .lang-ko { display: inline; }
+  html[lang="ko"] .lang-ko-block { display: block; }
   input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: #f59e0b;
@@ -32,11 +39,11 @@
     </a>
     <nav class="hidden md:flex items-center gap-6 text-sm">
       <a href="index.html" class="hover:text-amber-600">
-        <span class="lang-ja">← トップへ戻る</span><span class="lang-en">← Back to home</span>
+        <span class="lang-ja">← トップへ戻る</span><span class="lang-en">← Back to home</span><span class="lang-zh">← 返回首页</span><span class="lang-ko">← 홈으로 돌아가기</span>
       </a>
       <a href="mailto:komei.hotel@gmail.com" class="text-slate-600 hover:text-amber-600">✉ komei.hotel@gmail.com</a>
     </nav>
-    <button onclick="toggleLang()" class="md:ml-4 text-xs px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100" id="langBtn">EN</button>
+    <select onchange="setLang(this.value)" id="langSel" class="md:ml-4 text-sm px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer"><option value="ja" selected>日本語</option><option value="en">EN</option><option value="zh">中文</option><option value="ko">한국어</option></select>
   </div>
 </header>
 
@@ -47,21 +54,25 @@
     <h1 class="text-3xl md:text-5xl font-bold mb-3">
       <span class="lang-ja">仮予約申込</span>
       <span class="lang-en">Reservation Request</span>
+      <span class="lang-zh">预订申请</span>
+      <span class="lang-ko">예약 신청</span>
     </h1>
     <p class="text-amber-50 text-sm md:text-base">
       <span class="lang-ja">代表者情報をご記入ください ｜ 24時間以内に運営から承認のご連絡をお送りします</span>
       <span class="lang-en">Enter your contact details &middot; We confirm availability within 24 hours</span>
+      <span class="lang-zh">请填写代表人信息 ｜ 我们将在24小时内确认并回复</span>
+      <span class="lang-ko">대표자 정보를 입력해 주세요 ｜ 24시간 이내에 승인 여부를 알려드립니다</span>
     </p>
   </div>
   <!-- Step indicator -->
   <div class="max-w-3xl mx-auto mt-8 flex items-center justify-between text-xs text-amber-50">
-    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-white text-amber-600 grid place-items-center font-bold">1</div><div class="mt-1"><span class="lang-ja">仮予約</span><span class="lang-en">Request</span></div></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-white text-amber-600 grid place-items-center font-bold">1</div><div class="mt-1"><span class="lang-ja">仮予約</span><span class="lang-en">Request</span><span class="lang-zh">预订申请</span><span class="lang-ko">예약 신청</span></div></div>
     <div class="flex-1 h-0.5 bg-amber-200/40"></div>
-    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-amber-200/40 text-white grid place-items-center font-bold">2</div><div class="mt-1"><span class="lang-ja">承認</span><span class="lang-en">Approval</span></div></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-amber-200/40 text-white grid place-items-center font-bold">2</div><div class="mt-1"><span class="lang-ja">承認</span><span class="lang-en">Approval</span><span class="lang-zh">审批</span><span class="lang-ko">승인</span></div></div>
     <div class="flex-1 h-0.5 bg-amber-200/40"></div>
-    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-amber-200/40 text-white grid place-items-center font-bold">3</div><div class="mt-1"><span class="lang-ja">本登録</span><span class="lang-en">Details</span></div></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-amber-200/40 text-white grid place-items-center font-bold">3</div><div class="mt-1"><span class="lang-ja">本登録</span><span class="lang-en">Details</span><span class="lang-zh">正式登记</span><span class="lang-ko">본등록</span></div></div>
     <div class="flex-1 h-0.5 bg-amber-200/40"></div>
-    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-amber-200/40 text-white grid place-items-center font-bold">4</div><div class="mt-1"><span class="lang-ja">お支払</span><span class="lang-en">Payment</span></div></div>
+    <div class="flex-1 text-center"><div class="w-8 h-8 mx-auto rounded-full bg-amber-200/40 text-white grid place-items-center font-bold">4</div><div class="mt-1"><span class="lang-ja">お支払</span><span class="lang-en">Payment</span><span class="lang-zh">支付</span><span class="lang-ko">결제</span></div></div>
   </div>
 </section>
 
@@ -70,19 +81,21 @@
   <div class="bg-white border border-amber-200 rounded-2xl shadow-lg p-5">
     <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
-        <div class="text-xs text-slate-500"><span class="lang-ja">選択された日程</span><span class="lang-en">Selected dates</span></div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">選択された日程</span><span class="lang-en">Selected dates</span><span class="lang-zh">已选日期</span><span class="lang-ko">선택한 일정</span></div>
         <div id="psDates" class="font-bold text-slate-800"></div>
         <div id="psNights" class="text-xs text-slate-500"></div>
       </div>
       <div class="text-right">
-        <div class="text-xs text-slate-500"><span class="lang-ja">榁算料金（税込）</span><span class="lang-en">Estimated total</span></div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">榁算料金（税込）</span><span class="lang-en">Estimated total</span><span class="lang-zh">预估费用（含税）</span><span class="lang-ko">예상 요금（세금 포함）</span></div>
         <div id="psTotal" class="text-2xl font-bold text-amber-600"></div>
-        <div class="text-xs text-slate-400"><span class="lang-ja">承認時に最終確定</span><span class="lang-en">Final on approval</span></div>
+        <div class="text-xs text-slate-400"><span class="lang-ja">承認時に最終確定</span><span class="lang-en">Final on approval</span><span class="lang-zh">审批时最终确定</span><span class="lang-ko">승인 시 최종 확정</span></div>
       </div>
     </div>
     <div class="mt-3 pt-3 border-t border-amber-100 text-xs text-slate-500 leading-relaxed">
       <span class="lang-ja">※ こちらの料金は<a href="https://www.airbnb.jp/rooms/1039805188907481877" target="_blank" class="text-amber-600 underline">Airbnb掲載価格</a>から最大10%オフの目安です。最終金額は管理者の確認後に確定されるため、実際の料金が上下する場合がございます。</span>
       <span class="lang-en">※ This is an estimate of up to 10% off our <a href="https://www.airbnb.jp/rooms/1039805188907481877" target="_blank" class="text-amber-600 underline">Airbnb listing price</a>. The final amount is confirmed upon admin approval and may vary.</span>
+      <span class="lang-zh">※ 此价格为Airbnb标价最高优惠10%的预估价。最终金额将在管理员确认后确定，实际费用可能有所变动。</span>
+      <span class="lang-ko">※ 이 가격은 Airbnb 게재 가격에서 최대 10% 할인된 예상 가격입니다. 최종 금액은 관리자 확인 후 확정되며 실제 요금이 변동될 수 있습니다.</span>
     </div>
   </div>
 </div>
@@ -96,26 +109,26 @@
       <div>
         <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
           <span class="w-7 h-7 rounded-full bg-amber-500 text-white grid place-items-center text-sm">1</span>
-          <span class="lang-ja">ご滞在情報</span><span class="lang-en">Stay Information</span>
+          <span class="lang-ja">ご滞在情報</span><span class="lang-en">Stay Information</span><span class="lang-zh">住宿信息</span><span class="lang-ko">숙박 정보</span>
         </h2>
         <div class="grid md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-semibold mb-1">
-              <span class="lang-ja">チェックイン日</span><span class="lang-en">Check-in date</span>
+              <span class="lang-ja">チェックイン日</span><span class="lang-en">Check-in date</span><span class="lang-zh">入住日期</span><span class="lang-ko">체크인 날짜</span>
               <span class="text-red-500">*</span>
             </label>
             <input type="date" id="checkin" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">
-              <span class="lang-ja">チェックアウト日</span><span class="lang-en">Check-out date</span>
+              <span class="lang-ja">チェックアウト日</span><span class="lang-en">Check-out date</span><span class="lang-zh">退房日期</span><span class="lang-ko">체크아웃 날짜</span>
               <span class="text-red-500">*</span>
             </label>
             <input type="date" id="checkout" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">
-              <span class="lang-ja">宿泊人数（大人）</span><span class="lang-en">Adults</span>
+              <span class="lang-ja">宿泊人数（大人）</span><span class="lang-en">Adults</span><span class="lang-zh">住客人数（成人）</span><span class="lang-ko">숙박 인원（성인）</span>
               <span class="text-red-500">*</span>
             </label>
             <select id="adults" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white">
@@ -128,7 +141,7 @@
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">
-              <span class="lang-ja">お子様（12歳以下）</span><span class="lang-en">Children (12 &amp; under)</span>
+              <span class="lang-ja">お子様（12歳以下）</span><span class="lang-en">Children (12 &amp; under)</span><span class="lang-zh">儿童（12岁以下）</span><span class="lang-ko">아동（12세 이하）</span>
             </label>
             <select id="children" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white">
               <option value="0" selected>0</option><option value="1">1</option>
@@ -139,10 +152,14 @@
             <p class="font-semibold mb-1">
               <span class="lang-ja">📍 一棟まるごと貸切（最大10名様まで）</span>
               <span class="lang-en">📍 Whole house rental (sleeps up to 10)</span>
+              <span class="lang-zh">📍 整栋独享（最多可住10人）</span>
+              <span class="lang-ko">📍 건물 전체 대여（최대 10명）</span>
             </p>
             <p class="text-xs text-slate-600">
               <span class="lang-ja">1階：ダブル1・シングル2・ソファーベッド(ダブル)1 / 2階：ダブル2・シングル2。最大10名様までご宿泊可能。各階にキッチン・パスルーム・トイレ・洗面台完備。</span>
               <span class="lang-en">1F: 1 double + 2 singles + 1 double sofa bed / 2F: 2 doubles + 2 singles. Sleeps up to 10 guests. Each floor has its own kitchen, bathroom, toilet and washbasin.</span>
+              <span class="lang-zh">1楼：双人床1张·单人床2张·沙发床（双人）1张 / 2楼：双人床2张·单人床2张。最多可容纳10位客人。每层配有独立厨房、浴室、卫生间及洗手台。</span>
+              <span class="lang-ko">1층: 더블 1·싱글 2·소파베드(더블) 1 / 2층: 더블 2·싱글 2. 최대 10명 숙박 가능. 각 층에 주방·욕실·화장실·세면대 완비.</span>
             </p>
           </div>
         </div>
@@ -154,39 +171,39 @@
       <div>
         <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
           <span class="w-7 h-7 rounded-full bg-amber-500 text-white grid place-items-center text-sm">2</span>
-          <span class="lang-ja">お客様情報</span><span class="lang-en">Guest Information</span>
+          <span class="lang-ja">お客様情報</span><span class="lang-en">Guest Information</span><span class="lang-zh">客人信息</span><span class="lang-ko">고객 정보</span>
         </h2>
         <div class="grid md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-semibold mb-1">
-              <span class="lang-ja">姓</span><span class="lang-en">Last name</span>
+              <span class="lang-ja">姓</span><span class="lang-en">Last name</span><span class="lang-zh">姓</span><span class="lang-ko">성</span>
               <span class="text-red-500">*</span>
             </label>
             <input type="text" id="last_name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="山田 / Yamada">
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">
-              <span class="lang-ja">名</span><span class="lang-en">First name</span>
+              <span class="lang-ja">名</span><span class="lang-en">First name</span><span class="lang-zh">名</span><span class="lang-ko">이름</span>
               <span class="text-red-500">*</span>
             </label>
             <input type="text" id="first_name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="太郎 / Taro">
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">
-              <span class="lang-ja">国・地域</span><span class="lang-en">Country / Region</span>
+              <span class="lang-ja">国・地域</span><span class="lang-en">Country / Region</span><span class="lang-zh">国家/地区</span><span class="lang-ko">국가/지역</span>
             </label>
             <input type="text" id="country" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="日本 / Japan">
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">
-              <span class="lang-ja">メールアドレス</span><span class="lang-en">Email</span>
+              <span class="lang-ja">メールアドレス</span><span class="lang-en">Email</span><span class="lang-zh">电子邮箱</span><span class="lang-ko">이메일</span>
               <span class="text-red-500">*</span>
             </label>
             <input type="email" id="email" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="example@example.com">
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">
-              <span class="lang-ja">電話番号</span><span class="lang-en">Phone</span>
+              <span class="lang-ja">電話番号</span><span class="lang-en">Phone</span><span class="lang-zh">电话号码</span><span class="lang-ko">전화번호</span>
               <span class="text-red-500">*</span>
             </label>
             <input type="tel" id="phone" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="090-0000-0000">
@@ -200,7 +217,7 @@
       <div>
         <h2 class="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
           <span class="w-7 h-7 rounded-full bg-amber-500 text-white grid place-items-center text-sm">3</span>
-          <span class="lang-ja">ご要望・備考</span><span class="lang-en">Requests &amp; Notes</span>
+          <span class="lang-ja">ご要望・備考</span><span class="lang-en">Requests &amp; Notes</span><span class="lang-zh">需求与备注</span><span class="lang-ko">요청 사항 및 비고</span>
         </h2>
         <textarea id="notes" rows="4" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg" placeholder="到着予定時刻。追加の寝具、特別なご要望など / Arrival time, extra bedding, special requests..."></textarea>
         <div class="mt-4 space-y-2 text-sm">
@@ -210,9 +227,13 @@
               <a href="terms.html" target="_blank" class="text-amber-600 hover:underline">
                 <span class="lang-ja">利用規約・キャンセルポリシー・プライバシーポリシー</span>
                 <span class="lang-en">Terms, Cancellation Policy &amp; Privacy Policy</span>
+                <span class="lang-zh">使用条款·退订政策·隐私政策</span>
+                <span class="lang-ko">이용약관·취소 정책·개인정보 처리방침</span>
               </a>
               <span class="lang-ja">に同意します</span>
               <span class="lang-en"> — I agree</span>
+              <span class="lang-zh">——我同意</span>
+              <span class="lang-ko">에 동의합니다</span>
               <span class="text-red-500">*</span>
             </span>
           </label>
@@ -221,6 +242,8 @@
             <span>
               <span class="lang-ja">承認後に宿泊者全員の本人確認情報の提出と事前決済が必要なことを承知しました</span>
               <span class="lang-en">I understand that after approval, all guests' ID information and prepayment will be required</span>
+              <span class="lang-zh">我已知悉审批通过后需提交所有住客的身份信息并预付款</span>
+              <span class="lang-ko">승인 후 모든 숙박자의 본인 확인 정보 제출과 사전 결제가 필요함을 이해했습니다</span>
               <span class="text-red-500">*</span>
             </span>
           </label>
@@ -230,28 +253,40 @@
       <button type="submit" id="submitBtn" class="w-full py-4 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
         <span class="lang-ja">仮予約を申し込む</span>
         <span class="lang-en">Submit Reservation Request</span>
+        <span class="lang-zh">提交预订申请</span>
+        <span class="lang-ko">예약 신청하기</span>
       </button>
 
       <div class="rounded-lg bg-slate-50 border border-slate-200 p-4 text-xs text-slate-600 space-y-1">
         <p class="font-semibold text-slate-700">
           <span class="lang-ja">📋 この後の流れ</span>
           <span class="lang-en">📋 What happens next</span>
+          <span class="lang-zh">📋 接下来的流程</span>
+          <span class="lang-ko">📋 이후 절차</span>
         </p>
         <p>
           <span class="lang-ja">1. 運営が24時間以内に承認/却下のメールをお送りします</span>
           <span class="lang-en">1. We confirm or decline within 24 hours via email</span>
+          <span class="lang-zh">1. 我们将在24小时内通过邮件通知审批结果</span>
+          <span class="lang-ko">1. 24시간 이내에 승인/거절 이메일을 보내드립니다</span>
         </p>
         <p>
           <span class="lang-ja">2. 承認後、本登録ページのURLと最終金額をメールでご案内</span>
           <span class="lang-en">2. After approval, you'll receive a registration URL and final price</span>
+          <span class="lang-zh">2. 审批通过后，将通过邮件发送正式登记页面链接和最终金额</span>
+          <span class="lang-ko">2. 승인 후 본등록 페이지 URL과 최종 금액을 이메일로 안내</span>
         </p>
         <p>
           <span class="lang-ja">3. 宿泊者全員の情報を入力（外国籍の方はパスポート画像が必要です）</span>
           <span class="lang-en">3. Enter all guests' details (passport image required for non-Japanese guests)</span>
+          <span class="lang-zh">3. 填写所有住客信息（非日本国籍需上传护照照片）</span>
+          <span class="lang-ko">3. 모든 숙박자 정보 입력（외국 국적의 경우 여권 이미지 필요）</span>
         </p>
         <p>
           <span class="lang-ja">4. オンライン決済（クレジットカード）または銀行振込でお支払い → 予約確定</span>
           <span class="lang-en">4. Pay by credit card or bank transfer to confirm your reservation</span>
+          <span class="lang-zh">4. 通过信用卡或银行转账支付 → 预订确定</span>
+          <span class="lang-ko">4. 온라인 결제（신용카드）또는 은행 송금으로 결제 → 예약 확정</span>
         </p>
       </div>
     </form>
@@ -261,18 +296,18 @@
   <div class="max-w-3xl mx-auto mt-10 grid sm:grid-cols-3 gap-4">
     <div class="bg-white rounded-xl p-5 shadow text-center">
       <div class="text-3xl mb-2">💰</div>
-      <h3 class="font-bold mb-1"><span class="lang-ja">最安値保証</span><span class="lang-en">Best price</span></h3>
-      <p class="text-xs text-slate-500"><span class="lang-ja">OTAより最大10%お得</span><span class="lang-en">Up to 10% less than OTAs</span></p>
+      <h3 class="font-bold mb-1"><span class="lang-ja">最安値保証</span><span class="lang-en">Best price</span><span class="lang-zh">最低价保证</span><span class="lang-ko">최저가 보장</span></h3>
+      <p class="text-xs text-slate-500"><span class="lang-ja">OTAより最大10%お得</span><span class="lang-en">Up to 10% less than OTAs</span><span class="lang-zh">比OTA最多便宜10%</span><span class="lang-ko">OTA보다 최대 10% 저렴</span></p>
     </div>
     <div class="bg-white rounded-xl p-5 shadow text-center">
       <div class="text-3xl mb-2">🤝</div>
-      <h3 class="font-bold mb-1"><span class="lang-ja">柔軟な対応</span><span class="lang-en">Flexible</span></h3>
-      <p class="text-xs text-slate-500"><span class="lang-ja">連泊・長期割引相談可</span><span class="lang-en">Long-stay discounts</span></p>
+      <h3 class="font-bold mb-1"><span class="lang-ja">柔軟な対応</span><span class="lang-en">Flexible</span><span class="lang-zh">灵活应对</span><span class="lang-ko">유연한 대응</span></h3>
+      <p class="text-xs text-slate-500"><span class="lang-ja">連泊・長期割引相談可</span><span class="lang-en">Long-stay discounts</span><span class="lang-zh">长住优惠可商议</span><span class="lang-ko">연박·장기 할인 상담 가능</span></p>
     </div>
     <div class="bg-white rounded-xl p-5 shadow text-center">
       <div class="text-3xl mb-2">⏱️</div>
-      <h3 class="font-bold mb-1"><span class="lang-ja">24時間以内返信</span><span class="lang-en">24-hour reply</span></h3>
-      <p class="text-xs text-slate-500"><span class="lang-ja">運営から直接ご連絡</span><span class="lang-en">Directly from the host</span></p>
+      <h3 class="font-bold mb-1"><span class="lang-ja">24時間以内返信</span><span class="lang-en">24-hour reply</span><span class="lang-zh">24小时内回复</span><span class="lang-ko">24시간 이내 답변</span></h3>
+      <p class="text-xs text-slate-500"><span class="lang-ja">運営から直接ご連絡</span><span class="lang-en">Directly from the host</span><span class="lang-zh">房东直接联系您</span><span class="lang-ko">운영자가 직접 연락</span></p>
     </div>
   </div>
 </section>
@@ -284,14 +319,19 @@
     <h3 class="text-xl font-bold mb-2">
       <span class="lang-ja">仮予約を受け付けました</span>
       <span class="lang-en">Request received</span>
+      <span class="lang-zh">预订申请已受理</span>
+      <span class="lang-ko">예약 신청이 접수되었습니다</span>
     </h3>
     <p class="text-sm text-slate-600 mb-3">
       <span class="lang-ja">ご記入のメールアドレスに受付確認メールを送信しました。運営が承認次第、24時間以内に本登録ページのご案内をお送りします。</span>
       <span class="lang-en">A confirmation email has been sent. We will email you the registration link within 24 hours.</span>
+      <span class="lang-zh">确认邮件已发送至您填写的邮箱。审批通过后，我们将在24小时内发送正式登记页面链接。</span>
+      <span class="lang-ko">입력하신 이메일로 접수 확인 메일을 발송했습니다. 승인 후 24시간 이내에 본등록 페이지 안내를 보내드립니다.</span>
     </p>
     <p class="text-xs text-slate-400 mb-5" id="modalRefId"></p>
     <a href="index.html" class="inline-block px-6 py-2 rounded-full bg-slate-900 text-white font-semibold">
       <span class="lang-ja">トップへ戻る</span><span class="lang-en">Back to home</span>
+      <span class="lang-zh">返回首页</span><span class="lang-ko">홈으로 돌아가기</span>
     </a>
   </div>
 </div>
@@ -303,6 +343,8 @@
     <h3 class="text-xl font-bold mb-2">
       <span class="lang-ja">送信に失敗しました</span>
       <span class="lang-en">Submission failed</span>
+      <span class="lang-zh">发送失败</span>
+      <span class="lang-ko">전송 실패</span>
     </h3>
     <p class="text-sm text-slate-600 mb-5" id="errMsg"></p>
     <button onclick="document.getElementById('errModal').classList.add('hidden');document.getElementById('errModal').classList.remove('flex');" class="px-6 py-2 rounded-full bg-slate-900 text-white font-semibold">OK</button>
@@ -323,12 +365,11 @@ const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx6JO_l8Hhb5pQCIZk
 const DEMO = new URLSearchParams(location.search).get('demo') === '1';
 function demoReservationId(){ return 'R' + new Date().toISOString().slice(0,10).replace(/-/g,'') + Math.floor(Math.random()*9000+1000); }
 
-function toggleLang() {
-  const html = document.documentElement;
-  const isJa = html.lang === 'ja';
-  html.lang = isJa ? 'en' : 'ja';
-  document.getElementById('langBtn').textContent = isJa ? 'JA' : 'EN';
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  document.getElementById('langSel').value = lang;
 }
+function toggleLang() { setLang(document.documentElement.lang === 'ja' ? 'en' : 'ja'); }
 
 function yen(n){ return '¥' + Number(n).toLocaleString('ja-JP'); }
 function pad(n){ return n < 10 ? '0' + n : '' + n; }
@@ -398,7 +439,7 @@ function updatePriceSummary() {
   wrap.classList.remove('hidden');
   document.getElementById('psDates').textContent = `${fmtDateLabel(ciVal)} → ${fmtDateLabel(coVal)}`;
   document.getElementById('psNights').innerHTML =
-    `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span>`;
+    `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span><span class="lang-zh">${nights}晚</span><span class="lang-ko">${nights}박</span>`;
   document.getElementById('psTotal').textContent = yen(p.total);
 }
 
@@ -486,7 +527,7 @@ async function submitForm(e) {
     document.getElementById('errModal').classList.remove('hidden');
     document.getElementById('errModal').classList.add('flex');
     btn.disabled = false;
-    btn.innerHTML = '<span class="lang-ja">仮予約を申し込む</span><span class="lang-en">Submit Reservation Request</span>';
+    btn.innerHTML = '<span class="lang-ja">仮予約を申し込む</span><span class="lang-en">Submit Reservation Request</span><span class="lang-zh">提交预订申请</span><span class="lang-ko">예약 신청하기</span>';
   }
   return false;
 }
@@ -516,4 +557,20 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   // Enforce 3-night minimum on date change
   const ci = document.getElementById('checkin');
-  const co = docu
+  const co = document.getElementById('checkout');
+  function enforceMin(){
+    if (!ci.value) return;
+    const min = new Date(ci.value);
+    min.setDate(min.getDate()+3);
+    co.min = fmt(min);
+    if (co.value && new Date(co.value) < min) co.value = fmt(min);
+  }
+  ci.addEventListener('change', () => { enforceMin(); updatePriceSummary(); });
+  co.addEventListener('change', updatePriceSummary);
+  enforceMin();
+  // Initial price calculation (works with or without URL params)
+  updatePriceSummary();
+});
+</script>
+</body>
+</html>
