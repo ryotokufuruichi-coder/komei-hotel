@@ -1,5 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /register.html
+Disallow: /payment.html
+Disallow: /thanks.html
+Disallow: /demo_stripe.html
 Disallow: /images/floorplan_*.png
 
 Sitemap: https://komei.yoshinarcorp.com/sitemap.xml
