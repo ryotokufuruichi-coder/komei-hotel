@@ -2,6 +2,14 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TBDRC88R6Y"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TBDRC88R6Y');
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>本登録 ｜ Komei Hotel 光明荘</title>
 <meta name="description" content="Komei Hotel 光明荘の本登録フォーム。承認後の宿泊者情報入力ページです。">
@@ -544,4 +552,18 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('repLastName').value = rep.last_name || rep.name;
     document.getElementById('repFirstName').value = rep.first_name;
     document.getElementById('repEmail').value = rep.email;
-    docume
+    document.getElementById('repPhone').value = rep.phone;
+
+    // Pre-add guest cards based on adults+children count
+    const totalGuests = (r.adults || 1) + (r.children || 0);
+    addGuest({name: rep.name});
+    for (let i = 1; i < totalGuests; i++) addGuest();
+  } catch (err) {
+    document.getElementById('errMsg').textContent = '予約情報が取得できません: ' + err.message;
+    document.getElementById('errModal').classList.remove('hidden');
+    document.getElementById('errModal').classList.add('flex');
+  }
+});
+</script>
+</body>
+</html>

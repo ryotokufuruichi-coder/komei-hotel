@@ -2,6 +2,14 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TBDRC88R6Y"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TBDRC88R6Y');
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Book Direct ｜ Komei Hotel 光明荘 — Private Vacation Rental Tokyo Asakusa</title>
 <meta name="description" content="Book Komei Hotel direct and save up to 10% vs Airbnb. Private whole-house short-term rental near Senso-ji Temple & Skytree, Tokyo. Entire house sleeps 10, rooftop terrace. Best Airbnb alternative in Sumida. 直接予約でOTAより最大10%お得。">
@@ -445,6 +453,7 @@ function updatePriceSummary() {
 
 async function submitForm(e) {
   e.preventDefault();
+  if (typeof gtag === 'function') { gtag('event', 'generate_lead', { event_category: 'booking', event_label: 'booking_form_submit' }); }
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
   btn.innerText = '送信中… / Sending…';

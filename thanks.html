@@ -2,6 +2,15 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TBDRC88R6Y"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TBDRC88R6Y');
+  gtag('event', 'purchase', { transaction_id: Date.now().toString() });
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>予約確定 ｜ Komei Hotel 光明荘</title>
 <meta name="description" content="Komei Hotel 光明荘のご予約が確定しました">
@@ -298,4 +307,18 @@ async function load(){
     console.error(e);
     document.getElementById('r-id').textContent = RID;
     document.getElementById('r-id-en').textContent = RID;
-    document.getElementById(
+    document.getElementById('r-id-zh').textContent = RID;
+    document.getElementById('r-id-ko').textContent = RID;
+  }
+  showContent();
+}
+
+function showContent(){
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('content').classList.remove('hidden');
+}
+
+load();
+</script>
+</body>
+</html>
