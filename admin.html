@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面 ｜ Komei Hotel</title>
+<meta name="robots" content="noindex, nofollow">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif; }
+  .status-badge { display:inline-block; padding:2px 10px; border-radius:9999px; font-size:0.75rem; font-weight:600; }
+  .status-requested  { background:#fef9c3; color:#854d0e; }
+  .status-approved   { background:#dbeafe; color:#1e40af; }
+  .status-registered { background:#e0e7ff; color:#3730a3; }
+  .status-paid       { background:#dcfce7; color:#166534; }
+  .status-cancelled  { background:#fee2e2; color:#991b1b; }
+  .status-rejected   { background:#fecaca; color:#991b1b; }
+  .chat-msg { max-width:80%; }
+  .chat-guest { margin-left:auto; background:#fef3c7; border-radius:16px 16px 4px 16px; }
+  .chat-host  { margin-right:auto; background:#dbeafe; border-radius:16px 16px 16px 4px; }
+  .fade-in { animation: fadeIn 0.2s ease-in; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .nav-tab.active { border-bottom:3px solid #f59e0b; color:#d97706; font-weight:600; }
+  tr.clickable:hover { background:#fffbeb; cursor:pointer; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+<!-- ====== Login Screen ====== -->
+<div id="loginScreen" class="flex items-center justify-center min-h-screen">
+  <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
+    <h1 class="text-2xl font-bold text-center mb-2">Komei Hotel</h1>
+    <p class="text-slate-500 text-center mb-6">管理ダッシュボード</p>
+    <div class="mb-4">
+      <label class="block text-sm font-medium mb-1">管理者トークン</label>
+      <input id="tokenInput" type="password" class="w-full border rounded-lg px-4 py-2.5 text-sm" placeholder="ADMIN_TOKEN を入力">
+    </div>
+    <button onclick="doLogin()" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-lg transition">ログイン</button>
+    <p id="loginError" class="text-red-500 text-sm mt-3 hidden text-center"></p>
+  </div>
+</div>
+
+<!-- ====== Main Dashboard ====== -->
+<div id="dashboard" class="hidden">
+  <!-- Header -->
+  <header class="bg-white border-b sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <h1 class="text-lg font-bold">Komei Hotel <span class="text-amber-500">Admin</span></h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <button onclick="loadReservations()" class="text-sm text-slate-500 hover:text-amber-600" title="更新">&#x21BB; 更新</button>
+        <button onclick="doLogout()" class="text-sm text-slate-500 hover:text-red-500">ログアウト</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div id="statsBar" class="max-w-7xl mx-auto px-4 py-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-slate-500 mb-1">全予約数</div>
+        <div id="statTotal" class="text-2xl font-bold">-</div>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-slate-500 mb-1">承認待ち</div>
+        <div id="statPending" class="text-2xl font-bold text-amber-600">-</div>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-slate-500 mb-1">今後のチェックイン</div>
+        <div id="statUpcoming" class="text-2xl font-bold text-blue-600">-</div>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-slate-500 mb-1">確定済み売上</div>
+        <div id="statRevenue" class="text-2xl font-bold text-green-600">-</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="max-w-7xl mx-auto px-4 pb-2">
+    <div class="flex flex-wrap items-center gap-3 bg-white rounded-xl p-3 shadow-sm">
+      <label class="text-sm font-medium">ステータス:</label>
+      <select id="filterStatus" onchange="loadReservations()" class="border rounded-lg px-3 py-1.5 text-sm">
+        <option value="all">すべて</option>
+        <option value="requested">承認待ち</option>
+        <option value="approved">承認済み</option>
+        <option value="registered">登録済み</option>
+        <option value="paid">確定</option>
+        <option value="cancelled">キャンセル</option>
+        <option value="rejected">却下</option>
+      </select>
+      <label class="text-sm font-medium ml-4">チェックイン:</label>
+      <input id="filterFrom" type="date" class="border rounded-lg px-3 py-1.5 text-sm" onchange="loadReservations()">
+      <span class="text-slate-400">〜</span>
+      <input id="filterTo" type="date" class="border rounded-lg px-3 py-1.5 text-sm" onchange="loadReservations()">
+      <button onclick="clearFilters()" class="text-xs text-slate-400 hover:text-slate-600 ml-2">クリア</button>
+    </div>
+  </div>
+
+  <!-- Reservation List -->
+  <div id="listView" class="max-w-7xl mx-auto px-4 py-4">
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-left">
+            <tr>
+              <th class="px-4 py-3 font-medium">予約ID</th>
+              <th class="px-4 py-3 font-medium">ステータス</th>
+              <th class="px-4 py-3 font-medium">チェックイン</th>
+              <th class="px-4 py-3 font-medium">チェックアウト</th>
+              <th class="px-4 py-3 font-medium">泊</th>
+              <th class="px-4 py-3 font-medium">代表者</th>
+              <th class="px-4 py-3 font-medium">人数</th>
+              <th class="px-4 py-3 font-medium">金額</th>
+              <th class="px-4 py-3 font-medium">支払</th>
+              <th class="px-4 py-3 font-medium">ソース</th>
+            </tr>
+          </thead>
+          <tbody id="reservationTable"></tbody>
+        </table>
+      </div>
+      <div id="emptyMsg" class="hidden text-center py-12 text-slate-400">予約がありません</div>
+    </div>
+  </div>
+
+  <!-- Reservation Detail (overlay) -->
+  <div id="detailOverlay" class="hidden fixed inset-0 z-40 bg-black/30 flex justify-end">
+    <div class="bg-white w-full max-w-2xl h-full overflow-y-auto shadow-2xl fade-in">
+      <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+        <h2 id="detailTitle" class="text-lg font-bold"></h2>
+        <button onclick="closeDetail()" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="border-b px-6 flex gap-6">
+        <button class="nav-tab active py-3 text-sm" data-tab="info" onclick="switchTab(this)">予約情報</button>
+        <button class="nav-tab py-3 text-sm" data-tab="guests" onclick="switchTab(this)">ゲスト</button>
+        <button class="nav-tab py-3 text-sm" data-tab="messages" onclick="switchTab(this)">メッセージ</button>
+        <button class="nav-tab py-3 text-sm" data-tab="logs" onclick="switchTab(this)">ログ</button>
+      </div>
+
+      <!-- Tab: Info -->
+      <div id="tab-info" class="tab-panel px-6 py-4">
+        <div id="detailInfo"></div>
+        <div id="detailActions" class="mt-6"></div>
+      </div>
+
+      <!-- Tab: Guests -->
+      <div id="tab-guests" class="tab-panel px-6 py-4 hidden">
+        <div id="detailGuests"></div>
+      </div>
+
+      <!-- Tab: Messages -->
+      <div id="tab-messages" class="tab-panel px-6 py-4 hidden">
+        <div id="detailMessages" class="space-y-3 mb-4 max-h-96 overflow-y-auto"></div>
+        <div class="flex gap-2">
+          <textarea id="replyInput" rows="2" class="flex-1 border rounded-lg px-3 py-2 text-sm resize-none" placeholder="メッセージを入力..."></textarea>
+          <button onclick="sendReply()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 rounded-lg text-sm font-medium whitespace-nowrap">送信</button>
+        </div>
+      </div>
+
+      <!-- Tab: Logs -->
+      <div id="tab-logs" class="tab-panel px-6 py-4 hidden">
+        <div id="detailLogs"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay" class="hidden fixed inset-0 z-50 bg-white/60 flex items-center justify-center">
+    <div class="text-amber-600 text-lg font-medium">読み込み中...</div>
+  </div>
+</div>
+
+<script>
+// ============ Config ============
+const API_URL = 'https://script.google.com/macros/s/AKfycbx6JO_l8Hhb5pQCIZkBTgEkChylOcD4e32JuCcCG-XtvuaQ6I5qacd7UuyeHQ8fnOZR/exec';
+let ADMIN_TOKEN = '';
+let currentReservationId = '';
+
+// ============ API Helper ============
+async function api(type, data = {}) {
+  data.type = type;
+  data.admin_token = ADMIN_TOKEN;
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(data)
+  });
+  return res.json();
+}
+
+// ============ Auth ============
+async function doLogin() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) return;
+  showLoading(true);
+  try {
+    const res = await api('admin_auth', { admin_token: token });
+    if (res.ok) {
+      ADMIN_TOKEN = token;
+      sessionStorage.setItem('admin_token', token);
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      loadReservations();
+    } else {
+      showLoginError('トークンが無効です');
+    }
+  } catch (e) {
+    showLoginError('接続エラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+function doLogout() {
+  ADMIN_TOKEN = '';
+  sessionStorage.removeItem('admin_token');
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('tokenInput').value = '';
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ============ Reservation List ============
+async function loadReservations() {
+  showLoading(true);
+  try {
+    const filters = {
+      status_filter: document.getElementById('filterStatus').value,
+      date_from: document.getElementById('filterFrom').value,
+      date_to: document.getElementById('filterTo').value
+    };
+    const res = await api('admin_list', filters);
+    if (!res.ok) { alert('エラー: ' + res.error); return; }
+
+    // Update stats
+    document.getElementById('statTotal').textContent = res.stats.total || 0;
+    document.getElementById('statPending').textContent = res.stats.pending || 0;
+    document.getElementById('statUpcoming').textContent = res.stats.upcoming || 0;
+    document.getElementById('statRevenue').textContent = '¥' + (res.stats.total_revenue || 0).toLocaleString();
+
+    // Render table
+    const tbody = document.getElementById('reservationTable');
+    const emptyMsg = document.getElementById('emptyMsg');
+    if (res.reservations.length === 0) {
+      tbody.innerHTML = '';
+      emptyMsg.classList.remove('hidden');
+      return;
+    }
+    emptyMsg.classList.add('hidden');
+
+    tbody.innerHTML = res.reservations.map(r => `
+      <tr class="clickable border-t hover:bg-amber-50/50 transition" onclick="openDetail('${r.id}')">
+        <td class="px-4 py-3 font-mono text-xs">${esc(r.id)}</td>
+        <td class="px-4 py-3"><span class="status-badge status-${r.status}">${statusLabel(r.status)}</span></td>
+        <td class="px-4 py-3">${esc(r.checkin)}</td>
+        <td class="px-4 py-3">${esc(r.checkout)}</td>
+        <td class="px-4 py-3">${r.nights || '-'}</td>
+        <td class="px-4 py-3">${esc(r.rep_name)}</td>
+        <td class="px-4 py-3">${r.adults}+${r.children}</td>
+        <td class="px-4 py-3 text-right">¥${Number(r.final_total || r.estimated_total || 0).toLocaleString()}</td>
+        <td class="px-4 py-3"><span class="text-xs">${esc(r.payment_status || '-')}</span></td>
+        <td class="px-4 py-3 text-xs text-slate-400">${esc(r.source || '-')}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    alert('読み込みエラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+function clearFilters() {
+  document.getElementById('filterStatus').value = 'all';
+  document.getElementById('filterFrom').value = '';
+  document.getElementById('filterTo').value = '';
+  loadReservations();
+}
+
+// ============ Reservation Detail ============
+async function openDetail(id) {
+  currentReservationId = id;
+  showLoading(true);
+  try {
+    const res = await api('admin_detail', { reservation_id: id });
+    if (!res.ok) { alert('エラー: ' + res.error); return; }
+
+    document.getElementById('detailTitle').textContent = id + ' — ' + res.reservation.rep_name;
+
+    // Info tab
+    const r = res.reservation;
+    document.getElementById('detailInfo').innerHTML = `
+      <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+        <div><span class="text-slate-500">ステータス:</span> <span class="status-badge status-${r.status}">${statusLabel(r.status)}</span></div>
+        <div><span class="text-slate-500">ソース:</span> ${esc(r.source || 'direct')}</div>
+        <div><span class="text-slate-500">チェックイン:</span> <b>${esc(r.checkin)}</b></div>
+        <div><span class="text-slate-500">チェックアウト:</span> <b>${esc(r.checkout)}</b> (${r.nights}泊)</div>
+        <div><span class="text-slate-500">代表者:</span> ${esc(r.rep_name)}</div>
+        <div><span class="text-slate-500">国:</span> ${esc(r.rep_country || '-')}</div>
+        <div><span class="text-slate-500">メール:</span> <a href="mailto:${esc(r.rep_email)}" class="text-blue-600 underline">${esc(r.rep_email)}</a></div>
+        <div><span class="text-slate-500">電話:</span> ${esc(r.rep_phone || '-')}</div>
+        <div><span class="text-slate-500">人数:</span> 大人${r.adults} / 子${r.children}</div>
+        <div><span class="text-slate-500">概算:</span> ¥${Number(r.estimated_total || 0).toLocaleString()}</div>
+        <div><span class="text-slate-500">確定金額:</span> <b>¥${Number(r.final_total || 0).toLocaleString()}</b></div>
+        <div><span class="text-slate-500">支払方法:</span> ${esc(r.payment_method || '-')}</div>
+        <div><span class="text-slate-500">支払状況:</span> ${esc(r.payment_status || '-')}</div>
+        <div><span class="text-slate-500">作成日:</span> ${formatDate(r.created_at)}</div>
+      </div>
+      ${r.notes ? '<div class="mt-4 bg-amber-50 rounded-lg p-3 text-sm"><b>備考:</b> ' + esc(r.notes) + '</div>' : ''}
+    `;
+
+    // Action buttons based on status
+    let actions = '';
+    if (r.status === 'requested') {
+      actions = `
+        <div class="flex gap-3">
+          <button onclick="adminAction('approved')" class="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium">承認する</button>
+          <button onclick="adminAction('rejected')" class="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-medium">却下する</button>
+        </div>`;
+    } else if (r.status === 'registered' || (r.status === 'approved' && r.payment_method === 'bank')) {
+      actions = `
+        <div class="flex gap-3">
+          <button onclick="adminAction('paid')" class="bg-green-500 hover:bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium">入金確認済みにする</button>
+          <button onclick="adminAction('cancelled')" class="bg-slate-400 hover:bg-slate-500 text-white px-5 py-2 rounded-lg text-sm font-medium">キャンセル</button>
+        </div>`;
+    } else if (['approved','registered','paid'].includes(r.status)) {
+      actions = `
+        <div class="flex gap-3">
+          <button onclick="adminAction('cancelled')" class="bg-slate-400 hover:bg-slate-500 text-white px-5 py-2 rounded-lg text-sm font-medium">キャンセル</button>
+        </div>`;
+    }
+    document.getElementById('detailActions').innerHTML = actions;
+
+    // Guests tab
+    if (res.guests && res.guests.length > 0) {
+      document.getElementById('detailGuests').innerHTML = `
+        <div class="space-y-3">
+          ${res.guests.map((g, i) => `
+            <div class="border rounded-lg p-4 text-sm">
+              <div class="font-medium mb-2">ゲスト ${i+1}: ${esc(g.name)}</div>
+              <div class="grid grid-cols-2 gap-2 text-slate-600">
+                <div>国籍: ${esc(g.nationality || '-')}</div>
+                <div>住所: ${esc(g.address || '-')}</div>
+                <div>職業: ${esc(g.occupation || '-')}</div>
+                <div>パスポート: ${esc(g.passport_no || '-')}</div>
+                ${g.passport_file_url ? '<div class="col-span-2"><a href="'+esc(g.passport_file_url)+'" target="_blank" class="text-blue-600 underline text-xs">パスポート画像</a></div>' : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+    } else {
+      document.getElementById('detailGuests').innerHTML = '<p class="text-slate-400 text-center py-8">ゲスト情報はまだ登録されていません</p>';
+    }
+
+    // Messages tab
+    renderMessages(res.messages || []);
+
+    // Logs tab
+    if (res.logs && res.logs.length > 0) {
+      document.getElementById('detailLogs').innerHTML = `
+        <div class="space-y-1">
+          ${res.logs.map(l => `
+            <div class="flex items-start gap-3 text-xs py-2 border-b border-slate-100">
+              <span class="text-slate-400 whitespace-nowrap">${formatDate(l.timestamp)}</span>
+              <span class="font-mono bg-slate-100 px-2 py-0.5 rounded">${esc(l.action)}</span>
+              <span class="text-slate-600">${esc(l.detail || '')}</span>
+            </div>
+          `).join('')}
+        </div>`;
+    } else {
+      document.getElementById('detailLogs').innerHTML = '<p class="text-slate-400 text-center py-8">ログなし</p>';
+    }
+
+    // Show overlay & reset to info tab
+    switchTab(document.querySelector('[data-tab="info"]'));
+    document.getElementById('detailOverlay').classList.remove('hidden');
+  } catch (e) {
+    alert('詳細取得エラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+function closeDetail() {
+  document.getElementById('detailOverlay').classList.add('hidden');
+  currentReservationId = '';
+}
+
+function switchTab(btn) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+}
+
+// ============ Actions ============
+async function adminAction(newStatus) {
+  const labels = { approved:'承認', rejected:'却下', cancelled:'キャンセル', paid:'入金確認済み' };
+  if (!confirm('この予約を「' + labels[newStatus] + '」にしますか？')) return;
+
+  showLoading(true);
+  try {
+    const data = { reservation_id: currentReservationId, new_status: newStatus };
+    const res = await api('admin_update_status', data);
+    if (res.ok) {
+      await openDetail(currentReservationId);
+      loadReservations();
+    } else {
+      alert('エラー: ' + res.error);
+    }
+  } catch (e) {
+    alert('操作エラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+async function sendReply() {
+  const input = document.getElementById('replyInput');
+  const message = input.value.trim();
+  if (!message) return;
+
+  showLoading(true);
+  try {
+    const res = await api('admin_reply', { reservation_id: currentReservationId, message: message });
+    if (res.ok) {
+      input.value = '';
+      // Refresh detail to show new message
+      const detail = await api('admin_detail', { reservation_id: currentReservationId });
+      if (detail.ok) renderMessages(detail.messages || []);
+    } else {
+      alert('送信エラー: ' + res.error);
+    }
+  } catch (e) {
+    alert('送信エラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+function renderMessages(messages) {
+  const el = document.getElementById('detailMessages');
+  if (messages.length === 0) {
+    el.innerHTML = '<p class="text-slate-400 text-center py-8">メッセージなし</p>';
+    return;
+  }
+  el.innerHTML = messages.map(m => `
+    <div class="chat-msg ${m.sender === 'host' ? 'chat-host' : 'chat-guest'} px-4 py-2.5">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xs font-medium ${m.sender === 'host' ? 'text-blue-700' : 'text-amber-700'}">${m.sender === 'host' ? 'ホスト' : 'ゲスト'}</span>
+        <span class="text-xs text-slate-400">${formatDate(m.timestamp)}</span>
+      </div>
+      <div class="text-sm whitespace-pre-wrap">${esc(m.message)}</div>
+    </div>
+  `).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+// ============ Helpers ============
+function esc(s) { if (s == null) return ''; const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+function statusLabel(s) {
+  const map = { requested:'承認待ち', approved:'承認済み', registered:'登録済み', paid:'確定', cancelled:'キャンセル', rejected:'却下' };
+  return map[s] || s;
+}
+
+function formatDate(d) {
+  if (!d) return '-';
+  const s = String(d);
+  if (s.length >= 16) return s.substring(0, 16).replace('T', ' ');
+  return s;
+}
+
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
+}
+
+// ============ Init ============
+document.addEventListener('DOMContentLoaded', () => {
+  // Auto-login from session
+  const saved = sessionStorage.getItem('admin_token');
+  if (saved) {
+    ADMIN_TOKEN = saved;
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    loadReservations();
+  }
+  // Enter key on login
+  document.getElementById('tokenInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  // ESC to close detail
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeDetail();
+  });
+});
+</script>
+</body>
+</html>

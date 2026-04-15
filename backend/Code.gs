@@ -62,6 +62,11 @@ function doPost(e) {
       case 'payment_init':        return jsonResponse(handlePaymentInit(body));
       case 'mypage_message':      return jsonResponse(handleMyPageMessage(body));
       case 'mypage_change_request': return jsonResponse(handleMyPageChangeRequest(body));
+      case 'admin_auth':            return jsonResponse(handleAdminAuth(body));
+      case 'admin_list':            return jsonResponse(handleAdminListReservations(body));
+      case 'admin_detail':          return jsonResponse(handleAdminGetDetail(body));
+      case 'admin_reply':           return jsonResponse(handleAdminReply(body));
+      case 'admin_update_status':   return jsonResponse(handleAdminUpdateStatus(body));
       default: return jsonResponse({ ok:false, error:'unknown type' });
     }
   } catch (err) {
@@ -745,6 +750,262 @@ function sendAdminReply(reservationId, message) {
   Logger.log('Reply sent to ' + r.row.rep_email);
 }
 
+// ============ Admin Dashboard API ============
+
+/**
+ * Verify admin token from request.
+ */
+function verifyAdmin_(token) {
+  let stored = getProp_('ADMIN_TOKEN');
+  if (!stored) stored = generateAndStoreAdminToken_();
+  return token === stored;
+}
+
+/**
+ * List all reservations (admin only).
+ * Supports filtering by status and date range.
+ */
+function handleAdminListReservations(body) {
+  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
+
+  const sh = sheet_('reservations');
+  ensureHeaders_(sh, HEADERS_RESERVATIONS);
+  const data = sh.getDataRange().getValues();
+  if (data.length <= 1) return { ok:true, reservations:[], stats:{} };
+
+  const headers = data[0];
+  const reservations = [];
+  let totalRevenue = 0, upcoming = 0, pending = 0;
+  const now = new Date();
+
+  for (let i = 1; i < data.length; i++) {
+    const obj = {};
+    headers.forEach((h, j) => obj[h] = data[i][j]);
+
+    // Apply filters
+    if (body.status_filter && body.status_filter !== 'all' && obj.status !== body.status_filter) continue;
+    if (body.date_from) {
+      const ci = toYMDSafe_(obj.checkin);
+      if (ci < body.date_from) continue;
+    }
+    if (body.date_to) {
+      const ci = toYMDSafe_(obj.checkin);
+      if (ci > body.date_to) continue;
+    }
+
+    reservations.push({
+      id: obj.id,
+      status: obj.status,
+      checkin: toYMDSafe_(obj.checkin),
+      checkout: toYMDSafe_(obj.checkout),
+      nights: obj.nights,
+      adults: obj.adults,
+      children: obj.children,
+      rep_name: getRepName_(obj),
+      rep_email: obj.rep_email,
+      rep_phone: obj.rep_phone,
+      rep_country: obj.rep_country,
+      estimated_total: obj.estimated_total,
+      final_total: obj.final_total,
+      payment_method: obj.payment_method,
+      payment_status: obj.payment_status,
+      created_at: obj.created_at,
+      updated_at: obj.updated_at,
+      source: obj.source
+    });
+
+    // Stats
+    if (obj.status === STATUS.PAID) totalRevenue += parseInt(obj.final_total || obj.estimated_total || 0);
+    if (obj.status === STATUS.REQUESTED) pending++;
+    const ciDate = new Date(toYMDSafe_(obj.checkin) + 'T00:00:00+09:00');
+    if (ciDate >= now && (obj.status === STATUS.PAID || obj.status === STATUS.APPROVED || obj.status === STATUS.REGISTERED)) upcoming++;
+  }
+
+  // Sort by created_at descending (newest first)
+  reservations.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+  return {
+    ok: true,
+    reservations: reservations,
+    stats: {
+      total: reservations.length,
+      pending: pending,
+      upcoming: upcoming,
+      total_revenue: totalRevenue
+    }
+  };
+}
+
+/**
+ * Get reservation detail with guests and messages (admin only).
+ */
+function handleAdminGetDetail(body) {
+  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
+
+  const r = findReservationRow_(body.reservation_id);
+  if (!r) return { ok:false, error:'not_found' };
+
+  // Get guests
+  const gsh = sheet_('guests');
+  ensureHeaders_(gsh, HEADERS_GUESTS);
+  const gdata = gsh.getDataRange().getValues();
+  const gheaders = gdata[0];
+  const guests = [];
+  for (let i = 1; i < gdata.length; i++) {
+    const obj = {};
+    gheaders.forEach((h, j) => obj[h] = gdata[i][j]);
+    if (obj.reservation_id == body.reservation_id) {
+      guests.push(obj);
+    }
+  }
+
+  // Get messages
+  const msh = sheet_('messages');
+  ensureHeaders_(msh, HEADERS_MESSAGES);
+  const mdata = msh.getDataRange().getValues();
+  const mheaders = mdata[0];
+  const messages = [];
+  for (let i = 1; i < mdata.length; i++) {
+    const obj = {};
+    mheaders.forEach((h, j) => obj[h] = mdata[i][j]);
+    if (obj.reservation_id == body.reservation_id) {
+      messages.push({ timestamp: obj.ts, sender: obj.sender, message: obj.message });
+    }
+  }
+
+  // Get logs
+  const lsh = sheet_('logs');
+  ensureHeaders_(lsh, HEADERS_LOGS);
+  const ldata = lsh.getDataRange().getValues();
+  const lheaders = ldata[0];
+  const logs = [];
+  for (let i = 1; i < ldata.length; i++) {
+    const obj = {};
+    lheaders.forEach((h, j) => obj[h] = ldata[i][j]);
+    if (obj.reservation_id == body.reservation_id) {
+      logs.push({ timestamp: obj.ts, action: obj.action, detail: obj.detail });
+    }
+  }
+
+  return {
+    ok: true,
+    reservation: {
+      id: r.row.id,
+      status: r.row.status,
+      checkin: toYMDSafe_(r.row.checkin),
+      checkout: toYMDSafe_(r.row.checkout),
+      nights: r.row.nights,
+      adults: r.row.adults,
+      children: r.row.children,
+      rep_name: getRepName_(r.row),
+      rep_email: r.row.rep_email,
+      rep_phone: r.row.rep_phone,
+      rep_country: r.row.rep_country,
+      estimated_total: r.row.estimated_total,
+      final_total: r.row.final_total,
+      payment_method: r.row.payment_method,
+      payment_status: r.row.payment_status,
+      stripe_session_id: r.row.stripe_session_id,
+      notes: r.row.notes,
+      source: r.row.source,
+      created_at: r.row.created_at,
+      updated_at: r.row.updated_at
+    },
+    guests: guests,
+    messages: messages,
+    logs: logs
+  };
+}
+
+/**
+ * Admin sends a reply message to guest (from dashboard).
+ */
+function handleAdminReply(body) {
+  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
+
+  const id = (body.reservation_id || '').trim();
+  const message = (body.message || '').trim();
+  if (!id || !message) return { ok:false, error:'missing_fields' };
+
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not_found' };
+
+  // Save message
+  const sh = sheet_('messages');
+  ensureHeaders_(sh, HEADERS_MESSAGES);
+  sh.appendRow([new Date().toISOString(), id, 'host', message]);
+  log_(id, 'admin_reply', message.substring(0, 100));
+
+  // Notify guest by email
+  const base = getProp_('SITE_BASE_URL');
+  const mypageUrl = base + '/mypage.html?id=' + id + '&email=' + encodeURIComponent(r.row.rep_email);
+  const subject = '[Komei Hotel] メッセージが届きました / New message (' + id + ')';
+  const html =
+    '<p>' + getRepName_(r.row) + ' 様</p>'
+    + '<p>Komei Hotelからメッセージが届きました。</p>'
+    + '<div style="background:#f1f5f9;padding:16px;border-radius:8px;margin:16px 0">'
+    + '<p style="white-space:pre-wrap">' + message.replace(/</g, '&lt;') + '</p>'
+    + '</div>'
+    + '<p><a href="' + mypageUrl + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">マイページで返信する / Reply on My Page</a></p>'
+    + '<hr>'
+    + '<p>Dear ' + getRepName_(r.row) + ',<br>You have a new message from Komei Hotel. Click the button above to view and reply.</p>';
+  GmailApp.sendEmail(r.row.rep_email, subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
+
+  return { ok:true };
+}
+
+/**
+ * Admin updates reservation status (approve, reject, cancel, mark paid).
+ */
+function handleAdminUpdateStatus(body) {
+  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
+
+  const id = (body.reservation_id || '').trim();
+  const newStatus = (body.new_status || '').trim();
+  if (!id || !newStatus) return { ok:false, error:'missing_fields' };
+
+  const validStatuses = [STATUS.APPROVED, STATUS.REJECTED, STATUS.CANCELLED, STATUS.PAID];
+  if (validStatuses.indexOf(newStatus) === -1) return { ok:false, error:'invalid_status' };
+
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not_found' };
+
+  const updates = { status: newStatus, updated_at: new Date().toISOString() };
+
+  // If approving, handle final_total
+  if (newStatus === STATUS.APPROVED) {
+    let finalTotal = parseInt(body.final_total || r.row.estimated_total || 0);
+    if (finalTotal <= 0) finalTotal = computeEstimatedTotal_(r.row.checkin, r.row.checkout);
+    updates.final_total = finalTotal;
+    notifyGuestApproved_(id, r.row, finalTotal);
+  }
+
+  // If marking paid via bank transfer
+  if (newStatus === STATUS.PAID) {
+    updates.payment_status = 'paid';
+    if (!r.row.payment_method) updates.payment_method = 'bank';
+    notifyGuestConfirmed_(id, r.row);
+  }
+
+  // If rejecting
+  if (newStatus === STATUS.REJECTED) {
+    notifyGuestRejected_(id, r.row);
+  }
+
+  updateReservation_(r.rowIndex, updates);
+  log_(id, 'admin_' + newStatus, body.note || '');
+
+  return { ok:true, new_status: newStatus };
+}
+
+/**
+ * Admin auth check (validates token).
+ */
+function handleAdminAuth(body) {
+  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  return { ok:true };
+}
+
 // ============ One-time Setup ============
 /**
  * Run this once from the Apps Script editor to initialize sheets and admin token.
@@ -755,20 +1016,5 @@ function initialize() {
   ensureHeaders_(sheet_('logs'), HEADERS_LOGS);
   ensureHeaders_(sheet_('messages'), HEADERS_MESSAGES);
   generateAndStoreAdminToken_();
-  Logger.log('Initialized. ADMIN_TOKEN=' + getProp_('ADMIN_TOKEN'));
-}
-
-// manualResend wrapper removed (was one-time debug tool)
-
-/**
- * One-time fix: update final_total for R202604094904 (was 0 due to missing estimated_total).
- * Run once from the Apps Script editor, then delete this function.
- */
-function fixFinalTotal_R202604094904() {
-  const id = 'R202604094904';
-  const r = findReservationRow_(id);
-  if (!r) { Logger.log('not found'); return; }
-  const total = computeEstimatedTotal_(r.row.checkin, r.row.checkout);
-  updateReservation_(r.rowIndex, { final_total: total, estimated_total: total, updated_at: new Date().toISOString() });
-  Logger.log('Updated ' + id + ' final_total to ' + total);
+  Logger.log('Initialized. ADMIN_TOKEN: ' + getProp_('ADMIN_TOKEN'));
 }
