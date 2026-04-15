@@ -58,7 +58,7 @@
 
   <!-- Stats -->
   <div id="statsBar" class="max-w-7xl mx-auto px-4 py-4">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
       <div class="bg-white rounded-xl p-4 shadow-sm">
         <div class="text-xs text-slate-500 mb-1">全予約数</div>
         <div id="statTotal" class="text-2xl font-bold">-</div>
@@ -66,6 +66,10 @@
       <div class="bg-white rounded-xl p-4 shadow-sm">
         <div class="text-xs text-slate-500 mb-1">承認待ち</div>
         <div id="statPending" class="text-2xl font-bold text-amber-600">-</div>
+      </div>
+      <div id="statReplyCard" class="bg-white rounded-xl p-4 shadow-sm cursor-pointer hover:ring-2 hover:ring-red-300 transition" onclick="filterUnreplied()">
+        <div class="text-xs text-slate-500 mb-1">未返信メッセージ</div>
+        <div id="statNeedsReply" class="text-2xl font-bold text-red-500">-</div>
       </div>
       <div class="bg-white rounded-xl p-4 shadow-sm">
         <div class="text-xs text-slate-500 mb-1">今後のチェックイン</div>
@@ -240,46 +244,78 @@ async function loadReservations() {
     const res = await api('admin_list', filters);
     if (!res.ok) { alert('エラー: ' + res.error); return; }
 
+    // Store full list for filtering
+    window._allReservations = res.reservations;
+
     // Update stats
     document.getElementById('statTotal').textContent = res.stats.total || 0;
     document.getElementById('statPending').textContent = res.stats.pending || 0;
     document.getElementById('statUpcoming').textContent = res.stats.upcoming || 0;
     document.getElementById('statRevenue').textContent = '¥' + (res.stats.total_revenue || 0).toLocaleString();
-
-    // Render table
-    const tbody = document.getElementById('reservationTable');
-    const emptyMsg = document.getElementById('emptyMsg');
-    if (res.reservations.length === 0) {
-      tbody.innerHTML = '';
-      emptyMsg.classList.remove('hidden');
-      return;
+    const nr = res.stats.needs_reply || 0;
+    document.getElementById('statNeedsReply').textContent = nr;
+    const replyCard = document.getElementById('statReplyCard');
+    if (nr > 0) {
+      replyCard.classList.add('bg-red-50', 'ring-2', 'ring-red-200');
+      replyCard.classList.remove('bg-white');
+    } else {
+      replyCard.classList.remove('bg-red-50', 'ring-2', 'ring-red-200');
+      replyCard.classList.add('bg-white');
     }
-    emptyMsg.classList.add('hidden');
 
-    tbody.innerHTML = res.reservations.map(r => `
-      <tr class="clickable border-t hover:bg-amber-50/50 transition" onclick="openDetail('${r.id}')">
-        <td class="px-4 py-3 font-mono text-xs">${esc(r.id)}</td>
-        <td class="px-4 py-3"><span class="status-badge status-${r.status}">${statusLabel(r.status)}</span></td>
-        <td class="px-4 py-3">${esc(r.checkin)}</td>
-        <td class="px-4 py-3">${esc(r.checkout)}</td>
-        <td class="px-4 py-3">${r.nights || '-'}</td>
-        <td class="px-4 py-3">${esc(r.rep_name)}</td>
-        <td class="px-4 py-3">${r.adults}+${r.children}</td>
-        <td class="px-4 py-3 text-right">¥${Number(r.final_total || r.estimated_total || 0).toLocaleString()}</td>
-        <td class="px-4 py-3"><span class="text-xs">${esc(r.payment_status || '-')}</span></td>
-        <td class="px-4 py-3 text-xs text-slate-400">${esc(r.source || '-')}</td>
-      </tr>
-    `).join('');
+    renderTable(res.reservations);
   } catch (e) {
     alert('読み込みエラー: ' + e.message);
   }
   showLoading(false);
 }
 
+function renderTable(list) {
+  const tbody = document.getElementById('reservationTable');
+  const emptyMsg = document.getElementById('emptyMsg');
+  if (list.length === 0) {
+    tbody.innerHTML = '';
+    emptyMsg.classList.remove('hidden');
+    return;
+  }
+  emptyMsg.classList.add('hidden');
+
+  tbody.innerHTML = list.map(r => `
+    <tr class="clickable border-t hover:bg-amber-50/50 transition ${r.unreplied > 0 ? 'bg-red-50/60' : ''}" onclick="openDetail('${r.id}')">
+      <td class="px-4 py-3 font-mono text-xs">${esc(r.id)}</td>
+      <td class="px-4 py-3"><span class="status-badge status-${r.status}">${statusLabel(r.status)}</span></td>
+      <td class="px-4 py-3">${esc(r.checkin)}</td>
+      <td class="px-4 py-3">${esc(r.checkout)}</td>
+      <td class="px-4 py-3">${r.nights || '-'}</td>
+      <td class="px-4 py-3">${esc(r.rep_name)}${r.unreplied > 0 ? ' <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">' + r.unreplied + '</span>' : ''}</td>
+      <td class="px-4 py-3">${r.adults}+${r.children}</td>
+      <td class="px-4 py-3 text-right">¥${Number(r.final_total || r.estimated_total || 0).toLocaleString()}</td>
+      <td class="px-4 py-3"><span class="text-xs">${esc(r.payment_status || '-')}</span></td>
+      <td class="px-4 py-3 text-xs text-slate-400">${esc(r.source || '-')}</td>
+    </tr>
+  `).join('');
+}
+
+let _showingUnrepliedOnly = false;
+function filterUnreplied() {
+  if (!window._allReservations) return;
+  if (_showingUnrepliedOnly) {
+    renderTable(window._allReservations);
+    _showingUnrepliedOnly = false;
+    document.getElementById('statReplyCard').title = '';
+  } else {
+    const unreplied = window._allReservations.filter(r => r.unreplied > 0);
+    renderTable(unreplied);
+    _showingUnrepliedOnly = true;
+    document.getElementById('statReplyCard').title = 'もう一度クリックで全件表示';
+  }
+}
+
 function clearFilters() {
   document.getElementById('filterStatus').value = 'all';
   document.getElementById('filterFrom').value = '';
   document.getElementById('filterTo').value = '';
+  _showingUnrepliedOnly = false;
   loadReservations();
 }
 

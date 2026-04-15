@@ -773,9 +773,30 @@ function handleAdminListReservations(body) {
   const data = sh.getDataRange().getValues();
   if (data.length <= 1) return { ok:true, reservations:[], stats:{} };
 
+  // Pre-load messages to find unreplied ones per reservation
+  const msh = sheet_('messages');
+  ensureHeaders_(msh, HEADERS_MESSAGES);
+  const mdata = msh.getDataRange().getValues();
+  const mheaders = mdata[0];
+  // Build map: reservation_id -> { lastSender, unrepliedCount }
+  const msgMap = {};
+  for (let i = 1; i < mdata.length; i++) {
+    const mrow = {};
+    mheaders.forEach((h, j) => mrow[h] = mdata[i][j]);
+    const rid = String(mrow.reservation_id);
+    if (!msgMap[rid]) msgMap[rid] = { lastSender: '', unreplied: 0 };
+    if (mrow.sender === 'guest') {
+      msgMap[rid].unreplied++;
+      msgMap[rid].lastSender = 'guest';
+    } else if (mrow.sender === 'host') {
+      msgMap[rid].unreplied = 0; // host replied, reset count
+      msgMap[rid].lastSender = 'host';
+    }
+  }
+
   const headers = data[0];
   const reservations = [];
-  let totalRevenue = 0, upcoming = 0, pending = 0;
+  let totalRevenue = 0, upcoming = 0, pending = 0, needsReply = 0;
   const now = new Date();
 
   for (let i = 1; i < data.length; i++) {
@@ -792,6 +813,8 @@ function handleAdminListReservations(body) {
       const ci = toYMDSafe_(obj.checkin);
       if (ci > body.date_to) continue;
     }
+
+    const msgInfo = msgMap[String(obj.id)] || { lastSender: '', unreplied: 0 };
 
     reservations.push({
       id: obj.id,
@@ -811,12 +834,14 @@ function handleAdminListReservations(body) {
       payment_status: obj.payment_status,
       created_at: obj.created_at,
       updated_at: obj.updated_at,
-      source: obj.source
+      source: obj.source,
+      unreplied: msgInfo.unreplied
     });
 
     // Stats
     if (obj.status === STATUS.PAID) totalRevenue += parseInt(obj.final_total || obj.estimated_total || 0);
     if (obj.status === STATUS.REQUESTED) pending++;
+    if (msgInfo.unreplied > 0) needsReply++;
     const ciDate = new Date(toYMDSafe_(obj.checkin) + 'T00:00:00+09:00');
     if (ciDate >= now && (obj.status === STATUS.PAID || obj.status === STATUS.APPROVED || obj.status === STATUS.REGISTERED)) upcoming++;
   }
@@ -831,6 +856,7 @@ function handleAdminListReservations(body) {
       total: reservations.length,
       pending: pending,
       upcoming: upcoming,
+      needs_reply: needsReply,
       total_revenue: totalRevenue
     }
   };
