@@ -183,7 +183,7 @@ let currentReservationId = '';
 // ============ API Helper ============
 async function api(type, data = {}) {
   data.type = type;
-  data.admin_token = ADMIN_TOKEN;
+  if (!data.admin_token) data.admin_token = ADMIN_TOKEN;
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
