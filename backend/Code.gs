@@ -334,7 +334,7 @@ function notifyAdminPendingApproval_(id, body, nights) {
   const baseUrl = ScriptApp.getService().getUrl();
   const approveUrl = baseUrl + '?action=approve&id=' + id + '&t=' + adminToken;
   const rejectUrl  = baseUrl + '?action=reject&id='  + id + '&t=' + adminToken;
-  const subject = '[Komei Hotel] 新規仮予約 ' + id + ' (' + body.checkin + ' 〜 ' + body.checkout + ')';
+  const subject = '[Komei Hotel] 新規仮予約 ' + id + ' ' + body.representative.name + ' (' + body.checkin + ' 〜 ' + body.checkout + ')';
   const html = ''
     + '<h2>新規予約申込</h2>'
     + '<table cellpadding="6">'
@@ -408,9 +408,9 @@ function notifyGuestBankInstructions_(id, row, total) {
 
 function notifyAdminBankPending_(id, row, total) {
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
-    '[Komei Hotel] 銀行振込待ち ' + id,
+    '[Komei Hotel] 銀行振込待ち ' + id + ' ' + getRepName_(row),
     '',
-    { htmlBody: '<p>予約 ' + id + ' が銀行振込を選択しました。入金確認後、シートで status を paid に更新してください。</p><p>金額: ¥' + Number(total).toLocaleString() + '</p>' });
+    { htmlBody: '<p>予約 ' + id + '（' + getRepName_(row) + '）が銀行振込を選択しました。入金確認後、シートで status を paid に更新してください。</p><p>金額: ¥' + Number(total).toLocaleString() + '</p>' });
 }
 
 function notifyGuestConfirmed_(id, row) {
@@ -426,9 +426,9 @@ function notifyGuestConfirmed_(id, row) {
 
 function notifyAdminConfirmed_(id, row) {
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
-    '[Komei Hotel] 決済完了 ' + id,
+    '[Komei Hotel] 決済完了 ' + id + ' ' + getRepName_(row),
     '',
-    { htmlBody: '<p>予約 ' + id + ' が決済完了し確定しました。</p>' });
+    { htmlBody: '<p>予約 ' + id + '（' + getRepName_(row) + '）が決済完了し確定しました。</p>' });
 }
 
 // ============ Drive (Passport) ============
@@ -663,7 +663,7 @@ function handleMyPageMessage(body) {
   log_(id, 'mypage_message', 'guest: ' + message.substring(0, 100));
 
   // Notify admin by email
-  const subject = '[Komei Hotel] ゲストからメッセージ / Guest message (' + id + ')';
+  const subject = '[Komei Hotel] ゲストからメッセージ ' + getRepName_(r.row) + ' (' + id + ')';
   const replyUrl = getProp_('SITE_BASE_URL') + '/mypage.html?id=' + id;
   const html = '<h3>&#128172; ゲストからのメッセージ</h3>'
     + '<table cellpadding="6">'
@@ -702,7 +702,7 @@ function handleMyPageChangeRequest(body) {
 
   // Notify admin
   const typeLabels = { date:'日程変更', guests:'人数変更', other:'その他' };
-  const subject = '[Komei Hotel] 変更リクエスト / Change request (' + id + ') - ' + (typeLabels[changeType] || changeType);
+  const subject = '[Komei Hotel] 変更リクエスト ' + getRepName_(r.row) + ' (' + id + ') - ' + (typeLabels[changeType] || changeType);
   const html = '<h3>&#9999;&#65039; 変更リクエスト</h3>'
     + '<table cellpadding="6">'
     + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
