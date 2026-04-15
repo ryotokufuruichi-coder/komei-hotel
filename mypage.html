@@ -44,6 +44,7 @@
   .status-paid       { background: #dcfce7; color: #166534; }
   .status-cancelled  { background: #fee2e2; color: #991b1b; }
   .status-rejected   { background: #fee2e2; color: #991b1b; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -246,13 +247,16 @@
       <!-- Chat header -->
       <div class="px-5 py-3 border-b flex items-center gap-3">
         <div class="w-8 h-8 rounded-full bg-slate-800 text-white grid place-items-center text-sm font-bold">K</div>
-        <div>
+        <div class="flex-1">
           <p class="font-bold text-sm">Komei Hotel</p>
           <p class="text-xs text-slate-400">
             <span class="lang-ja">メール通知付き ・ 通常12時間以内に返信</span>
             <span class="lang-en">Email notifications ・ Usually reply within 12h</span>
           </p>
         </div>
+        <button onclick="refreshMessages()" id="chatRefreshBtn" class="text-slate-400 hover:text-amber-500 transition p-2 rounded-lg hover:bg-slate-50" title="更新">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+        </button>
       </div>
       <!-- Messages area -->
       <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3">
@@ -496,6 +500,13 @@ function loadMessages() {
     .then(data => {
       if (data.ok) renderMessages(data.messages || []);
     });
+}
+
+function refreshMessages() {
+  const btn = document.getElementById('chatRefreshBtn');
+  btn.style.animation = 'spin 0.6s ease';
+  loadMessages();
+  setTimeout(() => { btn.style.animation = ''; }, 700);
 }
 
 function renderMessages(messages) {
