@@ -189,7 +189,7 @@ function handleGetReservation(p) {
       checkout: toYMDSafe_(r.row.checkout),
       adults: r.row.adults,
       children: r.row.children,
-      representative_name: r.row.rep_name,
+      representative_name: getRepName_(r.row),
       representative_email: r.row.rep_email,
       representative_phone: r.row.rep_phone,
       estimated_total: r.row.estimated_total,
@@ -342,8 +342,8 @@ function notifyAdminPendingApproval_(id, body, nights) {
     + '<tr><td>備考</td><td>' + (body.notes || '-') + '</td></tr>'
     + '</table>'
     + '<p style="margin-top:24px">'
-    + '<a href="' + approveUrl + '" style="background:#10b981;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;margin-right:12px">✅ 承認する</a>'
-    + '<a href="' + rejectUrl + '" style="background:#ef4444;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px">❌ 却下</a>'
+    + '<a href="' + approveUrl + '" style="background:#10b981;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;margin-right:12px">&#10004; 承認する</a>'
+    + '<a href="' + rejectUrl + '" style="background:#ef4444;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px">&#10060; 却下</a>'
     + '</p>'
     + '<p style="color:#888;font-size:12px">承認時に金額を変更したい場合は承認URLに <code>&final_total=XXXXX</code> を追加してください。</p>';
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'), subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
@@ -436,6 +436,17 @@ function savePassportImage_(reservationId, idx, name, base64, mime) {
   const file = folder.createFile(blob);
   // limit to viewer-only access by default; do NOT set public
   return file.getUrl();
+}
+
+// ============ Data Helpers ============
+
+/** Get representative name with fallback for old schema (rep_first_name/rep_last_name) */
+function getRepName_(row) {
+  if (row.rep_name) return String(row.rep_name);
+  const first = row.rep_first_name || '';
+  const last = row.rep_last_name || '';
+  const combined = (String(first) + ' ' + String(last)).trim();
+  return combined || '(unknown)';
 }
 
 // ============ Sheet Helpers ============
@@ -592,7 +603,7 @@ function handleMyPageAuth(p) {
       checkout: toYMDSafe_(r.row.checkout),
       adults: r.row.adults,
       children: r.row.children,
-      representative_name: r.row.rep_name,
+      representative_name: getRepName_(r.row),
       representative_email: r.row.rep_email,
       representative_phone: r.row.rep_phone,
       estimated_total: r.row.estimated_total,
@@ -649,10 +660,10 @@ function handleMyPageMessage(body) {
   // Notify admin by email
   const subject = '[Komei Hotel] ゲストからメッセージ / Guest message (' + id + ')';
   const replyUrl = getProp_('SITE_BASE_URL') + '/mypage.html?id=' + id;
-  const html = '<h3>💬 ゲストからのメッセージ</h3>'
+  const html = '<h3>&#128172; ゲストからのメッセージ</h3>'
     + '<table cellpadding="6">'
     + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
-    + '<tr><td>ゲスト名</td><td>' + r.row.rep_name + '</td></tr>'
+    + '<tr><td>ゲスト名</td><td>' + getRepName_(r.row) + '</td></tr>'
     + '<tr><td>メール</td><td>' + r.row.rep_email + '</td></tr>'
     + '</table>'
     + '<div style="background:#fef3c7;padding:16px;border-radius:8px;margin:16px 0">'
@@ -687,10 +698,10 @@ function handleMyPageChangeRequest(body) {
   // Notify admin
   const typeLabels = { date:'日程変更', guests:'人数変更', other:'その他' };
   const subject = '[Komei Hotel] 変更リクエスト / Change request (' + id + ') - ' + (typeLabels[changeType] || changeType);
-  const html = '<h3>✏️ 変更リクエスト</h3>'
+  const html = '<h3>&#9999;&#65039; 変更リクエスト</h3>'
     + '<table cellpadding="6">'
     + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
-    + '<tr><td>ゲスト名</td><td>' + r.row.rep_name + '</td></tr>'
+    + '<tr><td>ゲスト名</td><td>' + getRepName_(r.row) + '</td></tr>'
     + '<tr><td>現在の日程</td><td>' + toYMDSafe_(r.row.checkin) + ' 〜 ' + toYMDSafe_(r.row.checkout) + '</td></tr>'
     + '<tr><td>ステータス</td><td>' + r.row.status + '</td></tr>'
     + '<tr><td>カテゴリ</td><td><b>' + (typeLabels[changeType] || changeType) + '</b></td></tr>'
@@ -722,14 +733,14 @@ function sendAdminReply(reservationId, message) {
   const mypageUrl = base + '/mypage.html?id=' + reservationId + '&email=' + encodeURIComponent(r.row.rep_email);
   const subject = '[Komei Hotel] メッセージが届きました / New message (' + reservationId + ')';
   const html =
-    '<p>' + r.row.rep_name + ' 様</p>'
+    '<p>' + getRepName_(r.row) + ' 様</p>'
     + '<p>Komei Hotelからメッセージが届きました。</p>'
     + '<div style="background:#f1f5f9;padding:16px;border-radius:8px;margin:16px 0">'
     + '<p style="white-space:pre-wrap">' + message.replace(/</g, '&lt;') + '</p>'
     + '</div>'
     + '<p><a href="' + mypageUrl + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">マイページで返信する / Reply on My Page</a></p>'
     + '<hr>'
-    + '<p>Dear ' + r.row.rep_name + ',<br>You have a new message from Komei Hotel. Click the button above to view and reply.</p>';
+    + '<p>Dear ' + getRepName_(r.row) + ',<br>You have a new message from Komei Hotel. Click the button above to view and reply.</p>';
   GmailApp.sendEmail(r.row.rep_email, subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
   Logger.log('Reply sent to ' + r.row.rep_email);
 }
