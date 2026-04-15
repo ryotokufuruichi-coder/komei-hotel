@@ -40,6 +40,7 @@ const HEADERS_GUESTS = [
   'passport_no','passport_file_url'
 ];
 const HEADERS_LOGS = ['ts','reservation_id','action','detail'];
+const HEADERS_MESSAGES = ['ts','reservation_id','sender','message'];
 
 const STATUS = {
   REQUESTED:  'requested',     // フロントから仮予約 POST 直後
@@ -59,6 +60,8 @@ function doPost(e) {
       case 'reservation_request': return jsonResponse(handleReservationRequest(body));
       case 'guest_registration':  return jsonResponse(handleGuestRegistration(body));
       case 'payment_init':        return jsonResponse(handlePaymentInit(body));
+      case 'mypage_message':      return jsonResponse(handleMyPageMessage(body));
+      case 'mypage_change_request': return jsonResponse(handleMyPageChangeRequest(body));
       default: return jsonResponse({ ok:false, error:'unknown type' });
     }
   } catch (err) {
@@ -78,6 +81,12 @@ function doGet(e) {
     }
     if (action === 'reject') {
       return htmlResponse(handleReject(e.parameter));
+    }
+    if (action === 'mypage_auth') {
+      return jsonResponse(handleMyPageAuth(e.parameter));
+    }
+    if (action === 'get_messages') {
+      return jsonResponse(handleGetMessages(e.parameter));
     }
     if (action === 'stripe_webhook_test') {
       return jsonResponse({ ok:true, msg:'use webhook endpoint via separate function' });
@@ -405,6 +414,7 @@ function notifyGuestConfirmed_(id, row) {
     + '<p>お支払いが完了し、ご予約 <b>' + id + '</b> が確定いたしました。<br>'
     + 'チェックイン日が近づきましたら、入室方法等の詳細をご案内いたします。</p>'
     + '<p>チェックイン: ' + toYMDSafe_(row.checkin) + ' 16:00〜<br>チェックアウト: ' + toYMDSafe_(row.checkout) + ' 〜10:00</p>'
+    + '<p style="margin-top:16px"><a href="' + getProp_('SITE_BASE_URL') + '/mypage.html?id=' + id + '&email=' + encodeURIComponent(row.rep_email) + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">マイページを確認 / View My Page</a></p>'
     + '<hr><p>Dear ' + row.rep_name + ',<br>Your reservation <b>' + id + '</b> is now confirmed. We will send check-in details closer to your arrival date.</p>';
   GmailApp.sendEmail(row.rep_email, '[Komei Hotel] ご予約確定のお知らせ / Reservation Confirmed (' + id + ')', '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
 }
@@ -558,6 +568,172 @@ function computeEstimatedTotal_(checkin, checkout) {
   return room - discount + cleaning;
 }
 
+// ============ My Page ============
+
+/**
+ * Authenticate guest by reservation_id + email.
+ * Returns reservation data if matched.
+ */
+function handleMyPageAuth(p) {
+  const id = (p.id || '').trim();
+  const email = (p.email || '').trim().toLowerCase();
+  if (!id || !email) return { ok:false, error:'not_found' };
+
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not_found' };
+  if (String(r.row.rep_email).toLowerCase() !== email) return { ok:false, error:'not_found' };
+
+  return {
+    ok: true,
+    reservation: {
+      reservation_id: r.row.id,
+      status: r.row.status,
+      checkin: toYMDSafe_(r.row.checkin),
+      checkout: toYMDSafe_(r.row.checkout),
+      adults: r.row.adults,
+      children: r.row.children,
+      representative_name: r.row.rep_name,
+      representative_email: r.row.rep_email,
+      representative_phone: r.row.rep_phone,
+      estimated_total: r.row.estimated_total,
+      final_total: r.row.final_total,
+      payment_status: r.row.payment_status
+    }
+  };
+}
+
+/**
+ * Get messages for a reservation (authenticated by email).
+ */
+function handleGetMessages(p) {
+  const id = (p.id || '').trim();
+  const email = (p.email || '').trim().toLowerCase();
+  if (!id || !email) return { ok:false, error:'auth_failed' };
+
+  const r = findReservationRow_(id);
+  if (!r || String(r.row.rep_email).toLowerCase() !== email) return { ok:false, error:'auth_failed' };
+
+  const sh = sheet_('messages');
+  ensureHeaders_(sh, HEADERS_MESSAGES);
+  const data = sh.getDataRange().getValues();
+  const headers = data[0];
+  const messages = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = {};
+    headers.forEach((h, j) => row[h] = data[i][j]);
+    if (row.reservation_id == id) {
+      messages.push({ timestamp: row.ts, sender: row.sender, message: row.message });
+    }
+  }
+  return { ok:true, messages: messages };
+}
+
+/**
+ * Guest sends a chat message.
+ */
+function handleMyPageMessage(body) {
+  const id = (body.reservation_id || '').trim();
+  const email = (body.email || '').trim().toLowerCase();
+  const message = (body.message || '').trim();
+  if (!id || !email || !message) return { ok:false, error:'missing_fields' };
+
+  const r = findReservationRow_(id);
+  if (!r || String(r.row.rep_email).toLowerCase() !== email) return { ok:false, error:'auth_failed' };
+
+  // Save message
+  const sh = sheet_('messages');
+  ensureHeaders_(sh, HEADERS_MESSAGES);
+  sh.appendRow([new Date().toISOString(), id, 'guest', message]);
+  log_(id, 'mypage_message', 'guest: ' + message.substring(0, 100));
+
+  // Notify admin by email
+  const subject = '[Komei Hotel] ゲストからメッセージ / Guest message (' + id + ')';
+  const replyUrl = getProp_('SITE_BASE_URL') + '/mypage.html?id=' + id;
+  const html = '<h3>💬 ゲストからのメッセージ</h3>'
+    + '<table cellpadding="6">'
+    + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
+    + '<tr><td>ゲスト名</td><td>' + r.row.rep_name + '</td></tr>'
+    + '<tr><td>メール</td><td>' + r.row.rep_email + '</td></tr>'
+    + '</table>'
+    + '<div style="background:#fef3c7;padding:16px;border-radius:8px;margin:16px 0">'
+    + '<p style="white-space:pre-wrap">' + message.replace(/</g, '&lt;') + '</p>'
+    + '</div>'
+    + '<p><b>返信方法:</b> 管理画面のメッセージシートに直接記入するか、GASの <code>sendAdminReply</code> 関数を使用してください。</p>';
+  GmailApp.sendEmail(getProp_('ADMIN_EMAIL'), subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
+
+  return { ok:true };
+}
+
+/**
+ * Guest sends a date/guest change request.
+ */
+function handleMyPageChangeRequest(body) {
+  const id = (body.reservation_id || '').trim();
+  const email = (body.email || '').trim().toLowerCase();
+  const changeType = body.change_type || 'other';
+  const detail = (body.detail || '').trim();
+  if (!id || !email || !detail) return { ok:false, error:'missing_fields' };
+
+  const r = findReservationRow_(id);
+  if (!r || String(r.row.rep_email).toLowerCase() !== email) return { ok:false, error:'auth_failed' };
+
+  // Save as a message too
+  const sh = sheet_('messages');
+  ensureHeaders_(sh, HEADERS_MESSAGES);
+  const msgText = '[変更リクエスト / Change Request: ' + changeType + ']\n' + detail;
+  sh.appendRow([new Date().toISOString(), id, 'guest', msgText]);
+  log_(id, 'change_request', changeType + ': ' + detail.substring(0, 200));
+
+  // Notify admin
+  const typeLabels = { date:'日程変更', guests:'人数変更', other:'その他' };
+  const subject = '[Komei Hotel] 変更リクエスト / Change request (' + id + ') - ' + (typeLabels[changeType] || changeType);
+  const html = '<h3>✏️ 変更リクエスト</h3>'
+    + '<table cellpadding="6">'
+    + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
+    + '<tr><td>ゲスト名</td><td>' + r.row.rep_name + '</td></tr>'
+    + '<tr><td>現在の日程</td><td>' + toYMDSafe_(r.row.checkin) + ' 〜 ' + toYMDSafe_(r.row.checkout) + '</td></tr>'
+    + '<tr><td>ステータス</td><td>' + r.row.status + '</td></tr>'
+    + '<tr><td>カテゴリ</td><td><b>' + (typeLabels[changeType] || changeType) + '</b></td></tr>'
+    + '</table>'
+    + '<div style="background:#fef3c7;padding:16px;border-radius:8px;margin:16px 0">'
+    + '<p style="white-space:pre-wrap">' + detail.replace(/</g, '&lt;') + '</p>'
+    + '</div>'
+    + '<p>マイページのメッセージ機能でゲストに直接返信できます。</p>';
+  GmailApp.sendEmail(getProp_('ADMIN_EMAIL'), subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
+
+  return { ok:true };
+}
+
+/**
+ * Admin sends a reply to guest via messages sheet.
+ * Run from Apps Script editor: sendAdminReply('R20260409XXXX', 'Your message here')
+ */
+function sendAdminReply(reservationId, message) {
+  const r = findReservationRow_(reservationId);
+  if (!r) { Logger.log('Reservation not found'); return; }
+
+  const sh = sheet_('messages');
+  ensureHeaders_(sh, HEADERS_MESSAGES);
+  sh.appendRow([new Date().toISOString(), reservationId, 'host', message]);
+  log_(reservationId, 'admin_reply', message.substring(0, 100));
+
+  // Notify guest by email
+  const base = getProp_('SITE_BASE_URL');
+  const mypageUrl = base + '/mypage.html?id=' + reservationId + '&email=' + encodeURIComponent(r.row.rep_email);
+  const subject = '[Komei Hotel] メッセージが届きました / New message (' + reservationId + ')';
+  const html =
+    '<p>' + r.row.rep_name + ' 様</p>'
+    + '<p>Komei Hotelからメッセージが届きました。</p>'
+    + '<div style="background:#f1f5f9;padding:16px;border-radius:8px;margin:16px 0">'
+    + '<p style="white-space:pre-wrap">' + message.replace(/</g, '&lt;') + '</p>'
+    + '</div>'
+    + '<p><a href="' + mypageUrl + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">マイページで返信する / Reply on My Page</a></p>'
+    + '<hr>'
+    + '<p>Dear ' + r.row.rep_name + ',<br>You have a new message from Komei Hotel. Click the button above to view and reply.</p>';
+  GmailApp.sendEmail(r.row.rep_email, subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
+  Logger.log('Reply sent to ' + r.row.rep_email);
+}
+
 // ============ One-time Setup ============
 /**
  * Run this once from the Apps Script editor to initialize sheets and admin token.
@@ -566,6 +742,7 @@ function initialize() {
   ensureHeaders_(sheet_('reservations'), HEADERS_RESERVATIONS);
   ensureHeaders_(sheet_('guests'), HEADERS_GUESTS);
   ensureHeaders_(sheet_('logs'), HEADERS_LOGS);
+  ensureHeaders_(sheet_('messages'), HEADERS_MESSAGES);
   generateAndStoreAdminToken_();
   Logger.log('Initialized. ADMIN_TOKEN=' + getProp_('ADMIN_TOKEN'));
 }

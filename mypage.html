@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TBDRC88R6Y"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TBDRC88R6Y');
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マイページ ｜ Komei Hotel 光明荘</title>
+<meta name="description" content="Komei Hotel 光明荘 予約者マイページ。予約内容の確認、チェックイン情報、ホストへの連絡ができます。">
+<meta name="robots" content="noindex">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
+  .lang-en { display: none; }
+  html[lang="en"] .lang-ja { display: none; }
+  html[lang="en"] .lang-en { display: inline; }
+  .lang-zh, .lang-ko { display: none; }
+  html[lang="zh"] .lang-ja { display: none; }
+  html[lang="zh"] .lang-zh { display: inline; }
+  html[lang="ko"] .lang-ja { display: none; }
+  html[lang="ko"] .lang-ko { display: inline; }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+  .tab-btn.active { border-color: #f59e0b; color: #d97706; background: #fffbeb; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .chat-msg { max-width: 80%; }
+  .chat-guest { margin-left: auto; background: #fef3c7; border-radius: 16px 16px 4px 16px; }
+  .chat-host  { margin-right: auto; background: #f1f5f9; border-radius: 16px 16px 16px 4px; }
+  .status-badge { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+  .status-requested  { background: #fef9c3; color: #854d0e; }
+  .status-approved   { background: #dbeafe; color: #1e40af; }
+  .status-registered { background: #e0e7ff; color: #3730a3; }
+  .status-paid       { background: #dcfce7; color: #166534; }
+  .status-cancelled  { background: #fee2e2; color: #991b1b; }
+  .status-rejected   { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- Header -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2">
+      <span class="w-9 h-9 rounded-full bg-slate-800 text-white grid place-items-center font-bold">K</span>
+      <span class="font-bold text-lg tracking-wide">Komei Hotel</span>
+      <span class="hidden sm:inline text-xs text-slate-500">光明荘</span>
+    </a>
+    <div class="flex items-center gap-3">
+      <button id="logoutBtn" onclick="logout()" class="hidden text-sm text-slate-500 hover:text-red-500">
+        <span class="lang-ja">ログアウト</span><span class="lang-en">Logout</span><span class="lang-zh">退出</span><span class="lang-ko">로그아웃</span>
+      </button>
+      <select onchange="setLang(this.value)" id="langSel" class="text-sm px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer">
+        <option value="ja" selected>日本語</option><option value="en">EN</option><option value="zh">中文</option><option value="ko">한국어</option>
+      </select>
+    </div>
+  </div>
+</header>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen" class="min-h-screen flex items-center justify-center px-4 pt-20">
+  <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-600 grid place-items-center mx-auto mb-3 text-2xl font-bold">K</div>
+      <h1 class="text-2xl font-bold">
+        <span class="lang-ja">マイページ</span><span class="lang-en">My Page</span><span class="lang-zh">我的页面</span><span class="lang-ko">마이페이지</span>
+      </h1>
+      <p class="text-sm text-slate-500 mt-1">
+        <span class="lang-ja">予約ID とメールアドレスでログイン</span>
+        <span class="lang-en">Login with your Reservation ID and email</span>
+        <span class="lang-zh">使用预订ID和邮箱登录</span>
+        <span class="lang-ko">예약 ID와 이메일로 로그인</span>
+      </p>
+    </div>
+    <form id="loginForm" onsubmit="return handleLogin(event)" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">
+          <span class="lang-ja">予約ID</span><span class="lang-en">Reservation ID</span><span class="lang-zh">预订ID</span><span class="lang-ko">예약 ID</span>
+        </label>
+        <input id="loginId" type="text" placeholder="R202604XXXXXX" required
+               class="w-full px-4 py-3 border border-slate-300 rounded-xl text-base">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">
+          <span class="lang-ja">メールアドレス</span><span class="lang-en">Email</span><span class="lang-zh">邮箱</span><span class="lang-ko">이메일</span>
+        </label>
+        <input id="loginEmail" type="email" placeholder="your@email.com" required
+               class="w-full px-4 py-3 border border-slate-300 rounded-xl text-base">
+      </div>
+      <div id="loginError" class="hidden text-red-600 text-sm bg-red-50 p-3 rounded-lg"></div>
+      <button id="loginBtn" type="submit"
+              class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition">
+        <span class="lang-ja">ログイン</span><span class="lang-en">Login</span><span class="lang-zh">登录</span><span class="lang-ko">로그인</span>
+      </button>
+    </form>
+    <p class="text-xs text-slate-400 mt-4 text-center">
+      <span class="lang-ja">予約IDは予約確認メールに記載されています</span>
+      <span class="lang-en">Your Reservation ID was sent in the confirmation email</span>
+      <span class="lang-zh">预订ID已在确认邮件中发送</span>
+      <span class="lang-ko">예약 ID는 확인 이메일에 기재되어 있습니다</span>
+    </p>
+  </div>
+</div>
+
+<!-- ===== MYPAGE DASHBOARD ===== -->
+<div id="dashboard" class="hidden pt-20 pb-16">
+
+  <!-- Welcome bar -->
+  <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white py-6 px-4">
+    <div class="max-w-4xl mx-auto">
+      <p class="text-amber-100 text-sm">
+        <span class="lang-ja">ようこそ</span><span class="lang-en">Welcome</span><span class="lang-zh">欢迎</span><span class="lang-ko">환영합니다</span>
+      </p>
+      <h2 class="text-2xl font-bold" id="welcomeName"></h2>
+      <div class="flex items-center gap-3 mt-2">
+        <span class="text-amber-100 text-sm" id="welcomeId"></span>
+        <span id="statusBadge" class="status-badge"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="max-w-4xl mx-auto px-4 mt-6">
+    <div class="flex gap-2 overflow-x-auto pb-2" id="tabBar">
+      <button onclick="switchTab('reservation')" data-tab="reservation" class="tab-btn active flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-transparent rounded-t-lg transition">
+        <span class="lang-ja">📋 予約情報</span><span class="lang-en">📋 Reservation</span><span class="lang-zh">📋 预订信息</span><span class="lang-ko">📋 예약 정보</span>
+      </button>
+      <button onclick="switchTab('checkin')" data-tab="checkin" class="tab-btn flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-transparent rounded-t-lg transition">
+        <span class="lang-ja">🏠 チェックイン</span><span class="lang-en">🏠 Check-in</span><span class="lang-zh">🏠 入住信息</span><span class="lang-ko">🏠 체크인</span>
+      </button>
+      <button onclick="switchTab('chat')" data-tab="chat" class="tab-btn flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-transparent rounded-t-lg transition">
+        <span class="lang-ja">💬 メッセージ</span><span class="lang-en">💬 Messages</span><span class="lang-zh">💬 消息</span><span class="lang-ko">💬 메시지</span>
+        <span id="unreadBadge" class="hidden ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5"></span>
+      </button>
+      <button onclick="switchTab('change')" data-tab="change" class="tab-btn flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-transparent rounded-t-lg transition">
+        <span class="lang-ja">✏️ 変更リクエスト</span><span class="lang-en">✏️ Change Request</span><span class="lang-zh">✏️ 变更申请</span><span class="lang-ko">✏️ 변경 요청</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB: Reservation Info -->
+  <div id="tab-reservation" class="tab-content active max-w-4xl mx-auto px-4 mt-4">
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h3 class="font-bold text-lg mb-4">
+        <span class="lang-ja">予約詳細</span><span class="lang-en">Reservation Details</span><span class="lang-zh">预订详情</span><span class="lang-ko">예약 상세</span>
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="reservationDetails">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Check-in Info -->
+  <div id="tab-checkin" class="tab-content max-w-4xl mx-auto px-4 mt-4">
+    <!-- Before payment -->
+    <div id="checkinLocked" class="bg-white rounded-2xl shadow p-6 text-center">
+      <div class="text-4xl mb-3">🔒</div>
+      <p class="text-slate-600">
+        <span class="lang-ja">チェックイン情報はお支払い完了後に表示されます</span>
+        <span class="lang-en">Check-in information will be available after payment</span>
+        <span class="lang-zh">入住信息将在付款完成后显示</span>
+        <span class="lang-ko">체크인 정보는 결제 완료 후 표시됩니다</span>
+      </p>
+    </div>
+    <!-- After payment -->
+    <div id="checkinInfo" class="hidden space-y-4">
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h3 class="font-bold text-lg mb-4">
+          <span class="lang-ja">🏠 チェックイン情報</span><span class="lang-en">🏠 Check-in Information</span><span class="lang-zh">🏠 入住信息</span><span class="lang-ko">🏠 체크인 정보</span>
+        </h3>
+        <div class="space-y-4 text-sm">
+          <div class="flex items-start gap-3 p-3 bg-amber-50 rounded-xl">
+            <span class="text-xl">📍</span>
+            <div>
+              <p class="font-bold"><span class="lang-ja">住所</span><span class="lang-en">Address</span><span class="lang-zh">地址</span><span class="lang-ko">주소</span></p>
+              <p>〒131-0045 東京都墨田区押上2-31-11</p>
+              <a href="https://maps.google.com/?q=35.7112,139.8149" target="_blank" class="text-amber-600 underline text-xs">Google Maps →</a>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-xl">
+            <span class="text-xl">🕐</span>
+            <div>
+              <p class="font-bold"><span class="lang-ja">チェックイン / アウト</span><span class="lang-en">Check-in / Check-out</span></p>
+              <p><span class="lang-ja">チェックイン: 16:00〜22:00 / チェックアウト: 〜10:00</span><span class="lang-en">Check-in: 4:00 PM – 10:00 PM / Check-out: by 10:00 AM</span></p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-green-50 rounded-xl">
+            <span class="text-xl">🔑</span>
+            <div>
+              <p class="font-bold"><span class="lang-ja">入室方法</span><span class="lang-en">How to enter</span></p>
+              <p><span class="lang-ja">玄関にスマートロックを設置しています。暗証番号はチェックイン日の前日にメールでお知らせします。</span>
+              <span class="lang-en">We use a smart lock on the front door. The access code will be sent to your email the day before check-in.</span></p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-purple-50 rounded-xl">
+            <span class="text-xl">📶</span>
+            <div>
+              <p class="font-bold">WiFi</p>
+              <p>SSID: <code class="bg-white px-2 py-0.5 rounded">Komei-Guest</code></p>
+              <p><span class="lang-ja">パスワードはチェックイン日の前日にメールでお知らせします。</span>
+              <span class="lang-en">Password will be sent by email the day before check-in.</span></p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-rose-50 rounded-xl">
+            <span class="text-xl">📞</span>
+            <div>
+              <p class="font-bold"><span class="lang-ja">緊急連絡先</span><span class="lang-en">Emergency Contact</span></p>
+              <p>komei.hotel@gmail.com</p>
+              <p class="text-xs text-slate-500"><span class="lang-ja">※ 緊急時はメッセージ機能もご利用いただけます</span>
+              <span class="lang-en">You can also use the Messages tab for urgent requests</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-6">
+        <h3 class="font-bold text-lg mb-3">
+          <span class="lang-ja">📜 ハウスルール</span><span class="lang-en">📜 House Rules</span>
+        </h3>
+        <ul class="text-sm space-y-2 text-slate-700">
+          <li>🚭 <span class="lang-ja">全館禁煙（バルコニーも含む）</span><span class="lang-en">No smoking anywhere (including terrace)</span></li>
+          <li>🎉 <span class="lang-ja">22:00以降は静かにお過ごしください</span><span class="lang-en">Please keep quiet after 10:00 PM</span></li>
+          <li>🗑️ <span class="lang-ja">ゴミは分別して指定の場所に</span><span class="lang-en">Please separate trash as instructed</span></li>
+          <li>🐾 <span class="lang-ja">ペット不可</span><span class="lang-en">No pets</span></li>
+          <li>👟 <span class="lang-ja">室内は靴を脱いでご利用ください</span><span class="lang-en">Please remove shoes indoors</span></li>
+        </ul>
+        <a href="terms.html" target="_blank" class="inline-block mt-3 text-amber-600 text-sm underline">
+          <span class="lang-ja">利用規約全文を見る →</span><span class="lang-en">View full terms →</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Chat -->
+  <div id="tab-chat" class="tab-content max-w-4xl mx-auto px-4 mt-4">
+    <div class="bg-white rounded-2xl shadow flex flex-col" style="height: 500px;">
+      <!-- Chat header -->
+      <div class="px-5 py-3 border-b flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-slate-800 text-white grid place-items-center text-sm font-bold">K</div>
+        <div>
+          <p class="font-bold text-sm">Komei Hotel</p>
+          <p class="text-xs text-slate-400">
+            <span class="lang-ja">メール通知付き ・ 通常12時間以内に返信</span>
+            <span class="lang-en">Email notifications ・ Usually reply within 12h</span>
+          </p>
+        </div>
+      </div>
+      <!-- Messages area -->
+      <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3">
+        <!-- Filled by JS -->
+      </div>
+      <!-- Input area -->
+      <div class="border-t p-3">
+        <form id="chatForm" onsubmit="return sendMessage(event)" class="flex gap-2">
+          <input id="chatInput" type="text" maxlength="1000"
+                 class="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl text-sm"
+                 placeholder="">
+          <button type="submit" id="chatSendBtn"
+                  class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm transition whitespace-nowrap">
+            <span class="lang-ja">送信</span><span class="lang-en">Send</span><span class="lang-zh">发送</span><span class="lang-ko">전송</span>
+          </button>
+        </form>
+        <p class="text-xs text-slate-400 mt-1 ml-1">
+          <span class="lang-ja">メッセージはホストにメール通知されます</span>
+          <span class="lang-en">Host will be notified by email</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Change Request -->
+  <div id="tab-change" class="tab-content max-w-4xl mx-auto px-4 mt-4">
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h3 class="font-bold text-lg mb-2">
+        <span class="lang-ja">✏️ 日程変更リクエスト</span><span class="lang-en">✏️ Date Change Request</span>
+      </h3>
+      <p class="text-sm text-slate-500 mb-4">
+        <span class="lang-ja">日程やゲスト人数の変更をご希望の場合は、以下のフォームからリクエストをお送りください。変更可否は担当者が確認のうえご連絡いたします。</span>
+        <span class="lang-en">If you need to change dates or guest count, submit a request below. We'll review and respond via email.</span>
+      </p>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 text-sm">
+        <p class="font-semibold text-amber-800">
+          <span class="lang-ja">⚠️ ご注意</span><span class="lang-en">⚠️ Note</span>
+        </p>
+        <p class="text-amber-700 mt-1">
+          <span class="lang-ja">変更リクエストの承認は保証されません。空室状況により対応できない場合がございます。キャンセルポリシーは<a href="terms.html" target="_blank" class="underline">利用規約</a>をご確認ください。</span>
+          <span class="lang-en">Change requests are not guaranteed. Availability may prevent accommodation. See our <a href="terms.html" target="_blank" class="underline">terms</a> for cancellation policy.</span>
+        </p>
+      </div>
+      <form id="changeForm" onsubmit="return sendChangeRequest(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">
+            <span class="lang-ja">変更内容のカテゴリ</span><span class="lang-en">Type of change</span>
+          </label>
+          <select id="changeType" class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm" required>
+            <option value="date"><span class="lang-ja">日程変更</span></option>
+            <option value="guests">ゲスト人数変更</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">
+            <span class="lang-ja">詳細</span><span class="lang-en">Details</span>
+          </label>
+          <textarea id="changeDetail" rows="4" required maxlength="2000"
+                    class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm"
+                    placeholder="例: チェックイン日を4/20から4/22に変更したいです"></textarea>
+        </div>
+        <div id="changeError" class="hidden text-red-600 text-sm bg-red-50 p-3 rounded-lg"></div>
+        <div id="changeSuccess" class="hidden text-green-700 text-sm bg-green-50 p-3 rounded-lg"></div>
+        <button id="changeBtn" type="submit"
+                class="w-full py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl transition">
+          <span class="lang-ja">変更リクエストを送信</span><span class="lang-en">Submit Change Request</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer class="bg-slate-800 text-slate-400 py-8 px-4">
+  <div class="max-w-4xl mx-auto text-center text-sm">
+    <p>&copy; 2025 Komei Hotel 光明荘 — <a href="terms.html" class="underline hover:text-white">Terms</a></p>
+  </div>
+</footer>
+
+<script>
+const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx6JO_l8Hhb5pQCIZkBTgEkChylOcD4e32JuCcCG-XtvuaQ6I5qacd7UuyeHQ8fnOZR/exec';
+
+let currentReservation = null;
+let currentAuth = null; // { id, email }
+
+// ===== Language =====
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  localStorage.setItem('komei_lang', lang);
+  updatePlaceholders();
+}
+function updatePlaceholders() {
+  const l = document.documentElement.lang || 'ja';
+  const ph = { ja: 'メッセージを入力…', en: 'Type a message…', zh: '输入消息…', ko: '메시지 입력…' };
+  const ci = document.getElementById('chatInput');
+  if (ci) ci.placeholder = ph[l] || ph.ja;
+}
+(function() {
+  const saved = localStorage.getItem('komei_lang');
+  if (saved) { document.documentElement.lang = saved; document.getElementById('langSel').value = saved; }
+  updatePlaceholders();
+})();
+
+// ===== Auth =====
+function handleLogin(e) {
+  e.preventDefault();
+  const id = document.getElementById('loginId').value.trim();
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const btn = document.getElementById('loginBtn');
+  const errDiv = document.getElementById('loginError');
+  errDiv.classList.add('hidden');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  const url = GAS_ENDPOINT + '?action=mypage_auth&id=' + encodeURIComponent(id) + '&email=' + encodeURIComponent(email);
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        currentAuth = { id, email };
+        currentReservation = data.reservation;
+        sessionStorage.setItem('komei_auth', JSON.stringify(currentAuth));
+        showDashboard();
+        loadMessages();
+      } else {
+        errDiv.textContent = data.error === 'not_found'
+          ? (document.documentElement.lang === 'en' ? 'Reservation not found or email does not match.' : '予約が見つかりません。予約IDまたはメールアドレスをご確認ください。')
+          : data.error;
+        errDiv.classList.remove('hidden');
+      }
+    })
+    .catch(err => {
+      errDiv.textContent = 'Connection error. Please try again.';
+      errDiv.classList.remove('hidden');
+    })
+    .finally(() => {
+      btn.disabled = false;
+      const l = document.documentElement.lang || 'ja';
+      btn.textContent = { ja:'ログイン', en:'Login', zh:'登录', ko:'로그인' }[l] || 'ログイン';
+    });
+  return false;
+}
+
+function logout() {
+  sessionStorage.removeItem('komei_auth');
+  currentAuth = null;
+  currentReservation = null;
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('logoutBtn').classList.add('hidden');
+}
+
+// Auto-login from session
+(function() {
+  const saved = sessionStorage.getItem('komei_auth');
+  if (saved) {
+    const auth = JSON.parse(saved);
+    document.getElementById('loginId').value = auth.id;
+    document.getElementById('loginEmail').value = auth.email;
+    handleLogin({ preventDefault() {} });
+  }
+  // Also check URL params
+  const p = new URLSearchParams(location.search);
+  if (p.get('id')) document.getElementById('loginId').value = p.get('id');
+  if (p.get('email')) document.getElementById('loginEmail').value = p.get('email');
+})();
+
+// ===== Dashboard =====
+function showDashboard() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('logoutBtn').classList.remove('hidden');
+
+  const r = currentReservation;
+  document.getElementById('welcomeName').textContent = r.representative_name + ' 様';
+  document.getElementById('welcomeId').textContent = r.reservation_id;
+
+  // Status badge
+  const badge = document.getElementById('statusBadge');
+  const statusLabels = {
+    requested:  { ja:'確認中', en:'Under Review' },
+    approved:   { ja:'承認済み', en:'Approved' },
+    registered: { ja:'登録済み', en:'Registered' },
+    paid:       { ja:'予約確定', en:'Confirmed' },
+    cancelled:  { ja:'キャンセル', en:'Cancelled' },
+    rejected:   { ja:'不可', en:'Rejected' }
+  };
+  const sl = statusLabels[r.status] || { ja: r.status, en: r.status };
+  const l = document.documentElement.lang || 'ja';
+  badge.textContent = (l === 'en' ? sl.en : sl.ja);
+  badge.className = 'status-badge status-' + r.status;
+
+  // Reservation details
+  const details = document.getElementById('reservationDetails');
+  const rows = [
+    ['予約ID / Reservation ID', r.reservation_id],
+    ['チェックイン / Check-in', r.checkin],
+    ['チェックアウト / Check-out', r.checkout],
+    ['大人 / Adults', r.adults],
+    ['子供 / Children', r.children],
+    ['代表者 / Representative', r.representative_name],
+    ['メール / Email', r.representative_email],
+    ['概算金額 / Estimated', '¥' + Number(r.estimated_total || 0).toLocaleString()],
+    ['確定金額 / Final', r.final_total ? '¥' + Number(r.final_total).toLocaleString() : '—'],
+    ['支払い / Payment', r.payment_status || '—']
+  ];
+  details.innerHTML = rows.map(([k, v]) =>
+    `<div class="flex justify-between py-2 border-b border-slate-100">
+       <span class="text-slate-500 text-sm">${k}</span>
+       <span class="font-medium text-sm">${v}</span>
+     </div>`
+  ).join('');
+
+  // Check-in info visibility
+  if (r.status === 'paid') {
+    document.getElementById('checkinLocked').classList.add('hidden');
+    document.getElementById('checkinInfo').classList.remove('hidden');
+  } else {
+    document.getElementById('checkinLocked').classList.remove('hidden');
+    document.getElementById('checkinInfo').classList.add('hidden');
+  }
+}
+
+// ===== Tabs =====
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ===== Chat =====
+function loadMessages() {
+  if (!currentAuth) return;
+  const url = GAS_ENDPOINT + '?action=get_messages&id=' + encodeURIComponent(currentAuth.id)
+            + '&email=' + encodeURIComponent(currentAuth.email);
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) renderMessages(data.messages || []);
+    });
+}
+
+function renderMessages(messages) {
+  const container = document.getElementById('chatMessages');
+  if (messages.length === 0) {
+    const l = document.documentElement.lang || 'ja';
+    const empty = {
+      ja: 'まだメッセージはありません。お気軽にご質問ください。',
+      en: 'No messages yet. Feel free to ask us anything!',
+      zh: '暂无消息。请随时向我们提问！',
+      ko: '아직 메시지가 없습니다. 편하게 문의해 주세요!'
+    };
+    container.innerHTML = `<div class="text-center text-slate-400 text-sm py-8">${empty[l] || empty.ja}</div>`;
+    return;
+  }
+  container.innerHTML = messages.map(m => {
+    const isGuest = m.sender === 'guest';
+    const cls = isGuest ? 'chat-guest' : 'chat-host';
+    const time = new Date(m.timestamp).toLocaleString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    return `<div class="chat-msg ${cls} px-4 py-2.5">
+      <p class="text-sm whitespace-pre-wrap">${escapeHtml(m.message)}</p>
+      <p class="text-xs text-slate-400 mt-1">${time}</p>
+    </div>`;
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendMessage(e) {
+  e.preventDefault();
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg || !currentAuth) return false;
+
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+
+  fetch(GAS_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      type: 'mypage_message',
+      reservation_id: currentAuth.id,
+      email: currentAuth.email,
+      message: msg
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      input.value = '';
+      loadMessages();
+    } else {
+      alert(data.error || 'Failed to send');
+    }
+  })
+  .catch(() => alert('Connection error'))
+  .finally(() => { btn.disabled = false; });
+  return false;
+}
+
+// ===== Change Request =====
+function sendChangeRequest(e) {
+  e.preventDefault();
+  const type = document.getElementById('changeType').value;
+  const detail = document.getElementById('changeDetail').value.trim();
+  if (!detail || !currentAuth) return false;
+
+  const btn = document.getElementById('changeBtn');
+  const errDiv = document.getElementById('changeError');
+  const okDiv = document.getElementById('changeSuccess');
+  errDiv.classList.add('hidden');
+  okDiv.classList.add('hidden');
+  btn.disabled = true;
+
+  fetch(GAS_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({
+      type: 'mypage_change_request',
+      reservation_id: currentAuth.id,
+      email: currentAuth.email,
+      change_type: type,
+      detail: detail
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      const l = document.documentElement.lang || 'ja';
+      okDiv.textContent = l === 'en'
+        ? 'Change request sent. We will reply by email.'
+        : '変更リクエストを送信しました。メールにてご回答いたします。';
+      okDiv.classList.remove('hidden');
+      document.getElementById('changeDetail').value = '';
+    } else {
+      errDiv.textContent = data.error || 'Error';
+      errDiv.classList.remove('hidden');
+    }
+  })
+  .catch(() => {
+    errDiv.textContent = 'Connection error';
+    errDiv.classList.remove('hidden');
+  })
+  .finally(() => { btn.disabled = false; });
+  return false;
+}
+
+// ===== Util =====
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
