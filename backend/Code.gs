@@ -20,7 +20,7 @@
  *
  * シート構成 (1シート = 1テーブル):
  *   reservations: id, status, created_at, updated_at, checkin, checkout, nights,
- *                 adults, children, rep_name, rep_email, rep_phone, rep_country,
+ *                 adults, children, rep_first_name, rep_last_name, rep_email, rep_phone, rep_country,
  *                 estimated_total, final_total, payment_method, payment_status,
  *                 stripe_session_id, token, notes, source, user_agent
  *   guests:       reservation_id, idx, name, nationality, address, occupation,
@@ -31,7 +31,7 @@
 // ============ Constants ============
 const HEADERS_RESERVATIONS = [
   'id','status','created_at','updated_at','checkin','checkout','nights',
-  'adults','children','rep_name','rep_email','rep_phone','rep_country',
+  'adults','children','rep_first_name','rep_last_name','rep_email','rep_phone','rep_country',
   'estimated_total','final_total','payment_method','payment_status',
   'stripe_session_id','token','notes','source','user_agent'
 ];
@@ -40,7 +40,12 @@ const HEADERS_GUESTS = [
   'passport_no','passport_file_url'
 ];
 const HEADERS_LOGS = ['ts','reservation_id','action','detail'];
-const HEADERS_MESSAGES = ['ts','reservation_id','sender','message'];
+const HEADERS_MESSAGES = ['id','reservation_id','sender','message','timestamp','read_by_host'];
+const HEADERS_REVIEWS = [
+  'id','reservation_id','rep_name','rep_country','overall','cleanliness','accuracy',
+  'checkin','communication','location','value','comment','private_feedback',
+  'created_at','published'
+];
 
 const STATUS = {
   REQUESTED:  'requested',     // フロントから仮予約 POST 直後
@@ -56,17 +61,29 @@ const STATUS = {
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
+
+    // Stripe webhook events have dot-separated type like 'checkout.session.completed'
+    if (body.type && body.type.indexOf('.') !== -1 && body.data && body.data.object) {
+      return stripeWebhookHandler(e);
+    }
+
     switch (body.type) {
-      case 'reservation_request': return jsonResponse(handleReservationRequest(body));
-      case 'guest_registration':  return jsonResponse(handleGuestRegistration(body));
-      case 'payment_init':        return jsonResponse(handlePaymentInit(body));
-      case 'mypage_message':      return jsonResponse(handleMyPageMessage(body));
-      case 'mypage_change_request': return jsonResponse(handleMyPageChangeRequest(body));
+      case 'reservation_request':   return jsonResponse(handleReservationRequest(body));
+      case 'guest_registration':    return jsonResponse(handleGuestRegistration(body));
+      case 'payment_init':          return jsonResponse(handlePaymentInit(body));
+      // Admin API
       case 'admin_auth':            return jsonResponse(handleAdminAuth(body));
-      case 'admin_list':            return jsonResponse(handleAdminListReservations(body));
-      case 'admin_detail':          return jsonResponse(handleAdminGetDetail(body));
-      case 'admin_reply':           return jsonResponse(handleAdminReply(body));
+      case 'admin_list':            return jsonResponse(handleAdminList(body));
+      case 'admin_detail':          return jsonResponse(handleAdminDetail(body));
       case 'admin_update_status':   return jsonResponse(handleAdminUpdateStatus(body));
+      case 'admin_reply':           return jsonResponse(handleAdminReply(body));
+      // Mypage API
+      case 'mypage_message':        return jsonResponse(handleMypageMessage(body));
+      case 'mypage_change_request': return jsonResponse(handleMypageChangeRequest(body));
+      // Review API
+      case 'submit_review':         return jsonResponse(handleSubmitReview(body));
+      case 'admin_list_reviews':    return jsonResponse(handleAdminListReviews(body));
+      case 'admin_toggle_review':   return jsonResponse(handleAdminToggleReview(body));
       default: return jsonResponse({ ok:false, error:'unknown type' });
     }
   } catch (err) {
@@ -81,6 +98,9 @@ function doGet(e) {
     if (action === 'get_reservation') {
       return jsonResponse(handleGetReservation(e.parameter));
     }
+    if (action === 'approve_form') {
+      return htmlResponse(handleApproveForm(e.parameter));
+    }
     if (action === 'approve') {
       return htmlResponse(handleApprove(e.parameter));
     }
@@ -88,10 +108,13 @@ function doGet(e) {
       return htmlResponse(handleReject(e.parameter));
     }
     if (action === 'mypage_auth') {
-      return jsonResponse(handleMyPageAuth(e.parameter));
+      return jsonResponse(handleMypageAuth(e.parameter));
     }
     if (action === 'get_messages') {
       return jsonResponse(handleGetMessages(e.parameter));
+    }
+    if (action === 'public_reviews') {
+      return jsonResponse(handlePublicReviews());
     }
     if (action === 'stripe_webhook_test') {
       return jsonResponse({ ok:true, msg:'use webhook endpoint via separate function' });
@@ -127,7 +150,8 @@ function handleReservationRequest(body) {
       case 'nights': return nights;
       case 'adults': return body.adults || 0;
       case 'children': return body.children || 0;
-      case 'rep_name': return body.representative.name;
+      case 'rep_first_name': return body.representative.first_name || '';
+      case 'rep_last_name': return body.representative.last_name || '';
       case 'rep_email': return body.representative.email;
       case 'rep_phone': return body.representative.phone;
       case 'rep_country': return body.representative.country;
@@ -144,6 +168,61 @@ function handleReservationRequest(body) {
   notifyAdminPendingApproval_(id, body, nights);
   notifyGuestRequestReceived_(id, body);
   return { ok:true, reservation_id: id };
+}
+
+function handleApproveForm(p) {
+  const id = p.id; const adminToken = p.t;
+  let stored = getProp_('ADMIN_TOKEN');
+  if (!stored) stored = generateAndStoreAdminToken_();
+  if (adminToken !== stored) return '<h1>Unauthorized</h1>';
+  const r = findReservationRow_(id);
+  if (!r) return '<h1>Not found</h1>';
+  if (r.row.status !== STATUS.REQUESTED) return '<h1>Already processed</h1><p>status='+r.row.status+'</p>';
+
+  const estTotal = parseInt(r.row.estimated_total || 0);
+  const guestName = fullName_(r.row);
+  const baseUrl = ScriptApp.getService().getUrl();
+  const approveAction = baseUrl + '?action=approve&id=' + id + '&t=' + adminToken;
+  const rejectAction  = baseUrl + '?action=reject&id='  + id + '&t=' + adminToken;
+
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<title>承認 — ' + id + '</title>'
+    + '<style>'
+    + 'body{font-family:-apple-system,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#1e293b;background:#f8fafc}'
+    + '.card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.1);padding:28px;margin-bottom:20px}'
+    + 'h1{font-size:22px;margin:0 0 20px}table{width:100%;border-collapse:collapse}td{padding:8px 4px;border-bottom:1px solid #e2e8f0}'
+    + 'td:first-child{color:#64748b;width:100px}'
+    + '.amount-box{background:#fffbeb;border:2px solid #f59e0b;border-radius:8px;padding:20px;margin:20px 0}'
+    + '.amount-box label{font-weight:600;display:block;margin-bottom:8px}'
+    + '.amount-box input{width:100%;font-size:24px;font-weight:700;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box}'
+    + '.btn{display:inline-block;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:600;text-decoration:none;border:none;cursor:pointer;margin-right:12px}'
+    + '.btn-approve{background:#10b981;color:#fff}.btn-reject{background:#ef4444;color:#fff}'
+    + '.btn:hover{opacity:.9}'
+    + '</style></head><body>'
+    + '<div class="card"><h1>予約承認</h1>'
+    + '<table>'
+    + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
+    + '<tr><td>代表者</td><td>' + guestName + '</td></tr>'
+    + '<tr><td>期間</td><td>' + toYMDSafe_(r.row.checkin) + ' 〜 ' + toYMDSafe_(r.row.checkout) + ' (' + r.row.nights + '泊)</td></tr>'
+    + '<tr><td>人数</td><td>大人' + r.row.adults + ' / 子' + r.row.children + '</td></tr>'
+    + '<tr><td>メール</td><td>' + r.row.rep_email + '</td></tr>'
+    + '<tr><td>備考</td><td>' + (r.row.notes || '-') + '</td></tr>'
+    + '</table>'
+    + '<div class="amount-box">'
+    + '<label>確定金額（税込）</label>'
+    + '<input type="number" id="finalTotal" value="' + estTotal + '" min="0" step="1000">'
+    + '<p style="color:#92400e;font-size:13px;margin:8px 0 0">概算金額: ¥' + estTotal.toLocaleString() + '　※変更がなければそのまま承認してください</p>'
+    + '</div>'
+    + '<div style="text-align:center;margin-top:24px">'
+    + '<button class="btn btn-approve" onclick="doApprove()">✅ 承認する</button>'
+    + '<a href="' + rejectAction + '" class="btn btn-reject">❌ 却下</a>'
+    + '</div></div>'
+    + '<script>'
+    + 'function doApprove(){'
+    + '  var t=document.getElementById("finalTotal").value;'
+    + '  window.location="' + approveAction + '&final_total="+encodeURIComponent(t);'
+    + '}'
+    + '</script></body></html>';
 }
 
 function handleApprove(p) {
@@ -194,8 +273,10 @@ function handleGetReservation(p) {
       checkout: toYMDSafe_(r.row.checkout),
       adults: r.row.adults,
       children: r.row.children,
-      representative_name: getRepName_(r.row),
-      representative_email: r.row.rep_email,
+      representative_first_name: maskName_(r.row.rep_first_name),
+      representative_last_name: maskName_(r.row.rep_last_name),
+      representative_name: maskName_(r.row.rep_first_name) + ' ' + maskName_(r.row.rep_last_name),
+      representative_email: maskEmail_(r.row.rep_email),
       representative_phone: r.row.rep_phone,
       estimated_total: r.row.estimated_total,
       final_total: r.row.final_total,
@@ -332,32 +413,33 @@ function notifyAdminPendingApproval_(id, body, nights) {
   let adminToken = getProp_('ADMIN_TOKEN');
   if (!adminToken) adminToken = generateAndStoreAdminToken_();
   const baseUrl = ScriptApp.getService().getUrl();
-  const approveUrl = baseUrl + '?action=approve&id=' + id + '&t=' + adminToken;
+  const approveFormUrl = baseUrl + '?action=approve_form&id=' + id + '&t=' + adminToken;
   const rejectUrl  = baseUrl + '?action=reject&id='  + id + '&t=' + adminToken;
-  const subject = '[Komei Hotel] 新規仮予約 ' + id + ' ' + body.representative.name + ' (' + body.checkin + ' 〜 ' + body.checkout + ')';
+  const guestName = (body.representative.first_name || '') + ' ' + (body.representative.last_name || '');
+  const subject = '[Komei Hotel] 新規仮予約 ' + id + ' (' + body.checkin + ' 〜 ' + body.checkout + ')';
   const html = ''
     + '<h2>新規予約申込</h2>'
     + '<table cellpadding="6">'
     + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
     + '<tr><td>期間</td><td>' + body.checkin + ' 〜 ' + body.checkout + ' (' + nights + '泊)</td></tr>'
     + '<tr><td>人数</td><td>大人' + body.adults + ' / 子' + body.children + '</td></tr>'
-    + '<tr><td>代表者</td><td>' + body.representative.name + ' (' + body.representative.country + ')</td></tr>'
+    + '<tr><td>代表者</td><td>' + guestName.trim() + ' (' + body.representative.country + ')</td></tr>'
     + '<tr><td>連絡先</td><td>' + body.representative.email + ' / ' + body.representative.phone + '</td></tr>'
     + '<tr><td>概算金額</td><td>¥' + Number(body.estimated_total).toLocaleString() + '</td></tr>'
     + '<tr><td>備考</td><td>' + (body.notes || '-') + '</td></tr>'
     + '</table>'
     + '<p style="margin-top:24px">'
-    + '<a href="' + approveUrl + '" style="background:#10b981;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;margin-right:12px">&#10004; 承認する</a>'
-    + '<a href="' + rejectUrl + '" style="background:#ef4444;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px">&#10060; 却下</a>'
-    + '</p>'
-    + '<p style="color:#888;font-size:12px">承認時に金額を変更したい場合は承認URLに <code>&final_total=XXXXX</code> を追加してください。</p>';
+    + '<a href="' + approveFormUrl + '" style="background:#10b981;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;margin-right:12px">✅ 承認する（金額確認）</a>'
+    + '<a href="' + rejectUrl + '" style="background:#ef4444;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px">❌ 却下</a>'
+    + '</p>';
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'), subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
 }
 
 function notifyGuestRequestReceived_(id, body) {
+  const guestNameFull = ((body.representative.first_name || '') + ' ' + (body.representative.last_name || '')).trim();
   const subject = '[Komei Hotel] お申込みを受付けました / Reservation request received (' + id + ')';
   const html =
-    '<p>' + body.representative.name + ' 様</p>'
+    '<p>' + guestNameFull + ' 様</p>'
     + '<p>この度は Komei Hotel 光明荘へのお申込みをいただき、誠にありがとうございます。<br>'
     + '以下の内容でお申込みを承りました。担当者の確認後、24時間以内に承認のご連絡をお送りします。</p>'
     + '<table cellpadding="6"><tr><td>予約ID</td><td>' + id + '</td></tr>'
@@ -367,7 +449,7 @@ function notifyGuestRequestReceived_(id, body) {
     + '<tr><td>概算金額</td><td>¥' + Number(body.estimated_total).toLocaleString() + '</td></tr>'
     + '</table>'
     + '<hr>'
-    + '<p>Dear ' + body.representative.name + ',</p>'
+    + '<p>Dear ' + guestNameFull + ',</p>'
     + '<p>Thank you for your reservation request at Komei Hotel. We have received your request and will reply with approval within 24 hours.</p>';
   GmailApp.sendEmail(body.representative.email, subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
 }
@@ -375,15 +457,16 @@ function notifyGuestRequestReceived_(id, body) {
 function notifyGuestApproved_(id, row, finalTotal) {
   const base = getProp_('SITE_BASE_URL');
   const url = base + '/register.html?id=' + id + '&token=' + row.token;
+  const name = fullName_(row);
   const subject = '[Komei Hotel] ご予約が承認されました / Approved (' + id + ')';
   const html =
-    '<p>' + row.rep_name + ' 様</p>'
+    '<p>' + name + ' 様</p>'
     + '<p>お申込みいただいたご予約 <b>' + id + '</b> が承認されました。<br>'
     + '以下のリンクから宿泊者情報のご登録とお支払いにお進みください（リンクは7日間有効）。</p>'
     + '<p>確定金額: <b>¥' + Number(finalTotal).toLocaleString() + '</b></p>'
     + '<p><a href="' + url + '" style="background:#f59e0b;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;display:inline-block">本登録に進む / Continue Registration</a></p>'
     + '<hr>'
-    + '<p>Dear ' + row.rep_name + ',</p>'
+    + '<p>Dear ' + name + ',</p>'
     + '<p>Your reservation <b>' + id + '</b> has been approved. Total: <b>¥' + Number(finalTotal).toLocaleString() + '</b>. Please complete guest registration and payment via the link above (valid for 7 days).</p>';
   GmailApp.sendEmail(row.rep_email, subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
 }
@@ -398,7 +481,7 @@ function notifyGuestRejected_(id, row) {
 
 function notifyGuestBankInstructions_(id, row, total) {
   const html =
-    '<p>' + row.rep_name + ' 様</p>'
+    '<p>' + fullName_(row) + ' 様</p>'
     + '<p>下記口座へ <b>3営業日以内</b> にお振込ください。<br>振込人名義の前に予約ID「' + id + '」をご記入ください。</p>'
     + '<p>金額: <b>¥' + Number(total).toLocaleString() + '</b></p>'
     + '<p>銀行名: 三井住友銀行 / 支店: 赤坂支店 / 普通 9527788 / 名義: カ）コウケンショウジ</p>'
@@ -408,27 +491,27 @@ function notifyGuestBankInstructions_(id, row, total) {
 
 function notifyAdminBankPending_(id, row, total) {
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
-    '[Komei Hotel] 銀行振込待ち ' + id + ' ' + getRepName_(row),
+    '[Komei Hotel] 銀行振込待ち ' + id,
     '',
-    { htmlBody: '<p>予約 ' + id + '（' + getRepName_(row) + '）が銀行振込を選択しました。入金確認後、シートで status を paid に更新してください。</p><p>金額: ¥' + Number(total).toLocaleString() + '</p>' });
+    { htmlBody: '<p>予約 ' + id + ' が銀行振込を選択しました。入金確認後、シートで status を paid に更新してください。</p><p>金額: ¥' + Number(total).toLocaleString() + '</p>' });
 }
 
 function notifyGuestConfirmed_(id, row) {
+  const name = fullName_(row);
   const html =
-    '<p>' + row.rep_name + ' 様</p>'
+    '<p>' + name + ' 様</p>'
     + '<p>お支払いが完了し、ご予約 <b>' + id + '</b> が確定いたしました。<br>'
     + 'チェックイン日が近づきましたら、入室方法等の詳細をご案内いたします。</p>'
     + '<p>チェックイン: ' + toYMDSafe_(row.checkin) + ' 16:00〜<br>チェックアウト: ' + toYMDSafe_(row.checkout) + ' 〜10:00</p>'
-    + '<p style="margin-top:16px"><a href="' + getProp_('SITE_BASE_URL') + '/mypage.html?id=' + id + '&email=' + encodeURIComponent(row.rep_email) + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">マイページを確認 / View My Page</a></p>'
-    + '<hr><p>Dear ' + row.rep_name + ',<br>Your reservation <b>' + id + '</b> is now confirmed. We will send check-in details closer to your arrival date.</p>';
+    + '<hr><p>Dear ' + name + ',<br>Your reservation <b>' + id + '</b> is now confirmed. We will send check-in details closer to your arrival date.</p>';
   GmailApp.sendEmail(row.rep_email, '[Komei Hotel] ご予約確定のお知らせ / Reservation Confirmed (' + id + ')', '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
 }
 
 function notifyAdminConfirmed_(id, row) {
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
-    '[Komei Hotel] 決済完了 ' + id + ' ' + getRepName_(row),
+    '[Komei Hotel] 決済完了 ' + id,
     '',
-    { htmlBody: '<p>予約 ' + id + '（' + getRepName_(row) + '）が決済完了し確定しました。</p>' });
+    { htmlBody: '<p>予約 ' + id + ' が決済完了し確定しました。</p>' });
 }
 
 // ============ Drive (Passport) ============
@@ -441,17 +524,6 @@ function savePassportImage_(reservationId, idx, name, base64, mime) {
   const file = folder.createFile(blob);
   // limit to viewer-only access by default; do NOT set public
   return file.getUrl();
-}
-
-// ============ Data Helpers ============
-
-/** Get representative name with fallback for old schema (rep_first_name/rep_last_name) */
-function getRepName_(row) {
-  if (row.rep_name) return String(row.rep_name);
-  const first = row.rep_first_name || '';
-  const last = row.rep_last_name || '';
-  const combined = (String(first) + ' ' + String(last)).trim();
-  return combined || '(unknown)';
 }
 
 // ============ Sheet Helpers ============
@@ -499,6 +571,14 @@ function log_(reservationId, action, detail) {
   sh.appendRow([new Date().toISOString(), reservationId || '', action, detail || '']);
 }
 
+/** Build full display name from first + last */
+function fullName_(row) {
+  const f = String(row.rep_first_name || '').trim();
+  const l = String(row.rep_last_name || '').trim();
+  if (f && l) return f + ' ' + l;
+  return f || l || '';
+}
+
 // ============ Util ============
 
 function jsonResponse(obj) {
@@ -533,6 +613,37 @@ function nightsBetween_(ci, co) {
 }
 
 /**
+ * Mask a name for privacy: '山田太郎' → '山***', 'John Smith' → 'J*** S***'
+ */
+function maskName_(name) {
+  if (!name) return '';
+  const s = String(name).trim();
+  // Detect spaces (Western-style name)
+  if (s.indexOf(' ') !== -1) {
+    return s.split(/\s+/).map(function(w) { return w.charAt(0) + '***'; }).join(' ');
+  }
+  // CJK or single-token name
+  return s.charAt(0) + '***';
+}
+
+/**
+ * Mask an email for privacy: 'user@example.com' → 'u***@e***.com'
+ */
+function maskEmail_(email) {
+  if (!email) return '';
+  const s = String(email).trim();
+  const at = s.indexOf('@');
+  if (at <= 0) return '***';
+  const local = s.substring(0, at);
+  const domain = s.substring(at + 1);
+  const dot = domain.lastIndexOf('.');
+  if (dot <= 0) return local.charAt(0) + '***@***';
+  const domainName = domain.substring(0, dot);
+  const tld = domain.substring(dot);
+  return local.charAt(0) + '***@' + domainName.charAt(0) + '***' + tld;
+}
+
+/**
  * Safely convert a date value (Date object or string) to 'YYYY-MM-DD'.
  * Sheets may auto-convert stored date strings into Date objects;
  * calling toISOString() on those yields UTC which shifts the day in JST.
@@ -550,7 +661,8 @@ function toYMDSafe_(v) {
 
 /**
  * Server-side price computation (fallback when estimated_total is missing).
- * Uses same logic as front-end: nightly rate * nights - 5% discount + cleaning fee.
+ * Dynamic pricing: base ¥30,000 + ¥5,000 per month ahead, year-end overrides.
+ * Max 10% direct-booking discount vs Airbnb.
  */
 function computeEstimatedTotal_(checkin, checkout) {
   // Normalise inputs: Sheets may pass Date objects instead of strings
@@ -560,15 +672,27 @@ function computeEstimatedTotal_(checkin, checkout) {
   }
   checkin  = toYMD(checkin);
   checkout = toYMD(checkout);
-  const DEFAULT_RATE = 40000;
+
   const CLEANING_FEE = 27000;
   const CLEANING_FEE_YEAREND = 35000;
-  const DIRECT_DISCOUNT = 0.05;
-  // Same RATES snapshot as front-end
-  const RATES = {"2026-04-06":37000,"2026-04-07":37000,"2026-04-09":50000,"2026-04-12":40000,"2026-04-17":40000,"2026-04-18":40000,"2026-04-19":40000,"2026-04-20":40000,"2026-04-21":40000,"2026-04-28":38000,"2026-04-29":38000,"2026-04-30":38000,"2026-05-01":38000,"2026-05-02":38000,"2026-05-03":38000,"2026-05-04":38000,"2026-05-05":38000,"2026-05-06":38000,"2026-05-07":38000,"2026-05-08":38000,"2026-05-09":38000,"2026-05-10":38000,"2026-05-11":38000,"2026-05-12":38000,"2026-05-13":38000,"2026-05-14":48000,"2026-05-15":51000,"2026-05-16":60000,"2026-05-17":47000,"2026-05-18":47000,"2026-05-19":46000,"2026-05-20":45000,"2026-05-21":47000,"2026-05-22":50000,"2026-05-23":59000,"2026-05-24":49000,"2026-05-25":38000,"2026-05-26":38000,"2026-05-27":38000,"2026-06-04":41000,"2026-06-05":44000,"2026-06-06":47000,"2026-06-14":39000,"2026-06-15":38000,"2026-06-16":37000,"2026-06-22":40000,"2026-06-23":40000,"2026-06-24":40000,"2026-06-25":40000,"2026-06-26":40000,"2026-07-04":42000,"2026-07-05":42000,"2026-07-06":42000,"2026-07-07":49000,"2026-07-08":47000,"2026-07-09":49000,"2026-07-10":51000,"2026-07-11":55000,"2026-07-12":50000,"2026-07-13":49000,"2026-07-14":48000,"2026-07-15":46000,"2026-07-16":50000,"2026-07-17":56000,"2026-07-18":61000,"2026-07-19":55000,"2026-07-20":47000,"2026-07-21":48000,"2026-07-22":51000,"2026-07-23":49000,"2026-07-24":53000,"2026-07-25":64000,"2026-07-26":47000,"2026-07-27":45000,"2026-07-28":44000,"2026-07-29":44000,"2026-07-30":46000,"2026-07-31":49000,"2026-08-01":59000,"2026-08-10":54000,"2026-08-11":46000,"2026-08-12":44000,"2026-08-13":44000,"2026-08-14":48000,"2026-08-15":49000,"2026-08-16":43000,"2026-08-17":41000,"2026-08-18":41000,"2026-08-19":40000,"2026-08-20":42000,"2026-09-06":43000,"2026-09-07":39000,"2026-09-08":38000,"2026-09-09":37000,"2026-09-10":39000,"2026-09-11":43000,"2026-09-12":48000,"2026-09-13":43000,"2026-09-14":38000,"2026-09-15":36000,"2026-09-16":47000,"2026-09-17":47000,"2026-09-18":54000,"2026-09-30":49000};
+  const DIRECT_DISCOUNT = 0.10; // max 10% off vs Airbnb
+
+  const YEAREND_RATES = {
+    '12-27': 100000, '12-28': 100000, '12-29': 100000,
+    '12-30': 110000, '12-31': 110000, '01-01': 108000, '01-02': 105000
+  };
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
-  function isYearEnd(key) { const md = key.slice(5); return md >= '12-29' || md <= '01-03'; }
+  function isYearEnd(key) { const md = key.slice(5); return YEAREND_RATES[md] !== undefined; }
+  function getRate(dateStr) {
+    const md = dateStr.slice(5);
+    if (YEAREND_RATES[md] !== undefined) return YEAREND_RATES[md];
+    const today = new Date();
+    const todayYM = today.getFullYear() * 12 + today.getMonth();
+    const dateYM = parseInt(dateStr.slice(0, 4)) * 12 + (parseInt(dateStr.slice(5, 7)) - 1);
+    const monthDiff = Math.max(0, dateYM - todayYM);
+    return 30000 + monthDiff * 5000;
+  }
 
   let room = 0, anyYearEnd = false;
   const d = new Date(checkin + 'T00:00:00Z');
@@ -576,7 +700,7 @@ function computeEstimatedTotal_(checkin, checkout) {
   while (d < end) {
     const key = d.getUTCFullYear() + '-' + pad(d.getUTCMonth()+1) + '-' + pad(d.getUTCDate());
     if (isYearEnd(key)) anyYearEnd = true;
-    room += (RATES[key] || DEFAULT_RATE);
+    room += getRate(key);
     d.setUTCDate(d.getUTCDate() + 1);
   }
   const cleaning = anyYearEnd ? CLEANING_FEE_YEAREND : CLEANING_FEE;
@@ -584,452 +708,625 @@ function computeEstimatedTotal_(checkin, checkout) {
   return room - discount + cleaning;
 }
 
-// ============ My Page ============
+// ============ Admin API ============
 
-/**
- * Authenticate guest by reservation_id + email.
- * Returns reservation data if matched.
- */
-function handleMyPageAuth(p) {
-  const id = (p.id || '').trim();
-  const email = (p.email || '').trim().toLowerCase();
-  if (!id || !email) return { ok:false, error:'not_found' };
-
-  const r = findReservationRow_(id);
-  if (!r) return { ok:false, error:'not_found' };
-  if (String(r.row.rep_email).toLowerCase() !== email) return { ok:false, error:'not_found' };
-
-  return {
-    ok: true,
-    reservation: {
-      reservation_id: r.row.id,
-      status: r.row.status,
-      checkin: toYMDSafe_(r.row.checkin),
-      checkout: toYMDSafe_(r.row.checkout),
-      adults: r.row.adults,
-      children: r.row.children,
-      representative_name: getRepName_(r.row),
-      representative_email: r.row.rep_email,
-      representative_phone: r.row.rep_phone,
-      estimated_total: r.row.estimated_total,
-      final_total: r.row.final_total,
-      payment_status: r.row.payment_status
-    }
-  };
+function verifyAdminToken_(token) {
+  if (!token) return false;
+  return token === getProp_('ADMIN_TOKEN');
 }
 
-/**
- * Get messages for a reservation (authenticated by email).
- */
-function handleGetMessages(p) {
-  const id = (p.id || '').trim();
-  const email = (p.email || '').trim().toLowerCase();
-  if (!id || !email) return { ok:false, error:'auth_failed' };
-
-  const r = findReservationRow_(id);
-  if (!r || String(r.row.rep_email).toLowerCase() !== email) return { ok:false, error:'auth_failed' };
-
-  const sh = sheet_('messages');
-  ensureHeaders_(sh, HEADERS_MESSAGES);
-  const data = sh.getDataRange().getValues();
-  const headers = data[0];
-  const messages = [];
-  for (let i = 1; i < data.length; i++) {
-    const row = {};
-    headers.forEach((h, j) => row[h] = data[i][j]);
-    if (row.reservation_id == id) {
-      messages.push({ timestamp: row.ts, sender: row.sender, message: row.message });
-    }
-  }
-  return { ok:true, messages: messages };
-}
-
-/**
- * Guest sends a chat message.
- */
-function handleMyPageMessage(body) {
-  const id = (body.reservation_id || '').trim();
-  const email = (body.email || '').trim().toLowerCase();
-  const message = (body.message || '').trim();
-  if (!id || !email || !message) return { ok:false, error:'missing_fields' };
-
-  const r = findReservationRow_(id);
-  if (!r || String(r.row.rep_email).toLowerCase() !== email) return { ok:false, error:'auth_failed' };
-
-  // Save message
-  const sh = sheet_('messages');
-  ensureHeaders_(sh, HEADERS_MESSAGES);
-  sh.appendRow([new Date().toISOString(), id, 'guest', message]);
-  log_(id, 'mypage_message', 'guest: ' + message.substring(0, 100));
-
-  // Notify admin by email
-  const subject = '[Komei Hotel] ゲストからメッセージ ' + getRepName_(r.row) + ' (' + id + ')';
-  const replyUrl = getProp_('SITE_BASE_URL') + '/mypage.html?id=' + id;
-  const html = '<h3>&#128172; ゲストからのメッセージ</h3>'
-    + '<table cellpadding="6">'
-    + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
-    + '<tr><td>ゲスト名</td><td>' + getRepName_(r.row) + '</td></tr>'
-    + '<tr><td>メール</td><td>' + r.row.rep_email + '</td></tr>'
-    + '</table>'
-    + '<div style="background:#fef3c7;padding:16px;border-radius:8px;margin:16px 0">'
-    + '<p style="white-space:pre-wrap">' + message.replace(/</g, '&lt;') + '</p>'
-    + '</div>'
-    + '<p><b>返信方法:</b> 管理画面のメッセージシートに直接記入するか、GASの <code>sendAdminReply</code> 関数を使用してください。</p>';
-  GmailApp.sendEmail(getProp_('ADMIN_EMAIL'), subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
-
+function handleAdminAuth(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
   return { ok:true };
 }
 
-/**
- * Guest sends a date/guest change request.
- */
-function handleMyPageChangeRequest(body) {
-  const id = (body.reservation_id || '').trim();
-  const email = (body.email || '').trim().toLowerCase();
-  const changeType = body.change_type || 'other';
-  const detail = (body.detail || '').trim();
-  if (!id || !email || !detail) return { ok:false, error:'missing_fields' };
-
-  const r = findReservationRow_(id);
-  if (!r || String(r.row.rep_email).toLowerCase() !== email) return { ok:false, error:'auth_failed' };
-
-  // Save as a message too
-  const sh = sheet_('messages');
-  ensureHeaders_(sh, HEADERS_MESSAGES);
-  const msgText = '[変更リクエスト / Change Request: ' + changeType + ']\n' + detail;
-  sh.appendRow([new Date().toISOString(), id, 'guest', msgText]);
-  log_(id, 'change_request', changeType + ': ' + detail.substring(0, 200));
-
-  // Notify admin
-  const typeLabels = { date:'日程変更', guests:'人数変更', other:'その他' };
-  const subject = '[Komei Hotel] 変更リクエスト ' + getRepName_(r.row) + ' (' + id + ') - ' + (typeLabels[changeType] || changeType);
-  const html = '<h3>&#9999;&#65039; 変更リクエスト</h3>'
-    + '<table cellpadding="6">'
-    + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
-    + '<tr><td>ゲスト名</td><td>' + getRepName_(r.row) + '</td></tr>'
-    + '<tr><td>現在の日程</td><td>' + toYMDSafe_(r.row.checkin) + ' 〜 ' + toYMDSafe_(r.row.checkout) + '</td></tr>'
-    + '<tr><td>ステータス</td><td>' + r.row.status + '</td></tr>'
-    + '<tr><td>カテゴリ</td><td><b>' + (typeLabels[changeType] || changeType) + '</b></td></tr>'
-    + '</table>'
-    + '<div style="background:#fef3c7;padding:16px;border-radius:8px;margin:16px 0">'
-    + '<p style="white-space:pre-wrap">' + detail.replace(/</g, '&lt;') + '</p>'
-    + '</div>'
-    + '<p>マイページのメッセージ機能でゲストに直接返信できます。</p>';
-  GmailApp.sendEmail(getProp_('ADMIN_EMAIL'), subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
-
-  return { ok:true };
-}
-
-/**
- * Admin sends a reply to guest via messages sheet.
- * Run from Apps Script editor: sendAdminReply('R20260409XXXX', 'Your message here')
- */
-function sendAdminReply(reservationId, message) {
-  const r = findReservationRow_(reservationId);
-  if (!r) { Logger.log('Reservation not found'); return; }
-
-  const sh = sheet_('messages');
-  ensureHeaders_(sh, HEADERS_MESSAGES);
-  sh.appendRow([new Date().toISOString(), reservationId, 'host', message]);
-  log_(reservationId, 'admin_reply', message.substring(0, 100));
-
-  // Notify guest by email
-  const base = getProp_('SITE_BASE_URL');
-  const mypageUrl = base + '/mypage.html?id=' + reservationId + '&email=' + encodeURIComponent(r.row.rep_email);
-  const subject = '[Komei Hotel] メッセージが届きました / New message (' + reservationId + ')';
-  const html =
-    '<p>' + getRepName_(r.row) + ' 様</p>'
-    + '<p>Komei Hotelからメッセージが届きました。</p>'
-    + '<div style="background:#f1f5f9;padding:16px;border-radius:8px;margin:16px 0">'
-    + '<p style="white-space:pre-wrap">' + message.replace(/</g, '&lt;') + '</p>'
-    + '</div>'
-    + '<p><a href="' + mypageUrl + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">マイページで返信する / Reply on My Page</a></p>'
-    + '<hr>'
-    + '<p>Dear ' + getRepName_(r.row) + ',<br>You have a new message from Komei Hotel. Click the button above to view and reply.</p>';
-  GmailApp.sendEmail(r.row.rep_email, subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
-  Logger.log('Reply sent to ' + r.row.rep_email);
-}
-
-// ============ Admin Dashboard API ============
-
-/**
- * Verify admin token from request.
- */
-function verifyAdmin_(token) {
-  let stored = getProp_('ADMIN_TOKEN');
-  if (!stored) stored = generateAndStoreAdminToken_();
-  return token === stored;
-}
-
-/**
- * List all reservations (admin only).
- * Supports filtering by status and date range.
- */
-function handleAdminListReservations(body) {
-  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
+function handleAdminList(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
 
   const sh = sheet_('reservations');
   ensureHeaders_(sh, HEADERS_RESERVATIONS);
   const data = sh.getDataRange().getValues();
-  if (data.length <= 1) return { ok:true, reservations:[], stats:{} };
-
-  // Pre-load messages to find unreplied ones per reservation
-  const msh = sheet_('messages');
-  ensureHeaders_(msh, HEADERS_MESSAGES);
-  const mdata = msh.getDataRange().getValues();
-  const mheaders = mdata[0];
-  // Build map: reservation_id -> { lastSender, unrepliedCount }
-  const msgMap = {};
-  for (let i = 1; i < mdata.length; i++) {
-    const mrow = {};
-    mheaders.forEach((h, j) => mrow[h] = mdata[i][j]);
-    const rid = String(mrow.reservation_id);
-    if (!msgMap[rid]) msgMap[rid] = { lastSender: '', unreplied: 0 };
-    if (mrow.sender === 'guest') {
-      msgMap[rid].unreplied++;
-      msgMap[rid].lastSender = 'guest';
-    } else if (mrow.sender === 'host') {
-      msgMap[rid].unreplied = 0; // host replied, reset count
-      msgMap[rid].lastSender = 'host';
-    }
-  }
-
   const headers = data[0];
-  const reservations = [];
-  let totalRevenue = 0, upcoming = 0, pending = 0, needsReply = 0;
-  const now = new Date();
-
+  const allRows = [];
   for (let i = 1; i < data.length; i++) {
     const obj = {};
-    headers.forEach((h, j) => obj[h] = data[i][j]);
-
-    // Apply filters
-    if (body.status_filter && body.status_filter !== 'all' && obj.status !== body.status_filter) continue;
-    if (body.date_from) {
-      const ci = toYMDSafe_(obj.checkin);
-      if (ci < body.date_from) continue;
-    }
-    if (body.date_to) {
-      const ci = toYMDSafe_(obj.checkin);
-      if (ci > body.date_to) continue;
-    }
-
-    const msgInfo = msgMap[String(obj.id)] || { lastSender: '', unreplied: 0 };
-
-    reservations.push({
-      id: obj.id,
-      status: obj.status,
-      checkin: toYMDSafe_(obj.checkin),
-      checkout: toYMDSafe_(obj.checkout),
-      nights: obj.nights,
-      adults: obj.adults,
-      children: obj.children,
-      rep_name: getRepName_(obj),
-      rep_email: obj.rep_email,
-      rep_phone: obj.rep_phone,
-      rep_country: obj.rep_country,
-      estimated_total: obj.estimated_total,
-      final_total: obj.final_total,
-      payment_method: obj.payment_method,
-      payment_status: obj.payment_status,
-      created_at: obj.created_at,
-      updated_at: obj.updated_at,
-      source: obj.source,
-      unreplied: msgInfo.unreplied
-    });
-
-    // Stats
-    if (obj.status === STATUS.PAID) totalRevenue += parseInt(obj.final_total || obj.estimated_total || 0);
-    if (obj.status === STATUS.REQUESTED) pending++;
-    if (msgInfo.unreplied > 0) needsReply++;
-    const ciDate = new Date(toYMDSafe_(obj.checkin) + 'T00:00:00+09:00');
-    if (ciDate >= now && (obj.status === STATUS.PAID || obj.status === STATUS.APPROVED || obj.status === STATUS.REGISTERED)) upcoming++;
+    headers.forEach(function(h, j) { obj[h] = data[i][j]; });
+    allRows.push(obj);
   }
 
-  // Sort by created_at descending (newest first)
-  reservations.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  const unrepliedMap = buildUnrepliedMap_();
 
-  return {
-    ok: true,
-    reservations: reservations,
-    stats: {
-      total: reservations.length,
-      pending: pending,
-      upcoming: upcoming,
-      needs_reply: needsReply,
-      total_revenue: totalRevenue
-    }
-  };
+  const statusFilter = body.status_filter || 'all';
+  const dateFrom = body.date_from || '';
+  const dateTo   = body.date_to   || '';
+
+  const filtered = allRows.filter(function(r) {
+    if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+    if (dateFrom && toYMDSafe_(r.checkin) < dateFrom) return false;
+    if (dateTo   && toYMDSafe_(r.checkin) > dateTo)   return false;
+    return true;
+  });
+
+  const today = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
+
+  const reservations = filtered.map(function(r) {
+    return {
+      id:             r.id,
+      status:         r.status,
+      checkin:        toYMDSafe_(r.checkin),
+      checkout:       toYMDSafe_(r.checkout),
+      nights:         r.nights,
+      adults:         r.adults,
+      children:       r.children,
+      rep_name:       fullName_(r),
+      rep_email:      r.rep_email,
+      estimated_total:r.estimated_total,
+      final_total:    r.final_total,
+      payment_method: r.payment_method,
+      payment_status: r.payment_status,
+      source:         r.source,
+      unreplied:      unrepliedMap[r.id] || 0
+    };
+  }).sort(function(a, b) { return b.id.localeCompare(a.id); });
+
+  return { ok:true, reservations:reservations, stats:buildAdminStats_(allRows, unrepliedMap, today) };
 }
 
-/**
- * Get reservation detail with guests and messages (admin only).
- */
-function handleAdminGetDetail(body) {
-  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
+function buildUnrepliedMap_() {
+  const sh = sheet_('messages');
+  ensureHeaders_(sh, HEADERS_MESSAGES);
+  if (sh.getLastRow() <= 1) return {};
+  const data = sh.getDataRange().getValues();
+  const headers = data[0];
+  const si = headers.indexOf('sender'), ri = headers.indexOf('read_by_host'), ii = headers.indexOf('reservation_id');
+  const map = {};
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][si] === 'guest' && !data[i][ri]) {
+      const rid = String(data[i][ii]);
+      map[rid] = (map[rid] || 0) + 1;
+    }
+  }
+  return map;
+}
 
-  const r = findReservationRow_(body.reservation_id);
-  if (!r) return { ok:false, error:'not_found' };
+function buildAdminStats_(allRows, unrepliedMap, today) {
+  let pending = 0, upcoming = 0, revenue = 0, needsReply = 0;
+  allRows.forEach(function(r) {
+    if (r.status === 'requested') pending++;
+    if (['approved','registered','paid'].indexOf(r.status) >= 0 && toYMDSafe_(r.checkin) >= today) upcoming++;
+    if (r.status === 'paid') revenue += Number(r.final_total || 0);
+    if (unrepliedMap[r.id]) needsReply++;
+  });
+  return { total:allRows.length, pending:pending, upcoming:upcoming, total_revenue:revenue, needs_reply:needsReply };
+}
 
-  // Get guests
+function handleAdminDetail(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  const id = body.reservation_id;
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not found' };
+
+  // Guests
   const gsh = sheet_('guests');
   ensureHeaders_(gsh, HEADERS_GUESTS);
-  const gdata = gsh.getDataRange().getValues();
+  const gdata = gsh.getLastRow() > 1 ? gsh.getDataRange().getValues() : [HEADERS_GUESTS];
   const gheaders = gdata[0];
   const guests = [];
   for (let i = 1; i < gdata.length; i++) {
-    const obj = {};
-    gheaders.forEach((h, j) => obj[h] = gdata[i][j]);
-    if (obj.reservation_id == body.reservation_id) {
-      guests.push(obj);
+    if (String(gdata[i][0]) === id) {
+      const g = {};
+      gheaders.forEach(function(h, j) { g[h] = gdata[i][j]; });
+      guests.push(g);
     }
   }
 
-  // Get messages
-  const msh = sheet_('messages');
-  ensureHeaders_(msh, HEADERS_MESSAGES);
-  const mdata = msh.getDataRange().getValues();
-  const mheaders = mdata[0];
-  const messages = [];
-  for (let i = 1; i < mdata.length; i++) {
-    const obj = {};
-    mheaders.forEach((h, j) => obj[h] = mdata[i][j]);
-    if (obj.reservation_id == body.reservation_id) {
-      messages.push({ timestamp: obj.ts, sender: obj.sender, message: obj.message });
-    }
-  }
+  // Messages — mark guest messages as read by host
+  const messages = getMessages_(id);
+  markMessagesReadByHost_(id);
 
-  // Get logs
+  // Logs (newest first)
   const lsh = sheet_('logs');
   ensureHeaders_(lsh, HEADERS_LOGS);
-  const ldata = lsh.getDataRange().getValues();
+  const ldata = lsh.getLastRow() > 1 ? lsh.getDataRange().getValues() : [HEADERS_LOGS];
   const lheaders = ldata[0];
   const logs = [];
   for (let i = 1; i < ldata.length; i++) {
-    const obj = {};
-    lheaders.forEach((h, j) => obj[h] = ldata[i][j]);
-    if (obj.reservation_id == body.reservation_id) {
-      logs.push({ timestamp: obj.ts, action: obj.action, detail: obj.detail });
+    if (String(ldata[i][1]) === id) {
+      const l = {};
+      lheaders.forEach(function(h, j) { l[h] = String(ldata[i][j]); });
+      l.timestamp = l.ts;
+      logs.push(l);
     }
   }
+  logs.reverse();
+
+  const reservation = {
+    id:             r.row.id,
+    status:         r.row.status,
+    checkin:        toYMDSafe_(r.row.checkin),
+    checkout:       toYMDSafe_(r.row.checkout),
+    nights:         r.row.nights,
+    adults:         r.row.adults,
+    children:       r.row.children,
+    rep_name:       fullName_(r.row),
+    rep_email:      r.row.rep_email,
+    rep_phone:      r.row.rep_phone,
+    rep_country:    r.row.rep_country,
+    estimated_total:r.row.estimated_total,
+    final_total:    r.row.final_total,
+    payment_method: r.row.payment_method,
+    payment_status: r.row.payment_status,
+    source:         r.row.source,
+    notes:          r.row.notes,
+    created_at:     r.row.created_at instanceof Date ? r.row.created_at.toISOString() : String(r.row.created_at)
+  };
+
+  return { ok:true, reservation:reservation, guests:guests, messages:messages, logs:logs };
+}
+
+function handleAdminUpdateStatus(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  const id = body.reservation_id;
+  const newStatus = body.new_status;
+  if (['approved','rejected','cancelled','paid'].indexOf(newStatus) < 0) return { ok:false, error:'invalid status' };
+
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not found' };
+
+  updateReservation_(r.rowIndex, { status:newStatus, updated_at:new Date().toISOString() });
+  log_(id, 'admin_status_change', 'to='+newStatus);
+
+  if (newStatus === 'approved') {
+    let finalTotal = parseInt(r.row.final_total || r.row.estimated_total || 0);
+    if (finalTotal <= 0) finalTotal = computeEstimatedTotal_(r.row.checkin, r.row.checkout);
+    updateReservation_(r.rowIndex, { final_total:finalTotal });
+    notifyGuestApproved_(id, r.row, finalTotal);
+  } else if (newStatus === 'rejected') {
+    notifyGuestRejected_(id, r.row);
+  } else if (newStatus === 'paid') {
+    const latest = findReservationRow_(id);
+    notifyGuestConfirmed_(id, latest ? latest.row : r.row);
+    notifyAdminConfirmed_(id, r.row);
+  }
+
+  return { ok:true };
+}
+
+function handleAdminReply(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  const id = body.reservation_id;
+  const message = (body.message || '').trim();
+  if (!message) return { ok:false, error:'no message' };
+
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not found' };
+
+  addMessage_(id, 'host', message);
+  log_(id, 'admin_reply', message.substring(0, 100));
+
+  const base       = getProp_('SITE_BASE_URL');
+  const mypageUrl  = base + '/mypage.html?id=' + id + '&email=' + encodeURIComponent(r.row.rep_email);
+  const name       = fullName_(r.row);
+  const html =
+    '<p>' + name + ' 様</p>'
+    + '<p>Komei Hotel からメッセージが届いています：</p>'
+    + '<blockquote style="border-left:4px solid #f59e0b;padding:12px;background:#fffbeb;margin:12px 0">'
+    + message.replace(/\n/g,'<br>') + '</blockquote>'
+    + '<p><a href="' + mypageUrl + '" style="background:#f59e0b;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px">マイページで確認 →</a></p>'
+    + '<hr><p>Dear ' + name + ', you have a new message from Komei Hotel. '
+    + '<a href="' + mypageUrl + '">View on My Page →</a></p>';
+  GmailApp.sendEmail(r.row.rep_email,
+    '[Komei Hotel] ホストからメッセージ / Message from Host (' + id + ')',
+    '', { htmlBody:html, name:getProp_('FROM_NAME','Komei Hotel') });
+
+  return { ok:true };
+}
+
+// ============ Mypage API ============
+
+function handleMypageAuth(params) {
+  const id    = (params.id    || '').trim();
+  const email = (params.email || '').trim().toLowerCase();
+  if (!id || !email) return { ok:false, error:'not_found' };
+
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not_found' };
+  if (String(r.row.rep_email).trim().toLowerCase() !== email) return { ok:false, error:'not_found' };
 
   return {
     ok: true,
     reservation: {
-      id: r.row.id,
-      status: r.row.status,
-      checkin: toYMDSafe_(r.row.checkin),
-      checkout: toYMDSafe_(r.row.checkout),
-      nights: r.row.nights,
-      adults: r.row.adults,
-      children: r.row.children,
-      rep_name: getRepName_(r.row),
-      rep_email: r.row.rep_email,
-      rep_phone: r.row.rep_phone,
-      rep_country: r.row.rep_country,
-      estimated_total: r.row.estimated_total,
-      final_total: r.row.final_total,
-      payment_method: r.row.payment_method,
-      payment_status: r.row.payment_status,
-      stripe_session_id: r.row.stripe_session_id,
-      notes: r.row.notes,
-      source: r.row.source,
-      created_at: r.row.created_at,
-      updated_at: r.row.updated_at
-    },
-    guests: guests,
-    messages: messages,
-    logs: logs
+      reservation_id:       r.row.id,
+      status:               r.row.status,
+      checkin:              toYMDSafe_(r.row.checkin),
+      checkout:             toYMDSafe_(r.row.checkout),
+      adults:               r.row.adults,
+      children:             r.row.children,
+      representative_name:  fullName_(r.row),
+      representative_email: r.row.rep_email,
+      estimated_total:      r.row.estimated_total,
+      final_total:          r.row.final_total,
+      payment_status:       r.row.payment_status
+    }
   };
 }
 
-/**
- * Admin sends a reply message to guest (from dashboard).
- */
-function handleAdminReply(body) {
-  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
-
-  const id = (body.reservation_id || '').trim();
-  const message = (body.message || '').trim();
-  if (!id || !message) return { ok:false, error:'missing_fields' };
+function handleGetMessages(params) {
+  const id    = (params.id    || '').trim();
+  const email = (params.email || '').trim().toLowerCase();
+  if (!id || !email) return { ok:false, error:'not_found' };
 
   const r = findReservationRow_(id);
   if (!r) return { ok:false, error:'not_found' };
+  if (String(r.row.rep_email).trim().toLowerCase() !== email) return { ok:false, error:'not_found' };
 
-  // Save message
+  return { ok:true, messages:getMessages_(id) };
+}
+
+function handleMypageMessage(body) {
+  const id      = (body.reservation_id || '').trim();
+  const email   = (body.email          || '').trim().toLowerCase();
+  const message = (body.message        || '').trim();
+  if (!message) return { ok:false, error:'no message' };
+
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not_found' };
+  if (String(r.row.rep_email).trim().toLowerCase() !== email) return { ok:false, error:'not_found' };
+
+  addMessage_(id, 'guest', message);
+  log_(id, 'guest_message', message.substring(0, 100));
+
+  const adminUrl = getProp_('SITE_BASE_URL') + '/admin.html';
+  GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
+    '[Komei Hotel] ゲストからメッセージ / Guest Message (' + id + ')',
+    '',
+    { htmlBody: '<p>予約 <b>' + id + '</b>（' + fullName_(r.row) + '）からメッセージ：</p>'
+        + '<blockquote style="border-left:4px solid #f59e0b;padding:12px;background:#fffbeb">'
+        + message.replace(/\n/g,'<br>') + '</blockquote>'
+        + '<p><a href="' + adminUrl + '">管理画面で確認 →</a></p>' });
+
+  return { ok:true };
+}
+
+function handleMypageChangeRequest(body) {
+  const id         = (body.reservation_id || '').trim();
+  const email      = (body.email          || '').trim().toLowerCase();
+  const changeType = body.change_type || 'other';
+  const detail     = (body.detail         || '').trim();
+  if (!detail) return { ok:false, error:'no detail' };
+
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not_found' };
+  if (String(r.row.rep_email).trim().toLowerCase() !== email) return { ok:false, error:'not_found' };
+
+  const typeLabel = ({ date:'日程変更', guests:'人数変更', other:'その他' })[changeType] || changeType;
+  const fullMsg   = '[変更リクエスト: ' + typeLabel + ']\n' + detail;
+  addMessage_(id, 'guest', fullMsg);
+  log_(id, 'change_request', changeType + ': ' + detail.substring(0, 100));
+
+  const adminUrl = getProp_('SITE_BASE_URL') + '/admin.html';
+  GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
+    '[Komei Hotel] 変更リクエスト / Change Request (' + id + ')',
+    '',
+    { htmlBody: '<p>予約 <b>' + id + '</b>（' + fullName_(r.row) + '）からの変更リクエスト：</p>'
+        + '<p>種類: <b>' + typeLabel + '</b></p>'
+        + '<blockquote style="border-left:4px solid #f59e0b;padding:12px;background:#fffbeb">'
+        + detail.replace(/\n/g,'<br>') + '</blockquote>'
+        + '<p><a href="' + adminUrl + '">管理画面で確認 →</a></p>' });
+
+  return { ok:true };
+}
+
+// ============ Messages Sheet Helpers ============
+
+function addMessage_(reservationId, sender, message) {
+  const sh    = sheet_('messages');
+  ensureHeaders_(sh, HEADERS_MESSAGES);
+  const msgId = 'M' + new Date().getTime() + ('000' + Math.floor(Math.random() * 1000)).slice(-3);
+  sh.appendRow([msgId, reservationId, sender, message, new Date().toISOString(), false]);
+}
+
+function getMessages_(reservationId) {
   const sh = sheet_('messages');
   ensureHeaders_(sh, HEADERS_MESSAGES);
-  sh.appendRow([new Date().toISOString(), id, 'host', message]);
-  log_(id, 'admin_reply', message.substring(0, 100));
-
-  // Notify guest by email
-  const base = getProp_('SITE_BASE_URL');
-  const mypageUrl = base + '/mypage.html?id=' + id + '&email=' + encodeURIComponent(r.row.rep_email);
-  const subject = '[Komei Hotel] メッセージが届きました / New message (' + id + ')';
-  const html =
-    '<p>' + getRepName_(r.row) + ' 様</p>'
-    + '<p>Komei Hotelからメッセージが届きました。</p>'
-    + '<div style="background:#f1f5f9;padding:16px;border-radius:8px;margin:16px 0">'
-    + '<p style="white-space:pre-wrap">' + message.replace(/</g, '&lt;') + '</p>'
-    + '</div>'
-    + '<p><a href="' + mypageUrl + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">マイページで返信する / Reply on My Page</a></p>'
-    + '<hr>'
-    + '<p>Dear ' + getRepName_(r.row) + ',<br>You have a new message from Komei Hotel. Click the button above to view and reply.</p>';
-  GmailApp.sendEmail(r.row.rep_email, subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
-
-  return { ok:true };
+  if (sh.getLastRow() <= 1) return [];
+  const data    = sh.getDataRange().getValues();
+  const headers = data[0];
+  const messages = [];
+  for (let i = 1; i < data.length; i++) {
+    const m = {};
+    headers.forEach(function(h, j) { m[h] = data[i][j]; });
+    if (String(m.reservation_id) === String(reservationId)) {
+      messages.push({
+        id:           m.id,
+        sender:       m.sender,
+        message:      m.message,
+        timestamp:    m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp),
+        read_by_host: m.read_by_host
+      });
+    }
+  }
+  messages.sort(function(a, b) { return a.timestamp.localeCompare(b.timestamp); });
+  return messages;
 }
 
-/**
- * Admin updates reservation status (approve, reject, cancel, mark paid).
- */
-function handleAdminUpdateStatus(body) {
-  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
-
-  const id = (body.reservation_id || '').trim();
-  const newStatus = (body.new_status || '').trim();
-  if (!id || !newStatus) return { ok:false, error:'missing_fields' };
-
-  const validStatuses = [STATUS.APPROVED, STATUS.REJECTED, STATUS.CANCELLED, STATUS.PAID];
-  if (validStatuses.indexOf(newStatus) === -1) return { ok:false, error:'invalid_status' };
-
-  const r = findReservationRow_(id);
-  if (!r) return { ok:false, error:'not_found' };
-
-  const updates = { status: newStatus, updated_at: new Date().toISOString() };
-
-  // If approving, handle final_total
-  if (newStatus === STATUS.APPROVED) {
-    let finalTotal = parseInt(body.final_total || r.row.estimated_total || 0);
-    if (finalTotal <= 0) finalTotal = computeEstimatedTotal_(r.row.checkin, r.row.checkout);
-    updates.final_total = finalTotal;
-    notifyGuestApproved_(id, r.row, finalTotal);
+function markMessagesReadByHost_(reservationId) {
+  const sh = sheet_('messages');
+  if (sh.getLastRow() <= 1) return;
+  const data    = sh.getDataRange().getValues();
+  const headers = data[0];
+  const si  = headers.indexOf('sender');
+  const ri  = headers.indexOf('read_by_host');
+  const idi = headers.indexOf('reservation_id');
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idi]) === String(reservationId)
+        && data[i][si] === 'guest'
+        && !data[i][ri]) {
+      sh.getRange(i + 1, ri + 1).setValue(true);
+    }
   }
-
-  // If marking paid via bank transfer
-  if (newStatus === STATUS.PAID) {
-    updates.payment_status = 'paid';
-    if (!r.row.payment_method) updates.payment_method = 'bank';
-    notifyGuestConfirmed_(id, r.row);
-  }
-
-  // If rejecting
-  if (newStatus === STATUS.REJECTED) {
-    notifyGuestRejected_(id, r.row);
-  }
-
-  updateReservation_(r.rowIndex, updates);
-  log_(id, 'admin_' + newStatus, body.note || '');
-
-  return { ok:true, new_status: newStatus };
 }
 
-/**
- * Admin auth check (validates token).
- */
-function handleAdminAuth(body) {
-  if (!verifyAdmin_(body.admin_token)) return { ok:false, error:'unauthorized' };
-  return { ok:true };
+// ============ Review Handlers ============
+
+function handleSubmitReview(body) {
+  // Verify reservation exists and guest is authorized
+  const rsh = sheet_('reservations');
+  const rData = rsh.getDataRange().getValues();
+  const rHeaders = rData[0];
+  const idIdx = rHeaders.indexOf('id');
+  const emailIdx = rHeaders.indexOf('rep_email');
+  const statusIdx = rHeaders.indexOf('status');
+  const coIdx = rHeaders.indexOf('checkout');
+  const fnIdx = rHeaders.indexOf('rep_first_name');
+  const lnIdx = rHeaders.indexOf('rep_last_name');
+  const countryIdx = rHeaders.indexOf('rep_country');
+
+  let found = null;
+  for (let i = 1; i < rData.length; i++) {
+    if (String(rData[i][idIdx]) === String(body.reservation_id)
+        && String(rData[i][emailIdx]).toLowerCase() === String(body.email).toLowerCase()) {
+      found = rData[i];
+      break;
+    }
+  }
+  if (!found) return { ok: false, error: 'Reservation not found' };
+  if (found[statusIdx] !== 'paid') return { ok: false, error: 'Only completed stays can be reviewed' };
+
+  // Check checkout date has passed
+  const coDate = new Date(found[coIdx]);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (coDate > today) return { ok: false, error: 'Review available after checkout' };
+
+  // Check if already reviewed
+  const revSh = sheet_('reviews');
+  ensureHeaders_(revSh, HEADERS_REVIEWS);
+  if (revSh.getLastRow() > 1) {
+    const revData = revSh.getDataRange().getValues();
+    const revRidIdx = revData[0].indexOf('reservation_id');
+    for (let i = 1; i < revData.length; i++) {
+      if (String(revData[i][revRidIdx]) === String(body.reservation_id)) {
+        return { ok: false, error: 'Already reviewed' };
+      }
+    }
+  }
+
+  // Validate ratings (1-5)
+  const categories = ['overall', 'cleanliness', 'accuracy', 'checkin', 'communication', 'location', 'value'];
+  for (const cat of categories) {
+    const val = Number(body[cat]);
+    if (!val || val < 1 || val > 5) return { ok: false, error: 'Invalid rating for ' + cat };
+  }
+
+  const repName = (found[lnIdx] + ' ' + found[fnIdx]).trim();
+  const reviewId = 'REV-' + Utilities.getUuid().substring(0, 8);
+  const now = new Date().toISOString();
+
+  const row = HEADERS_REVIEWS.map(h => {
+    switch (h) {
+      case 'id': return reviewId;
+      case 'reservation_id': return body.reservation_id;
+      case 'rep_name': return repName;
+      case 'rep_country': return found[countryIdx] || '';
+      case 'overall': return Number(body.overall);
+      case 'cleanliness': return Number(body.cleanliness);
+      case 'accuracy': return Number(body.accuracy);
+      case 'checkin': return Number(body.checkin);
+      case 'communication': return Number(body.communication);
+      case 'location': return Number(body.location);
+      case 'value': return Number(body.value);
+      case 'comment': return (body.comment || '').substring(0, 2000);
+      case 'private_feedback': return (body.private_feedback || '').substring(0, 2000);
+      case 'created_at': return now;
+      case 'published': return false;
+      default: return '';
+    }
+  });
+  revSh.appendRow(row);
+  log_(body.reservation_id, 'review_submitted', 'Overall: ' + body.overall + '/5');
+
+  // Notify admin
+  try {
+    const adminEmail = getProp_('ADMIN_EMAIL');
+    const subject = '【Komei Hotel】新しいレビュー (' + repName + ' ★' + body.overall + ')';
+    const html = '<h3>新しいレビューが投稿されました</h3>'
+      + '<p><b>予約ID:</b> ' + body.reservation_id + '<br>'
+      + '<b>ゲスト:</b> ' + repName + '<br>'
+      + '<b>総合評価:</b> ' + '★'.repeat(body.overall) + ' (' + body.overall + '/5)<br>'
+      + '<b>コメント:</b><br>' + (body.comment || '(なし)').replace(/\n/g, '<br>') + '</p>'
+      + (body.private_feedback ? '<p><b>プライベートフィードバック:</b><br>' + body.private_feedback.replace(/\n/g, '<br>') + '</p>' : '')
+      + '<p><a href="' + getProp_('SITE_BASE_URL') + '/admin.html">管理画面で確認</a></p>';
+    MailApp.sendEmail({ to: adminEmail, subject: subject, htmlBody: html, name: getProp_('FROM_NAME') || 'Komei Hotel' });
+  } catch (e) {
+    log_(body.reservation_id, 'review_notify_error', e.toString());
+  }
+
+  return { ok: true };
+}
+
+function handleAdminListReviews(body) {
+  if (!verifyAdmin_(body.admin_token)) return { ok: false, error: 'unauthorized' };
+
+  const sh = sheet_('reviews');
+  ensureHeaders_(sh, HEADERS_REVIEWS);
+  if (sh.getLastRow() <= 1) return { ok: true, reviews: [], stats: { total: 0, avg: 0, published: 0 } };
+
+  const data = sh.getDataRange().getValues();
+  const headers = data[0];
+  const reviews = [];
+  let totalOverall = 0;
+  let pubCount = 0;
+
+  for (let i = 1; i < data.length; i++) {
+    const obj = {};
+    headers.forEach((h, j) => { obj[h] = data[i][j]; });
+    reviews.push(obj);
+    totalOverall += Number(obj.overall) || 0;
+    if (obj.published) pubCount++;
+  }
+
+  reviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  return {
+    ok: true,
+    reviews: reviews,
+    stats: {
+      total: reviews.length,
+      avg: reviews.length > 0 ? Math.round((totalOverall / reviews.length) * 10) / 10 : 0,
+      published: pubCount
+    }
+  };
+}
+
+function handleAdminToggleReview(body) {
+  if (!verifyAdmin_(body.admin_token)) return { ok: false, error: 'unauthorized' };
+  if (!body.review_id) return { ok: false, error: 'review_id required' };
+
+  const sh = sheet_('reviews');
+  ensureHeaders_(sh, HEADERS_REVIEWS);
+  if (sh.getLastRow() <= 1) return { ok: false, error: 'No reviews' };
+
+  const data = sh.getDataRange().getValues();
+  const headers = data[0];
+  const idIdx = headers.indexOf('id');
+  const pubIdx = headers.indexOf('published');
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idIdx]) === String(body.review_id)) {
+      const newVal = !data[i][pubIdx];
+      sh.getRange(i + 1, pubIdx + 1).setValue(newVal);
+      log_(data[i][headers.indexOf('reservation_id')], 'review_publish_toggle', newVal ? 'published' : 'unpublished');
+      return { ok: true, published: newVal };
+    }
+  }
+  return { ok: false, error: 'Review not found' };
+}
+
+function handlePublicReviews() {
+  const sh = sheet_('reviews');
+  ensureHeaders_(sh, HEADERS_REVIEWS);
+  if (sh.getLastRow() <= 1) return { ok: true, reviews: [], avg: {}, count: 0 };
+
+  const data = sh.getDataRange().getValues();
+  const headers = data[0];
+  const reviews = [];
+  const sums = { overall: 0, cleanliness: 0, accuracy: 0, checkin: 0, communication: 0, location: 0, value: 0 };
+
+  for (let i = 1; i < data.length; i++) {
+    const obj = {};
+    headers.forEach((h, j) => { obj[h] = data[i][j]; });
+    if (!obj.published) continue;
+    // Public: exclude private_feedback
+    reviews.push({
+      rep_name: obj.rep_name,
+      rep_country: obj.rep_country,
+      overall: obj.overall,
+      cleanliness: obj.cleanliness,
+      accuracy: obj.accuracy,
+      checkin: obj.checkin,
+      communication: obj.communication,
+      location: obj.location,
+      value: obj.value,
+      comment: obj.comment,
+      created_at: obj.created_at
+    });
+    for (const k in sums) sums[k] += Number(obj[k]) || 0;
+  }
+
+  const count = reviews.length;
+  const avg = {};
+  if (count > 0) {
+    for (const k in sums) avg[k] = Math.round((sums[k] / count) * 10) / 10;
+  }
+
+  reviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  return { ok: true, reviews: reviews, avg: avg, count: count };
+}
+
+// ============ Review Request Email (Daily Trigger) ============
+
+function sendReviewRequestEmails() {
+  const sh = sheet_('reservations');
+  const data = sh.getDataRange().getValues();
+  const headers = data[0];
+  const idx = (h) => headers.indexOf(h);
+
+  const revSh = sheet_('reviews');
+  ensureHeaders_(revSh, HEADERS_REVIEWS);
+  const reviewedIds = new Set();
+  if (revSh.getLastRow() > 1) {
+    const revData = revSh.getDataRange().getValues();
+    const ridIdx = revData[0].indexOf('reservation_id');
+    for (let i = 1; i < revData.length; i++) {
+      reviewedIds.add(String(revData[i][ridIdx]));
+    }
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = Utilities.formatDate(yesterday, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+
+  const baseUrl = getProp_('SITE_BASE_URL') || '';
+  const fromName = getProp_('FROM_NAME') || 'Komei Hotel';
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (row[idx('status')] !== 'paid') continue;
+
+    const coStr = String(row[idx('checkout')]).substring(0, 10);
+    if (coStr !== yStr) continue;
+
+    const rid = String(row[idx('id')]);
+    if (reviewedIds.has(rid)) continue;
+
+    const email = row[idx('rep_email')];
+    const name = (row[idx('rep_last_name')] + ' ' + row[idx('rep_first_name')]).trim();
+    const token = row[idx('token')];
+
+    const mypageUrl = baseUrl + '/mypage.html?id=' + rid + '&email=' + encodeURIComponent(email);
+    const subject = '【Komei Hotel】ご宿泊ありがとうございました — レビューのお願い';
+    const html = '<div style="max-width:600px;margin:0 auto;font-family:sans-serif;">'
+      + '<h2 style="color:#d97706;">Komei Hotel 光明荘</h2>'
+      + '<p>' + name + ' 様</p>'
+      + '<p>この度はKomei Hotelにご宿泊いただき、誠にありがとうございました。</p>'
+      + '<p>ご滞在はいかがでしたか？今後のサービス向上のため、ぜひレビューをお聞かせください。</p>'
+      + '<p style="text-align:center;margin:30px 0;">'
+      + '<a href="' + mypageUrl + '" style="display:inline-block;background:#f59e0b;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">レビューを書く</a>'
+      + '</p>'
+      + '<p style="color:#94a3b8;font-size:13px;">マイページにログイン後、「レビュー」タブからご記入いただけます。</p>'
+      + '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">'
+      + '<p style="color:#94a3b8;font-size:12px;">Komei Hotel 光明荘<br>〒130-0005 東京都墨田区東駒形20-5<br>komei.hotel@gmail.com</p>'
+      + '</div>';
+
+    try {
+      MailApp.sendEmail({ to: email, subject: subject, htmlBody: html, name: fromName });
+      log_(rid, 'review_request_sent', email);
+    } catch (e) {
+      log_(rid, 'review_request_error', e.toString());
+    }
+  }
 }
 
 // ============ One-time Setup ============
@@ -1041,6 +1338,30 @@ function initialize() {
   ensureHeaders_(sheet_('guests'), HEADERS_GUESTS);
   ensureHeaders_(sheet_('logs'), HEADERS_LOGS);
   ensureHeaders_(sheet_('messages'), HEADERS_MESSAGES);
+  ensureHeaders_(sheet_('reviews'), HEADERS_REVIEWS);
   generateAndStoreAdminToken_();
-  Logger.log('Initialized. ADMIN_TOKEN: ' + getProp_('ADMIN_TOKEN'));
+  Logger.log('Initialized. ADMIN_TOKEN=' + getProp_('ADMIN_TOKEN'));
 }
+
+/**
+ * Run once to set up daily review request trigger.
+ * GASエディタで手動実行してください。
+ */
+function setupReviewTrigger() {
+  // Remove existing triggers for this function
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'sendReviewRequestEmails') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+  // Create daily trigger at 10:00 AM JST
+  ScriptApp.newTrigger('sendReviewRequestEmails')
+    .timeBased()
+    .atHour(10)
+    .everyDays(1)
+    .inTimezone('Asia/Tokyo')
+    .create();
+  Logger.log('Review request email trigger set for 10:00 AM daily.');
+}
+
+// manualResend wrapper removed (was one-time debug tool)

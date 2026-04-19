@@ -45,6 +45,11 @@
   .status-cancelled  { background: #fee2e2; color: #991b1b; }
   .status-rejected   { background: #fee2e2; color: #991b1b; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .star-btn { width:36px; height:36px; cursor:pointer; transition:transform 0.15s; display:inline-flex; align-items:center; justify-content:center; }
+  .star-btn:hover { transform:scale(1.2); }
+  .star-btn svg { width:28px; height:28px; }
+  .star-btn.active svg { fill:#f59e0b; stroke:#f59e0b; }
+  .star-btn:not(.active) svg { fill:#e2e8f0; stroke:#cbd5e1; }
 </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -145,6 +150,9 @@
       </button>
       <button onclick="switchTab('change')" data-tab="change" class="tab-btn flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-transparent rounded-t-lg transition">
         <span class="lang-ja">✏️ 変更リクエスト</span><span class="lang-en">✏️ Change Request</span><span class="lang-zh">✏️ 变更申请</span><span class="lang-ko">✏️ 변경 요청</span>
+      </button>
+      <button onclick="switchTab('review')" data-tab="review" id="reviewTabBtn" class="tab-btn flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 border-transparent rounded-t-lg transition hidden">
+        <span class="lang-ja">⭐ レビュー</span><span class="lang-en">⭐ Review</span><span class="lang-zh">⭐ 评价</span><span class="lang-ko">⭐ 리뷰</span>
       </button>
     </div>
   </div>
@@ -329,6 +337,113 @@
     </div>
   </div>
 
+  <!-- TAB: Review -->
+  <div id="tab-review" class="tab-content max-w-4xl mx-auto px-4 mt-4">
+    <!-- Already reviewed state -->
+    <div id="reviewDone" class="hidden bg-white rounded-2xl shadow p-6 text-center">
+      <div class="text-5xl mb-3">🎉</div>
+      <h3 class="font-bold text-lg mb-2">
+        <span class="lang-ja">レビューをいただきありがとうございます！</span>
+        <span class="lang-en">Thank you for your review!</span>
+      </h3>
+      <p class="text-slate-500 text-sm">
+        <span class="lang-ja">いただいたフィードバックはサービス向上に活用させていただきます。</span>
+        <span class="lang-en">Your feedback helps us improve our service.</span>
+      </p>
+    </div>
+    <!-- Review form -->
+    <div id="reviewForm" class="bg-white rounded-2xl shadow p-6">
+      <h3 class="font-bold text-lg mb-2">
+        <span class="lang-ja">⭐ 宿泊体験を評価</span><span class="lang-en">⭐ Rate Your Stay</span>
+      </h3>
+      <p class="text-sm text-slate-500 mb-6">
+        <span class="lang-ja">Komei Hotelでのご滞在はいかがでしたか？今後のサービス向上のためぜひご感想をお聞かせください。</span>
+        <span class="lang-en">How was your stay at Komei Hotel? Your feedback helps us improve.</span>
+      </p>
+
+      <!-- Star Ratings -->
+      <div class="space-y-5 mb-6">
+        <div class="star-row" data-cat="overall">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm font-semibold"><span class="lang-ja">総合評価</span><span class="lang-en">Overall</span></span>
+            <span class="text-xs text-slate-400 star-label"></span>
+          </div>
+          <div class="flex gap-1 star-group"></div>
+        </div>
+        <hr class="border-slate-100">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div class="star-row" data-cat="cleanliness">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium"><span class="lang-ja">清潔さ</span><span class="lang-en">Cleanliness</span></span>
+              <span class="text-xs text-slate-400 star-label"></span>
+            </div>
+            <div class="flex gap-1 star-group"></div>
+          </div>
+          <div class="star-row" data-cat="accuracy">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium"><span class="lang-ja">正確さ</span><span class="lang-en">Accuracy</span></span>
+              <span class="text-xs text-slate-400 star-label"></span>
+            </div>
+            <div class="flex gap-1 star-group"></div>
+          </div>
+          <div class="star-row" data-cat="checkin">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium"><span class="lang-ja">チェックイン</span><span class="lang-en">Check-in</span></span>
+              <span class="text-xs text-slate-400 star-label"></span>
+            </div>
+            <div class="flex gap-1 star-group"></div>
+          </div>
+          <div class="star-row" data-cat="communication">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium"><span class="lang-ja">コミュニケーション</span><span class="lang-en">Communication</span></span>
+              <span class="text-xs text-slate-400 star-label"></span>
+            </div>
+            <div class="flex gap-1 star-group"></div>
+          </div>
+          <div class="star-row" data-cat="location">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium"><span class="lang-ja">ロケーション</span><span class="lang-en">Location</span></span>
+              <span class="text-xs text-slate-400 star-label"></span>
+            </div>
+            <div class="flex gap-1 star-group"></div>
+          </div>
+          <div class="star-row" data-cat="value">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium"><span class="lang-ja">コスパ</span><span class="lang-en">Value</span></span>
+              <span class="text-xs text-slate-400 star-label"></span>
+            </div>
+            <div class="flex gap-1 star-group"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comment -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">
+          <span class="lang-ja">コメント（公開されます）</span><span class="lang-en">Public Comment</span>
+        </label>
+        <textarea id="reviewComment" rows="4" maxlength="2000"
+                  class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm"
+                  placeholder="宿泊の感想をお聞かせください..."></textarea>
+      </div>
+      <!-- Private feedback -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium mb-1">
+          <span class="lang-ja">ホストへのプライベートメッセージ（非公開）</span><span class="lang-en">Private Feedback (not published)</span>
+        </label>
+        <textarea id="reviewPrivate" rows="3" maxlength="2000"
+                  class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm"
+                  placeholder="改善点やホストだけに伝えたいことがあれば..."></textarea>
+      </div>
+
+      <div id="reviewError" class="hidden text-red-600 text-sm bg-red-50 p-3 rounded-lg mb-3"></div>
+      <button onclick="submitReview()" id="reviewSubmitBtn"
+              class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition">
+        <span class="lang-ja">レビューを送信</span><span class="lang-en">Submit Review</span>
+      </button>
+    </div>
+  </div>
+
 </div>
 
 <!-- Footer -->
@@ -378,11 +493,12 @@ function handleLogin(e) {
     .then(r => r.json())
     .then(data => {
       if (data.ok) {
-        currentAuth = { id, email };
+        currentAuth = { id, email, reservation: data.reservation };
         currentReservation = data.reservation;
         sessionStorage.setItem('komei_auth', JSON.stringify(currentAuth));
         showDashboard();
         loadMessages();
+        checkReviewEligibility();
       } else {
         errDiv.textContent = data.error === 'not_found'
           ? (document.documentElement.lang === 'en' ? 'Reservation not found or email does not match.' : '予約が見つかりません。予約IDまたはメールアドレスをご確認ください。')
@@ -612,6 +728,109 @@ function sendChangeRequest(e) {
   })
   .finally(() => { btn.disabled = false; });
   return false;
+}
+
+// ===== Review =====
+const reviewRatings = {};
+
+function initStarRatings() {
+  document.querySelectorAll('.star-row').forEach(row => {
+    const cat = row.dataset.cat;
+    const group = row.querySelector('.star-group');
+    reviewRatings[cat] = 0;
+    const starSvg = '<svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+    for (let i = 1; i <= 5; i++) {
+      const btn = document.createElement('span');
+      btn.className = 'star-btn';
+      btn.innerHTML = starSvg;
+      btn.dataset.val = i;
+      btn.onclick = function() {
+        reviewRatings[cat] = i;
+        row.querySelectorAll('.star-btn').forEach((s, idx) => {
+          s.classList.toggle('active', idx < i);
+        });
+        const labels = {ja:['','ひどい','不満','普通','良い','最高！'], en:['','Terrible','Poor','OK','Good','Excellent!']};
+        const l = document.documentElement.lang || 'ja';
+        row.querySelector('.star-label').textContent = (labels[l] || labels.ja)[i];
+      };
+      group.appendChild(btn);
+    }
+  });
+}
+
+function checkReviewEligibility() {
+  if (!currentAuth || !currentAuth.reservation) return;
+  const r = currentAuth.reservation;
+  if (r.status !== 'paid') return;
+  const co = new Date(r.checkout);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (co > today) return;
+  // Show review tab
+  document.getElementById('reviewTabBtn').classList.remove('hidden');
+  initStarRatings();
+}
+
+function submitReview() {
+  const errDiv = document.getElementById('reviewError');
+  errDiv.classList.add('hidden');
+  const cats = ['overall','cleanliness','accuracy','checkin','communication','location','value'];
+  for (const c of cats) {
+    if (!reviewRatings[c]) {
+      const l = document.documentElement.lang || 'ja';
+      errDiv.textContent = l === 'en' ? 'Please rate all categories.' : 'すべての項目を評価してください。';
+      errDiv.classList.remove('hidden');
+      return;
+    }
+  }
+  const btn = document.getElementById('reviewSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  const payload = {
+    type: 'submit_review',
+    reservation_id: currentAuth.id,
+    email: currentAuth.email,
+    overall: reviewRatings.overall,
+    cleanliness: reviewRatings.cleanliness,
+    accuracy: reviewRatings.accuracy,
+    checkin: reviewRatings.checkin,
+    communication: reviewRatings.communication,
+    location: reviewRatings.location,
+    value: reviewRatings.value,
+    comment: document.getElementById('reviewComment').value.trim(),
+    private_feedback: document.getElementById('reviewPrivate').value.trim()
+  };
+
+  fetch(GAS_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      document.getElementById('reviewForm').classList.add('hidden');
+      document.getElementById('reviewDone').classList.remove('hidden');
+    } else {
+      if (data.error === 'Already reviewed') {
+        document.getElementById('reviewForm').classList.add('hidden');
+        document.getElementById('reviewDone').classList.remove('hidden');
+      } else {
+        errDiv.textContent = data.error || 'Error';
+        errDiv.classList.remove('hidden');
+      }
+    }
+  })
+  .catch(() => {
+    errDiv.textContent = 'Connection error';
+    errDiv.classList.remove('hidden');
+  })
+  .finally(() => {
+    btn.disabled = false;
+    const l = document.documentElement.lang || 'ja';
+    btn.textContent = l === 'en' ? 'Submit Review' : 'レビューを送信';
+  });
 }
 
 // ===== Util =====

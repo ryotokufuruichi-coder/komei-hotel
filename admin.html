@@ -50,7 +50,8 @@
         <h1 class="text-lg font-bold">Komei Hotel <span class="text-amber-500">Admin</span></h1>
       </div>
       <div class="flex items-center gap-4">
-        <button onclick="loadReservations()" class="text-sm text-slate-500 hover:text-amber-600" title="更新">&#x21BB; 更新</button>
+        <button onclick="showReviewsPanel()" class="text-sm text-amber-600 hover:text-amber-700 font-medium">⭐ レビュー管理</button>
+        <button onclick="loadReservations();showListView()" class="text-sm text-slate-500 hover:text-amber-600" title="更新">&#x21BB; 更新</button>
         <button onclick="doLogout()" class="text-sm text-slate-500 hover:text-red-500">ログアウト</button>
       </div>
     </div>
@@ -83,7 +84,7 @@
   </div>
 
   <!-- Filters -->
-  <div class="max-w-7xl mx-auto px-4 pb-2">
+  <div id="filtersBar" class="max-w-7xl mx-auto px-4 pb-2">
     <div class="flex flex-wrap items-center gap-3 bg-white rounded-xl p-3 shadow-sm">
       <label class="text-sm font-medium">ステータス:</label>
       <select id="filterStatus" onchange="loadReservations()" class="border rounded-lg px-3 py-1.5 text-sm">
@@ -170,6 +171,32 @@
         <div id="detailLogs"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Reviews Panel -->
+  <div id="reviewsPanel" class="hidden max-w-7xl mx-auto px-4 py-4">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-bold">⭐ レビュー管理</h2>
+      <button onclick="showListView()" class="text-sm text-slate-500 hover:text-amber-600">← 予約一覧に戻る</button>
+    </div>
+    <!-- Review Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-4">
+      <div class="bg-white rounded-xl p-4 shadow-sm text-center">
+        <div class="text-xs text-slate-500 mb-1">レビュー総数</div>
+        <div id="revStatTotal" class="text-2xl font-bold">-</div>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm text-center">
+        <div class="text-xs text-slate-500 mb-1">平均評価</div>
+        <div id="revStatAvg" class="text-2xl font-bold text-amber-500">-</div>
+      </div>
+      <div class="bg-white rounded-xl p-4 shadow-sm text-center">
+        <div class="text-xs text-slate-500 mb-1">公開中</div>
+        <div id="revStatPub" class="text-2xl font-bold text-green-600">-</div>
+      </div>
+    </div>
+    <!-- Review List -->
+    <div id="reviewsList" class="space-y-4"></div>
+    <div id="reviewsEmpty" class="hidden text-center py-12 text-slate-400 bg-white rounded-xl shadow-sm">レビューはまだありません</div>
   </div>
 
   <!-- Loading overlay -->
@@ -512,6 +539,87 @@ function formatDate(d) {
 
 function showLoading(show) {
   document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
+}
+
+// ============ Reviews ============
+function showListView() {
+  document.getElementById('reviewsPanel').classList.add('hidden');
+  document.getElementById('statsBar').classList.remove('hidden');
+  document.getElementById('listView').classList.remove('hidden');
+  document.getElementById('filtersBar').classList.remove('hidden'); // filters
+}
+
+async function showReviewsPanel() {
+  // Hide reservation views
+  document.getElementById('statsBar').classList.add('hidden');
+  document.getElementById('listView').classList.add('hidden');
+  document.getElementById('filtersBar').classList.add('hidden'); // filters
+  document.getElementById('reviewsPanel').classList.remove('hidden');
+
+  showLoading(true);
+  try {
+    const res = await api('admin_list_reviews');
+    if (!res.ok) { alert('エラー: ' + res.error); return; }
+
+    document.getElementById('revStatTotal').textContent = res.stats.total;
+    document.getElementById('revStatAvg').textContent = res.stats.avg ? '★' + res.stats.avg : '-';
+    document.getElementById('revStatPub').textContent = res.stats.published;
+
+    const list = document.getElementById('reviewsList');
+    const empty = document.getElementById('reviewsEmpty');
+
+    if (res.reviews.length === 0) {
+      list.innerHTML = '';
+      empty.classList.remove('hidden');
+    } else {
+      empty.classList.add('hidden');
+      list.innerHTML = res.reviews.map(r => {
+        const stars = '★'.repeat(r.overall) + '☆'.repeat(5 - r.overall);
+        const cats = [
+          { label:'清潔さ', val:r.cleanliness }, { label:'正確さ', val:r.accuracy },
+          { label:'チェックイン', val:r.checkin }, { label:'コミュニケーション', val:r.communication },
+          { label:'ロケーション', val:r.location }, { label:'コスパ', val:r.value }
+        ];
+        return `
+          <div class="bg-white rounded-xl shadow-sm p-5 ${r.published ? 'ring-2 ring-green-200' : ''}">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="font-bold">${esc(r.rep_name)} <span class="text-slate-400 text-xs font-normal">${esc(r.rep_country || '')}</span></div>
+                <div class="text-amber-500 text-lg">${stars} <span class="text-sm text-slate-600">${r.overall}/5</span></div>
+                <div class="text-xs text-slate-400 mt-1">予約: ${esc(r.reservation_id)} ｜ ${formatDate(r.created_at)}</div>
+              </div>
+              <button onclick="toggleReview('${esc(r.id)}')" class="px-4 py-2 rounded-lg text-sm font-medium transition ${r.published
+                ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700'
+                : 'bg-slate-100 text-slate-600 hover:bg-green-100 hover:text-green-700'
+              }">${r.published ? '✓ 公開中 (取消)' : '公開する'}</button>
+            </div>
+            <div class="flex flex-wrap gap-3 mb-3 text-xs">
+              ${cats.map(c => `<span class="bg-slate-50 px-2 py-1 rounded">${c.label}: ${'★'.repeat(c.val)}${'☆'.repeat(5 - c.val)}</span>`).join('')}
+            </div>
+            ${r.comment ? '<div class="bg-slate-50 rounded-lg p-3 text-sm mb-2"><b>コメント:</b><br>' + esc(r.comment) + '</div>' : ''}
+            ${r.private_feedback ? '<div class="bg-amber-50 rounded-lg p-3 text-sm"><b>🔒 プライベートフィードバック:</b><br>' + esc(r.private_feedback) + '</div>' : ''}
+          </div>`;
+      }).join('');
+    }
+  } catch (e) {
+    alert('レビュー読み込みエラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+async function toggleReview(reviewId) {
+  showLoading(true);
+  try {
+    const res = await api('admin_toggle_review', { review_id: reviewId });
+    if (res.ok) {
+      showReviewsPanel(); // Refresh
+    } else {
+      alert('エラー: ' + res.error);
+    }
+  } catch (e) {
+    alert('操作エラー: ' + e.message);
+  }
+  showLoading(false);
 }
 
 // ============ Init ============

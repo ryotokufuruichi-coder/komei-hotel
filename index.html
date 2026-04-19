@@ -170,6 +170,7 @@
       <a href="#features" class="hover:text-amber-600"><span class="lang-ja">設備</span><span class="lang-en">Amenities</span><span class="lang-zh">设施</span><span class="lang-ko">시설</span></a>
       <a href="#access" class="hover:text-amber-600"><span class="lang-ja">アクセス</span><span class="lang-en">Access</span><span class="lang-zh">交通</span><span class="lang-ko">오시는 길</span></a>
       <a href="#availability" class="hover:text-amber-600"><span class="lang-ja">空室</span><span class="lang-en">Availability</span><span class="lang-zh">空房</span><span class="lang-ko">예약 가능</span></a>
+      <a href="#reviews" class="hover:text-amber-600"><span class="lang-ja">レビュー</span><span class="lang-en">Reviews</span><span class="lang-zh">评价</span><span class="lang-ko">리뷰</span></a>
       <a href="mypage.html" class="hover:text-amber-600"><span class="lang-ja">マイページ</span><span class="lang-en">My Page</span><span class="lang-zh">我的页面</span><span class="lang-ko">마이페이지</span></a>
       <a href="booking.html" class="px-4 py-2 rounded-full bg-amber-500 text-white font-semibold hover:bg-amber-600 transition">
         <span class="lang-ja">直接予約</span><span class="lang-en">Book Now</span><span class="lang-zh">直接预订</span><span class="lang-ko">직접 예약</span>
@@ -730,6 +731,98 @@
   }
   grid.addEventListener('click', handleClick);
   clearBtn.addEventListener('click', function(){ sel.ci=null; sel.co=null; updateSel(); });
+})();
+</script>
+
+<!-- Reviews -->
+<section id="reviews" class="py-20 px-4 bg-slate-50">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl md:text-4xl font-bold mb-3">
+        <span class="lang-ja">ゲストレビュー</span><span class="lang-en">Guest Reviews</span><span class="lang-zh">客人评价</span><span class="lang-ko">게스트 리뷰</span>
+      </h2>
+      <p class="text-slate-500">
+        <span class="lang-ja">実際にご宿泊いただいたゲストの声</span><span class="lang-en">What our guests say about their stay</span><span class="lang-zh">住客的真实评价</span><span class="lang-ko">실제 투숙객의 후기</span>
+      </p>
+    </div>
+    <!-- Avg summary -->
+    <div id="reviewSummary" class="hidden bg-white rounded-2xl shadow p-6 mb-8">
+      <div class="flex flex-col sm:flex-row items-center gap-6">
+        <div class="text-center">
+          <div id="reviewAvgScore" class="text-5xl font-bold text-amber-500"></div>
+          <div id="reviewAvgStars" class="text-amber-400 text-xl mt-1"></div>
+          <div id="reviewCount" class="text-sm text-slate-500 mt-1"></div>
+        </div>
+        <div class="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm" id="reviewAvgCats"></div>
+      </div>
+    </div>
+    <!-- Review cards -->
+    <div id="reviewCards" class="grid md:grid-cols-2 gap-6"></div>
+    <!-- No reviews placeholder -->
+    <div id="reviewsPlaceholder" class="text-center py-12 text-slate-400">
+      <span class="lang-ja">レビューはまだありません</span><span class="lang-en">No reviews yet</span>
+    </div>
+  </div>
+</section>
+<script>
+(function(){
+  var API = 'https://script.google.com/macros/s/AKfycbx6JO_l8Hhb5pQCIZkBTgEkChylOcD4e32JuCcCG-XtvuaQ6I5qacd7UuyeHQ8fnOZR/exec';
+  fetch(API + '?action=public_reviews')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.ok || data.count === 0) return;
+      document.getElementById('reviewsPlaceholder').classList.add('hidden');
+      var s = document.getElementById('reviewSummary');
+      s.classList.remove('hidden');
+      document.getElementById('reviewAvgScore').textContent = data.avg.overall;
+      var fullStars = Math.floor(data.avg.overall);
+      var stars = '';
+      for(var i=0;i<fullStars;i++) stars += '★';
+      if(data.avg.overall % 1 >= 0.5) stars += '★';
+      for(var i=stars.length;i<5;i++) stars += '☆';
+      document.getElementById('reviewAvgStars').textContent = stars;
+      var l = document.documentElement.lang || 'ja';
+      var countText = { ja: data.count + '件のレビュー', en: data.count + ' reviews', zh: data.count + '条评价', ko: data.count + '개 리뷰' };
+      document.getElementById('reviewCount').textContent = countText[l] || countText.ja;
+
+      var catLabels = {
+        ja: { cleanliness:'清潔さ', accuracy:'正確さ', checkin:'チェックイン', communication:'コミュニケーション', location:'ロケーション', value:'コスパ' },
+        en: { cleanliness:'Cleanliness', accuracy:'Accuracy', checkin:'Check-in', communication:'Communication', location:'Location', value:'Value' }
+      };
+      var labels = catLabels[l] || catLabels.ja;
+      var catsHtml = '';
+      ['cleanliness','accuracy','checkin','communication','location','value'].forEach(function(k){
+        var v = data.avg[k] || 0;
+        var pct = (v/5*100).toFixed(0);
+        catsHtml += '<div class="flex items-center gap-2"><span class="w-28 text-slate-600">' + labels[k] + '</span>'
+          + '<div class="flex-1 bg-slate-100 rounded-full h-2"><div class="bg-amber-400 h-2 rounded-full" style="width:'+pct+'%"></div></div>'
+          + '<span class="text-amber-600 font-semibold w-8 text-right">' + v + '</span></div>';
+      });
+      document.getElementById('reviewAvgCats').innerHTML = catsHtml;
+
+      var cards = document.getElementById('reviewCards');
+      var html = '';
+      data.reviews.forEach(function(r){
+        var rStars = '';
+        for(var i=0;i<r.overall;i++) rStars += '★';
+        for(var i=r.overall;i<5;i++) rStars += '☆';
+        var d = r.created_at ? new Date(r.created_at) : null;
+        var dateStr = d ? d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate() : '';
+        var country = r.rep_country ? ' · ' + r.rep_country : '';
+        var initials = (r.rep_name || '?').substring(0, 1);
+        html += '<div class="bg-white rounded-2xl shadow p-6">'
+          + '<div class="flex items-center gap-3 mb-3">'
+          + '<div class="w-10 h-10 rounded-full bg-amber-100 text-amber-700 grid place-items-center font-bold">' + initials + '</div>'
+          + '<div><div class="font-semibold">' + (r.rep_name || 'Guest') + '<span class="text-slate-400 text-xs font-normal">' + country + '</span></div>'
+          + '<div class="text-xs text-slate-400">' + dateStr + '</div></div>'
+          + '</div>'
+          + '<div class="text-amber-500 mb-2">' + rStars + ' <span class="text-sm text-slate-600">' + r.overall + '/5</span></div>'
+          + (r.comment ? '<p class="text-sm text-slate-700">' + r.comment.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') + '</p>' : '')
+          + '</div>';
+      });
+      cards.innerHTML = html;
+    })
+    .catch(function(){});
 })();
 </script>
 
