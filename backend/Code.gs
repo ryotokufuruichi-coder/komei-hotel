@@ -41,11 +41,6 @@ const HEADERS_GUESTS = [
 ];
 const HEADERS_LOGS = ['ts','reservation_id','action','detail'];
 const HEADERS_MESSAGES = ['id','reservation_id','sender','message','timestamp','read_by_host'];
-const HEADERS_REVIEWS = [
-  'id','reservation_id','rep_name','rep_country','overall','cleanliness','accuracy',
-  'checkin','communication','location','value','rooms','comment','private_feedback',
-  'created_at','published'
-];
 
 const STATUS = {
   REQUESTED:  'requested',     // フロントから仮予約 POST 直後
@@ -80,10 +75,6 @@ function doPost(e) {
       // Mypage API
       case 'mypage_message':        return jsonResponse(handleMypageMessage(body));
       case 'mypage_change_request': return jsonResponse(handleMypageChangeRequest(body));
-      // Review API
-      case 'submit_review':         return jsonResponse(handleSubmitReview(body));
-      case 'admin_list_reviews':    return jsonResponse(handleAdminListReviews(body));
-      case 'admin_toggle_review':   return jsonResponse(handleAdminToggleReview(body));
       default: return jsonResponse({ ok:false, error:'unknown type' });
     }
   } catch (err) {
@@ -112,9 +103,6 @@ function doGet(e) {
     }
     if (action === 'get_messages') {
       return jsonResponse(handleGetMessages(e.parameter));
-    }
-    if (action === 'public_reviews') {
-      return jsonResponse(handlePublicReviews());
     }
     if (action === 'stripe_webhook_test') {
       return jsonResponse({ ok:true, msg:'use webhook endpoint via separate function' });
@@ -1067,278 +1055,6 @@ function markMessagesReadByHost_(reservationId) {
   }
 }
 
-// ============ Review Handlers ============
-
-function handleSubmitReview(body) {
-  // Verify reservation exists and guest is authorized
-  const rsh = sheet_('reservations');
-  const rData = rsh.getDataRange().getValues();
-  const rHeaders = rData[0];
-  const idIdx = rHeaders.indexOf('id');
-  const emailIdx = rHeaders.indexOf('rep_email');
-  const statusIdx = rHeaders.indexOf('status');
-  const coIdx = rHeaders.indexOf('checkout');
-  const fnIdx = rHeaders.indexOf('rep_first_name');
-  const lnIdx = rHeaders.indexOf('rep_last_name');
-  const countryIdx = rHeaders.indexOf('rep_country');
-
-  let found = null;
-  for (let i = 1; i < rData.length; i++) {
-    if (String(rData[i][idIdx]) === String(body.reservation_id)
-        && String(rData[i][emailIdx]).toLowerCase() === String(body.email).toLowerCase()) {
-      found = rData[i];
-      break;
-    }
-  }
-  if (!found) return { ok: false, error: 'Reservation not found' };
-  if (found[statusIdx] !== 'paid') return { ok: false, error: 'Only completed stays can be reviewed' };
-
-  // Check checkout date has passed
-  const coDate = new Date(found[coIdx]);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (coDate > today) return { ok: false, error: 'Review available after checkout' };
-
-  // Check if already reviewed
-  const revSh = sheet_('reviews');
-  ensureHeaders_(revSh, HEADERS_REVIEWS);
-  if (revSh.getLastRow() > 1) {
-    const revData = revSh.getDataRange().getValues();
-    const revRidIdx = revData[0].indexOf('reservation_id');
-    for (let i = 1; i < revData.length; i++) {
-      if (String(revData[i][revRidIdx]) === String(body.reservation_id)) {
-        return { ok: false, error: 'Already reviewed' };
-      }
-    }
-  }
-
-  // Validate ratings (1-5)
-  const categories = ['overall', 'cleanliness', 'accuracy', 'checkin', 'communication', 'location', 'value', 'rooms'];
-  for (const cat of categories) {
-    const val = Number(body[cat]);
-    if (!val || val < 1 || val > 5) return { ok: false, error: 'Invalid rating for ' + cat };
-  }
-
-  const repName = (found[lnIdx] + ' ' + found[fnIdx]).trim();
-  const reviewId = 'REV-' + Utilities.getUuid().substring(0, 8);
-  const now = new Date().toISOString();
-
-  const row = HEADERS_REVIEWS.map(h => {
-    switch (h) {
-      case 'id': return reviewId;
-      case 'reservation_id': return body.reservation_id;
-      case 'rep_name': return repName;
-      case 'rep_country': return found[countryIdx] || '';
-      case 'overall': return Number(body.overall);
-      case 'cleanliness': return Number(body.cleanliness);
-      case 'accuracy': return Number(body.accuracy);
-      case 'checkin': return Number(body.checkin);
-      case 'communication': return Number(body.communication);
-      case 'location': return Number(body.location);
-      case 'value': return Number(body.value);
-      case 'rooms': return Number(body.rooms);
-      case 'comment': return (body.comment || '').substring(0, 2000);
-      case 'private_feedback': return (body.private_feedback || '').substring(0, 2000);
-      case 'created_at': return now;
-      case 'published': return false;
-      default: return '';
-    }
-  });
-  revSh.appendRow(row);
-  log_(body.reservation_id, 'review_submitted', 'Overall: ' + body.overall + '/5');
-
-  // Notify admin
-  try {
-    const adminEmail = getProp_('ADMIN_EMAIL');
-    const subject = '【Komei Hotel】新しいレビュー (' + repName + ' ★' + body.overall + ')';
-    const html = '<h3>新しいレビューが投稿されました</h3>'
-      + '<p><b>予約ID:</b> ' + body.reservation_id + '<br>'
-      + '<b>ゲスト:</b> ' + repName + '<br>'
-      + '<b>総合評価:</b> ' + '★'.repeat(body.overall) + ' (' + body.overall + '/5)<br>'
-      + '<b>コメント:</b><br>' + (body.comment || '(なし)').replace(/\n/g, '<br>') + '</p>'
-      + (body.private_feedback ? '<p><b>プライベートフィードバック:</b><br>' + body.private_feedback.replace(/\n/g, '<br>') + '</p>' : '')
-      + '<p><a href="' + getProp_('SITE_BASE_URL') + '/admin.html">管理画面で確認</a></p>';
-    MailApp.sendEmail({ to: adminEmail, subject: subject, htmlBody: html, name: getProp_('FROM_NAME') || 'Komei Hotel' });
-  } catch (e) {
-    log_(body.reservation_id, 'review_notify_error', e.toString());
-  }
-
-  return { ok: true };
-}
-
-function handleAdminListReviews(body) {
-  if (!verifyAdmin_(body.admin_token)) return { ok: false, error: 'unauthorized' };
-
-  const sh = sheet_('reviews');
-  ensureHeaders_(sh, HEADERS_REVIEWS);
-  if (sh.getLastRow() <= 1) return { ok: true, reviews: [], stats: { total: 0, avg: 0, published: 0 } };
-
-  const data = sh.getDataRange().getValues();
-  const headers = data[0];
-  const reviews = [];
-  let totalOverall = 0;
-  let pubCount = 0;
-
-  for (let i = 1; i < data.length; i++) {
-    const obj = {};
-    headers.forEach((h, j) => { obj[h] = data[i][j]; });
-    reviews.push(obj);
-    totalOverall += Number(obj.overall) || 0;
-    if (obj.published) pubCount++;
-  }
-
-  reviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-  return {
-    ok: true,
-    reviews: reviews,
-    stats: {
-      total: reviews.length,
-      avg: reviews.length > 0 ? Math.round((totalOverall / reviews.length) * 10) / 10 : 0,
-      published: pubCount
-    }
-  };
-}
-
-function handleAdminToggleReview(body) {
-  if (!verifyAdmin_(body.admin_token)) return { ok: false, error: 'unauthorized' };
-  if (!body.review_id) return { ok: false, error: 'review_id required' };
-
-  const sh = sheet_('reviews');
-  ensureHeaders_(sh, HEADERS_REVIEWS);
-  if (sh.getLastRow() <= 1) return { ok: false, error: 'No reviews' };
-
-  const data = sh.getDataRange().getValues();
-  const headers = data[0];
-  const idIdx = headers.indexOf('id');
-  const pubIdx = headers.indexOf('published');
-
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][idIdx]) === String(body.review_id)) {
-      const newVal = !data[i][pubIdx];
-      sh.getRange(i + 1, pubIdx + 1).setValue(newVal);
-      log_(data[i][headers.indexOf('reservation_id')], 'review_publish_toggle', newVal ? 'published' : 'unpublished');
-      return { ok: true, published: newVal };
-    }
-  }
-  return { ok: false, error: 'Review not found' };
-}
-
-function handlePublicReviews() {
-  const sh = sheet_('reviews');
-  ensureHeaders_(sh, HEADERS_REVIEWS);
-  if (sh.getLastRow() <= 1) return { ok: true, reviews: [], avg: {}, count: 0 };
-
-  const data = sh.getDataRange().getValues();
-  const headers = data[0];
-  const reviews = [];
-  const sums = { overall: 0, cleanliness: 0, accuracy: 0, checkin: 0, communication: 0, location: 0, value: 0, rooms: 0 };
-
-  for (let i = 1; i < data.length; i++) {
-    const obj = {};
-    headers.forEach((h, j) => { obj[h] = data[i][j]; });
-    if (!obj.published) continue;
-    // Public: exclude private_feedback
-    reviews.push({
-      rep_name: obj.rep_name,
-      rep_country: obj.rep_country,
-      overall: obj.overall,
-      cleanliness: obj.cleanliness,
-      accuracy: obj.accuracy,
-      checkin: obj.checkin,
-      communication: obj.communication,
-      location: obj.location,
-      value: obj.value,
-      rooms: obj.rooms,
-      comment: obj.comment,
-      created_at: obj.created_at
-    });
-    for (const k in sums) sums[k] += Number(obj[k]) || 0;
-  }
-
-  const count = reviews.length;
-  const avg = {};
-  if (count > 0) {
-    for (const k in sums) avg[k] = Math.round((sums[k] / count) * 10) / 10;
-  }
-
-  reviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-  return { ok: true, reviews: reviews, avg: avg, count: count };
-}
-
-// ============ Review Request Email (Daily Trigger) ============
-
-function sendReviewRequestEmails() {
-  const sh = sheet_('reservations');
-  const data = sh.getDataRange().getValues();
-  const headers = data[0];
-  const idx = (h) => headers.indexOf(h);
-
-  const revSh = sheet_('reviews');
-  ensureHeaders_(revSh, HEADERS_REVIEWS);
-  const reviewedIds = new Set();
-  if (revSh.getLastRow() > 1) {
-    const revData = revSh.getDataRange().getValues();
-    const ridIdx = revData[0].indexOf('reservation_id');
-    for (let i = 1; i < revData.length; i++) {
-      reviewedIds.add(String(revData[i][ridIdx]));
-    }
-  }
-
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = Utilities.formatDate(yesterday, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-
-  const baseUrl = getProp_('SITE_BASE_URL') || '';
-  const fromName = getProp_('FROM_NAME') || 'Komei Hotel';
-
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (row[idx('status')] !== 'paid') continue;
-
-    const coStr = String(row[idx('checkout')]).substring(0, 10);
-    if (coStr !== yStr) continue;
-
-    const rid = String(row[idx('id')]);
-    if (reviewedIds.has(rid)) continue;
-
-    const email = row[idx('rep_email')];
-    const name = (row[idx('rep_last_name')] + ' ' + row[idx('rep_first_name')]).trim();
-    const token = row[idx('token')];
-
-    const mypageUrl = baseUrl + '/mypage.html?id=' + rid + '&email=' + encodeURIComponent(email);
-    const googlePlaceId = getProp_('GOOGLE_PLACE_ID') || '';
-    const googleReviewUrl = googlePlaceId
-      ? 'https://search.google.com/local/writereview?placeid=' + googlePlaceId
-      : 'https://www.google.com/maps/search/Komei+Hotel+光明荘+東駒形';
-
-    const subject = '【Komei Hotel】ご宿泊ありがとうございました — レビューのお願い';
-    const html = '<div style="max-width:600px;margin:0 auto;font-family:sans-serif;">'
-      + '<h2 style="color:#d97706;">Komei Hotel 光明荘</h2>'
-      + '<p>' + name + ' 様</p>'
-      + '<p>この度はKomei Hotelにご宿泊いただき、誠にありがとうございました。</p>'
-      + '<p>ご滞在はいかがでしたか？今後のサービス向上のため、ぜひレビューをお聞かせください。</p>'
-      + '<p style="text-align:center;margin:30px 0;">'
-      + '<a href="' + mypageUrl + '" style="display:inline-block;background:#f59e0b;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">レビューを書く</a>'
-      + '</p>'
-      + '<p style="text-align:center;margin:20px 0;">'
-      + '<a href="' + googleReviewUrl + '" style="display:inline-block;background:#4285f4;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">📍 Googleにもレビューを書く</a>'
-      + '</p>'
-      + '<p style="color:#94a3b8;font-size:13px;">マイページにログイン後、「レビュー」タブからご記入いただけます。<br>Googleレビューもいただけると大変嬉しいです。</p>'
-      + '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">'
-      + '<p style="color:#94a3b8;font-size:12px;">Komei Hotel 光明荘<br>〒130-0005 東京都墨田区東駒形20-5<br>komei.hotel@gmail.com</p>'
-      + '</div>';
-
-    try {
-      MailApp.sendEmail({ to: email, subject: subject, htmlBody: html, name: fromName });
-      log_(rid, 'review_request_sent', email);
-    } catch (e) {
-      log_(rid, 'review_request_error', e.toString());
-    }
-  }
-}
-
 // ============ One-time Setup ============
 /**
  * Run this once from the Apps Script editor to initialize sheets and admin token.
@@ -1348,30 +1064,8 @@ function initialize() {
   ensureHeaders_(sheet_('guests'), HEADERS_GUESTS);
   ensureHeaders_(sheet_('logs'), HEADERS_LOGS);
   ensureHeaders_(sheet_('messages'), HEADERS_MESSAGES);
-  ensureHeaders_(sheet_('reviews'), HEADERS_REVIEWS);
   generateAndStoreAdminToken_();
   Logger.log('Initialized. ADMIN_TOKEN=' + getProp_('ADMIN_TOKEN'));
-}
-
-/**
- * Run once to set up daily review request trigger.
- * GASエディタで手動実行してください。
- */
-function setupReviewTrigger() {
-  // Remove existing triggers for this function
-  ScriptApp.getProjectTriggers().forEach(t => {
-    if (t.getHandlerFunction() === 'sendReviewRequestEmails') {
-      ScriptApp.deleteTrigger(t);
-    }
-  });
-  // Create daily trigger at 10:00 AM JST
-  ScriptApp.newTrigger('sendReviewRequestEmails')
-    .timeBased()
-    .atHour(10)
-    .everyDays(1)
-    .inTimezone('Asia/Tokyo')
-    .create();
-  Logger.log('Review request email trigger set for 10:00 AM daily.');
 }
 
 // manualResend wrapper removed (was one-time debug tool)
