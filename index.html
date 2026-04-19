@@ -786,12 +786,12 @@
       document.getElementById('reviewCount').textContent = countText[l] || countText.ja;
 
       var catLabels = {
-        ja: { cleanliness:'清潔さ', accuracy:'正確さ', checkin:'チェックイン', communication:'コミュニケーション', location:'ロケーション', value:'コスパ' },
-        en: { cleanliness:'Cleanliness', accuracy:'Accuracy', checkin:'Check-in', communication:'Communication', location:'Location', value:'Value' }
+        ja: { cleanliness:'清潔さ', accuracy:'正確さ', checkin:'チェックイン', communication:'コミュニケーション', location:'ロケーション', value:'コスパ', rooms:'部屋' },
+        en: { cleanliness:'Cleanliness', accuracy:'Accuracy', checkin:'Check-in', communication:'Communication', location:'Location', value:'Value', rooms:'Rooms' }
       };
       var labels = catLabels[l] || catLabels.ja;
       var catsHtml = '';
-      ['cleanliness','accuracy','checkin','communication','location','value'].forEach(function(k){
+      ['cleanliness','accuracy','checkin','communication','location','value','rooms'].forEach(function(k){
         var v = data.avg[k] || 0;
         var pct = (v/5*100).toFixed(0);
         catsHtml += '<div class="flex items-center gap-2"><span class="w-28 text-slate-600">' + labels[k] + '</span>'

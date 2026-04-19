@@ -43,7 +43,7 @@ const HEADERS_LOGS = ['ts','reservation_id','action','detail'];
 const HEADERS_MESSAGES = ['id','reservation_id','sender','message','timestamp','read_by_host'];
 const HEADERS_REVIEWS = [
   'id','reservation_id','rep_name','rep_country','overall','cleanliness','accuracy',
-  'checkin','communication','location','value','comment','private_feedback',
+  'checkin','communication','location','value','rooms','comment','private_feedback',
   'created_at','published'
 ];
 
@@ -1113,7 +1113,7 @@ function handleSubmitReview(body) {
   }
 
   // Validate ratings (1-5)
-  const categories = ['overall', 'cleanliness', 'accuracy', 'checkin', 'communication', 'location', 'value'];
+  const categories = ['overall', 'cleanliness', 'accuracy', 'checkin', 'communication', 'location', 'value', 'rooms'];
   for (const cat of categories) {
     const val = Number(body[cat]);
     if (!val || val < 1 || val > 5) return { ok: false, error: 'Invalid rating for ' + cat };
@@ -1136,6 +1136,7 @@ function handleSubmitReview(body) {
       case 'communication': return Number(body.communication);
       case 'location': return Number(body.location);
       case 'value': return Number(body.value);
+      case 'rooms': return Number(body.rooms);
       case 'comment': return (body.comment || '').substring(0, 2000);
       case 'private_feedback': return (body.private_feedback || '').substring(0, 2000);
       case 'created_at': return now;
@@ -1231,7 +1232,7 @@ function handlePublicReviews() {
   const data = sh.getDataRange().getValues();
   const headers = data[0];
   const reviews = [];
-  const sums = { overall: 0, cleanliness: 0, accuracy: 0, checkin: 0, communication: 0, location: 0, value: 0 };
+  const sums = { overall: 0, cleanliness: 0, accuracy: 0, checkin: 0, communication: 0, location: 0, value: 0, rooms: 0 };
 
   for (let i = 1; i < data.length; i++) {
     const obj = {};
@@ -1248,6 +1249,7 @@ function handlePublicReviews() {
       communication: obj.communication,
       location: obj.location,
       value: obj.value,
+      rooms: obj.rooms,
       comment: obj.comment,
       created_at: obj.created_at
     });
@@ -1306,6 +1308,11 @@ function sendReviewRequestEmails() {
     const token = row[idx('token')];
 
     const mypageUrl = baseUrl + '/mypage.html?id=' + rid + '&email=' + encodeURIComponent(email);
+    const googlePlaceId = getProp_('GOOGLE_PLACE_ID') || '';
+    const googleReviewUrl = googlePlaceId
+      ? 'https://search.google.com/local/writereview?placeid=' + googlePlaceId
+      : 'https://www.google.com/maps/search/Komei+Hotel+光明荘+東駒形';
+
     const subject = '【Komei Hotel】ご宿泊ありがとうございました — レビューのお願い';
     const html = '<div style="max-width:600px;margin:0 auto;font-family:sans-serif;">'
       + '<h2 style="color:#d97706;">Komei Hotel 光明荘</h2>'
@@ -1315,7 +1322,10 @@ function sendReviewRequestEmails() {
       + '<p style="text-align:center;margin:30px 0;">'
       + '<a href="' + mypageUrl + '" style="display:inline-block;background:#f59e0b;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">レビューを書く</a>'
       + '</p>'
-      + '<p style="color:#94a3b8;font-size:13px;">マイページにログイン後、「レビュー」タブからご記入いただけます。</p>'
+      + '<p style="text-align:center;margin:20px 0;">'
+      + '<a href="' + googleReviewUrl + '" style="display:inline-block;background:#4285f4;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">📍 Googleにもレビューを書く</a>'
+      + '</p>'
+      + '<p style="color:#94a3b8;font-size:13px;">マイページにログイン後、「レビュー」タブからご記入いただけます。<br>Googleレビューもいただけると大変嬉しいです。</p>'
       + '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">'
       + '<p style="color:#94a3b8;font-size:12px;">Komei Hotel 光明荘<br>〒130-0005 東京都墨田区東駒形20-5<br>komei.hotel@gmail.com</p>'
       + '</div>';

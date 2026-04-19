@@ -346,10 +346,30 @@
         <span class="lang-ja">レビューをいただきありがとうございます！</span>
         <span class="lang-en">Thank you for your review!</span>
       </h3>
-      <p class="text-slate-500 text-sm">
+      <p class="text-slate-500 text-sm mb-6">
         <span class="lang-ja">いただいたフィードバックはサービス向上に活用させていただきます。</span>
         <span class="lang-en">Your feedback helps us improve our service.</span>
       </p>
+      <div class="bg-blue-50 rounded-xl p-5 border border-blue-100">
+        <p class="text-sm font-semibold text-blue-800 mb-2">
+          <span class="lang-ja">📍 Googleにも同じレビューを投稿しませんか？</span>
+          <span class="lang-en">📍 Would you also leave a review on Google?</span>
+        </p>
+        <p class="text-xs text-blue-600 mb-4">
+          <span class="lang-ja">Googleレビューは他の旅行者の参考になり、私たちの大きな励みになります。</span>
+          <span class="lang-en">Your Google review helps other travelers and means a lot to us.</span>
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <button onclick="copyReviewForGoogle()" id="copyReviewBtn"
+                  class="px-5 py-2.5 bg-white border border-blue-200 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition">
+            <span class="lang-ja">📋 レビューをコピー</span><span class="lang-en">📋 Copy Review</span>
+          </button>
+          <a id="googleReviewLink" href="#" target="_blank"
+             class="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition inline-block">
+            <span class="lang-ja">Googleレビューを書く →</span><span class="lang-en">Write Google Review →</span>
+          </a>
+        </div>
+      </div>
     </div>
     <!-- Review form -->
     <div id="reviewForm" class="bg-white rounded-2xl shadow p-6">
@@ -410,6 +430,13 @@
           <div class="star-row" data-cat="value">
             <div class="flex items-center justify-between mb-1">
               <span class="text-sm font-medium"><span class="lang-ja">コスパ</span><span class="lang-en">Value</span></span>
+              <span class="text-xs text-slate-400 star-label"></span>
+            </div>
+            <div class="flex gap-1 star-group"></div>
+          </div>
+          <div class="star-row" data-cat="rooms">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium"><span class="lang-ja">部屋</span><span class="lang-en">Rooms</span></span>
               <span class="text-xs text-slate-400 star-label"></span>
             </div>
             <div class="flex gap-1 star-group"></div>
@@ -774,7 +801,7 @@ function checkReviewEligibility() {
 function submitReview() {
   const errDiv = document.getElementById('reviewError');
   errDiv.classList.add('hidden');
-  const cats = ['overall','cleanliness','accuracy','checkin','communication','location','value'];
+  const cats = ['overall','cleanliness','accuracy','checkin','communication','location','value','rooms'];
   for (const c of cats) {
     if (!reviewRatings[c]) {
       const l = document.documentElement.lang || 'ja';
@@ -798,6 +825,7 @@ function submitReview() {
     communication: reviewRatings.communication,
     location: reviewRatings.location,
     value: reviewRatings.value,
+    rooms: reviewRatings.rooms,
     comment: document.getElementById('reviewComment').value.trim(),
     private_feedback: document.getElementById('reviewPrivate').value.trim()
   };
@@ -812,10 +840,12 @@ function submitReview() {
     if (data.ok) {
       document.getElementById('reviewForm').classList.add('hidden');
       document.getElementById('reviewDone').classList.remove('hidden');
+      setupGoogleReviewLink();
     } else {
       if (data.error === 'Already reviewed') {
         document.getElementById('reviewForm').classList.add('hidden');
         document.getElementById('reviewDone').classList.remove('hidden');
+        setupGoogleReviewLink();
       } else {
         errDiv.textContent = data.error || 'Error';
         errDiv.classList.remove('hidden');
@@ -830,6 +860,32 @@ function submitReview() {
     btn.disabled = false;
     const l = document.documentElement.lang || 'ja';
     btn.textContent = l === 'en' ? 'Submit Review' : 'レビューを送信';
+  });
+}
+
+// ===== Google Review =====
+const GOOGLE_REVIEW_URL = 'https://www.google.com/maps/search/Komei+Hotel+光明荘+東駒形';
+
+function setupGoogleReviewLink() {
+  document.getElementById('googleReviewLink').href = GOOGLE_REVIEW_URL;
+}
+
+function copyReviewForGoogle() {
+  const comment = document.getElementById('reviewComment').value.trim();
+  if (!comment) {
+    const l = document.documentElement.lang || 'ja';
+    alert(l === 'en' ? 'No review text to copy.' : 'コピーするレビューテキストがありません。');
+    return;
+  }
+  navigator.clipboard.writeText(comment).then(() => {
+    const btn = document.getElementById('copyReviewBtn');
+    const l = document.documentElement.lang || 'ja';
+    btn.innerHTML = l === 'en' ? '✅ Copied!' : '✅ コピーしました！';
+    setTimeout(() => {
+      btn.innerHTML = l === 'en'
+        ? '<span class="lang-ja">📋 レビューをコピー</span><span class="lang-en">📋 Copy Review</span>'
+        : '<span class="lang-ja">📋 レビューをコピー</span><span class="lang-en">📋 Copy Review</span>';
+    }, 2000);
   });
 }
 

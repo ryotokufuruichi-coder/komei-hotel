@@ -578,7 +578,8 @@ async function showReviewsPanel() {
         const cats = [
           { label:'清潔さ', val:r.cleanliness }, { label:'正確さ', val:r.accuracy },
           { label:'チェックイン', val:r.checkin }, { label:'コミュニケーション', val:r.communication },
-          { label:'ロケーション', val:r.location }, { label:'コスパ', val:r.value }
+          { label:'ロケーション', val:r.location }, { label:'コスパ', val:r.value },
+          { label:'部屋', val:r.rooms }
         ];
         return `
           <div class="bg-white rounded-xl shadow-sm p-5 ${r.published ? 'ring-2 ring-green-200' : ''}">
