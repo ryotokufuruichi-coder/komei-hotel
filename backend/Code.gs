@@ -1167,7 +1167,7 @@ function handleSubmitReview(body) {
 }
 
 function handleAdminListReviews(body) {
-  if (!verifyAdmin_(body.admin_token)) return { ok: false, error: 'unauthorized' };
+  if (!verifyAdminToken_(body.admin_token)) return { ok: false, error: 'unauthorized' };
 
   const sh = sheet_('reviews');
   ensureHeaders_(sh, HEADERS_REVIEWS);
@@ -1201,7 +1201,7 @@ function handleAdminListReviews(body) {
 }
 
 function handleAdminToggleReview(body) {
-  if (!verifyAdmin_(body.admin_token)) return { ok: false, error: 'unauthorized' };
+  if (!verifyAdminToken_(body.admin_token)) return { ok: false, error: 'unauthorized' };
   if (!body.review_id) return { ok: false, error: 'review_id required' };
 
   const sh = sheet_('reviews');
