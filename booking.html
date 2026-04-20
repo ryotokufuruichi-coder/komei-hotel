@@ -105,7 +105,7 @@
         <div id="psDates" class="font-bold text-slate-800"></div>
         <div id="psNights" class="text-xs text-slate-500"></div>
       </div>
-      <div class="text-right">
+      <div class="text-right hidden">
         <div class="text-xs text-slate-500"><span class="lang-ja">概算料金（税込）</span><span class="lang-en">Estimated total</span><span class="lang-zh">预估费用（含税）</span><span class="lang-ko">예상 요금（세금 포함）</span></div>
         <div id="psTotal" class="text-2xl font-bold text-amber-600"></div>
         <div class="text-xs text-slate-400"><span class="lang-ja">承認時に最終確定</span><span class="lang-en">Final on approval</span><span class="lang-zh">审批时最终确定</span><span class="lang-ko">승인 시 최종 확정</span></div>
@@ -120,17 +120,25 @@
           <span class="lang-zh">💡 您知道Airbnb / Booking.com上相同日期的价格吗？</span>
           <span class="lang-ko">💡 같은 일정의 Airbnb / Booking.com 가격을 알고 계신가요?</span>
         </p>
-        <div class="flex items-center gap-3">
-          <div class="flex-1 relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">¥</span>
-            <input type="number" id="airbnbPrice" placeholder="Airbnb/Booking.comの合計金額を入力"
-              oninput="updateAirbnbComparison()"
-              class="w-full pl-8 pr-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200">
-          </div>
+        <div class="flex items-center gap-2 mb-2">
           <div class="shrink-0 text-xs space-y-1">
             <a href="https://www.airbnb.jp/rooms/1039805188907481877" target="_blank" class="block text-blue-600 underline hover:text-blue-800">Airbnbで確認→</a>
             <a href="https://www.booking.com/hotel/jp/komei-5min-to-station-direct-access-to-narita-and-haneda-asakusa-sky-tree.ja.html" target="_blank" class="block text-blue-600 underline hover:text-blue-800">Booking.comで確認→</a>
           </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex-1 relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">¥</span>
+            <input type="number" id="airbnbPrice" placeholder="Airbnb/Booking.comの合計金額を入力"
+              class="w-full pl-8 pr-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-200">
+          </div>
+          <button type="button" onclick="updateAirbnbComparison()"
+            class="shrink-0 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-5 rounded-lg text-sm transition-colors">
+            <span class="lang-ja">試算する</span>
+            <span class="lang-en">Calculate</span>
+            <span class="lang-zh">试算</span>
+            <span class="lang-ko">시산하기</span>
+          </button>
         </div>
         <div id="airbnbResult" class="hidden mt-3 bg-white border border-amber-300 rounded-lg p-3 text-center">
           <p class="text-xs text-slate-500 mb-1">
