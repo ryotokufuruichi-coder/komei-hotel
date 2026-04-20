@@ -41,6 +41,11 @@ const HEADERS_GUESTS = [
 ];
 const HEADERS_LOGS = ['ts','reservation_id','action','detail'];
 const HEADERS_MESSAGES = ['id','reservation_id','sender','message','timestamp','read_by_host'];
+const HEADERS_REVIEWS = [
+  'id','reservation_id','rep_name','rep_country','overall','cleanliness','accuracy',
+  'checkin','communication','location','value','rooms','comment','private_feedback',
+  'created_at','published'
+];
 
 const STATUS = {
   REQUESTED:  'requested',     // フロントから仮予紁EPOST 直征E
@@ -75,6 +80,10 @@ function doPost(e) {
       // Mypage API
       case 'mypage_message':        return jsonResponse(handleMypageMessage(body));
       case 'mypage_change_request': return jsonResponse(handleMypageChangeRequest(body));
+      // Review API
+      case 'submit_review':         return jsonResponse(handleSubmitReview(body));
+      case 'admin_list_reviews':    return jsonResponse(handleAdminListReviews(body));
+      case 'admin_toggle_review':   return jsonResponse(handleAdminToggleReview(body));
       default: return jsonResponse({ ok:false, error:'unknown type' });
     }
   } catch (err) {
@@ -103,6 +112,9 @@ function doGet(e) {
     }
     if (action === 'get_messages') {
       return jsonResponse(handleGetMessages(e.parameter));
+    }
+    if (action === 'public_reviews') {
+      return jsonResponse(handlePublicReviews());
     }
     if (action === 'stripe_webhook_test') {
       return jsonResponse({ ok:true, msg:'use webhook endpoint via separate function' });
@@ -1055,7 +1067,6 @@ function markMessagesReadByHost_(reservationId) {
   }
 }
 
-<<<<<<< HEAD
 // ============ Review Handlers ============
 
 function handleSubmitReview(body) {
@@ -1325,8 +1336,23 @@ function sendReviewRequestEmails() {
   }
 }
 
-=======
->>>>>>> d604a68b3bda00734c096c7e18c6502ad3116510
+// ============ Review Trigger Setup ============
+
+function setupReviewTrigger() {
+  // Remove existing triggers for this function
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'sendReviewRequestEmails') ScriptApp.deleteTrigger(t);
+  });
+  // Daily at 10:00 JST
+  ScriptApp.newTrigger('sendReviewRequestEmails')
+    .timeBased()
+    .atHour(10)
+    .everyDays(1)
+    .inTimezone('Asia/Tokyo')
+    .create();
+  Logger.log('Review trigger set: daily 10:00 JST');
+}
+
 // ============ One-time Setup ============
 /**
  * Run this once from the Apps Script editor to initialize sheets and admin token.
@@ -1336,6 +1362,7 @@ function initialize() {
   ensureHeaders_(sheet_('guests'), HEADERS_GUESTS);
   ensureHeaders_(sheet_('logs'), HEADERS_LOGS);
   ensureHeaders_(sheet_('messages'), HEADERS_MESSAGES);
+  ensureHeaders_(sheet_('reviews'), HEADERS_REVIEWS);
   generateAndStoreAdminToken_();
   Logger.log('Initialized. ADMIN_TOKEN=' + getProp_('ADMIN_TOKEN'));
 }
