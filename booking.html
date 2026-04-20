@@ -507,7 +507,7 @@ async function submitForm(e) {
         checkout: payload.checkout,
         adults: payload.adults,
         children: payload.children,
-        representative_name: payload.representative.name,
+        representative_name: [payload.representative.last_name, payload.representative.first_name].filter(Boolean).join(' ') || payload.representative.email,
         representative_email: payload.representative.email,
         representative_phone: payload.representative.phone,
         estimated_total: payload.estimated_total,

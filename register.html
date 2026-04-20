@@ -14,6 +14,16 @@
 <title>本登録 ｜ Komei Hotel 光明荘</title>
 <meta name="description" content="Komei Hotel 光明荘の本登録フォーム。承認後の宿泊者情報入力ページです。">
 <meta name="robots" content="noindex">
+<meta property="og:type" content="website">
+<meta property="og:title" content="本登録 ｜ Komei Hotel 光明荘">
+<meta property="og:description" content="Komei Hotel 光明荘の本登録フォーム。宿泊者情報をご入力ください。">
+<meta property="og:url" content="https://komei.yoshinarcorp.com/register.html">
+<meta property="og:image" content="https://komei.yoshinarcorp.com/images/og-image.jpg">
+<meta property="og:site_name" content="Komei Hotel 光明荘">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="本登録 ｜ Komei Hotel 光明荘">
+<meta name="twitter:description" content="Komei Hotel 光明荘の本登録フォーム。宿泊者情報をご入力ください。">
+<meta name="twitter:image" content="https://komei.yoshinarcorp.com/images/og-image.jpg">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   html { scroll-behavior: smooth; }
@@ -476,6 +486,10 @@ async function submitRegister(e) {
       if (store[reservationData.reservation_id]) {
         store[reservationData.reservation_id].status = 'registered';
         store[reservationData.reservation_id].guests = guests.length;
+        const repLast  = (document.getElementById('repLastName')  || {}).value || '';
+        const repFirst = (document.getElementById('repFirstName') || {}).value || '';
+        const updatedName = [repLast, repFirst].filter(Boolean).join(' ');
+        if (updatedName) store[reservationData.reservation_id].representative_name = updatedName;
         sessionStorage.setItem('demo_reservations', JSON.stringify(store));
       }
       data = { ok:true, demo:true };
