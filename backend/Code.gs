@@ -32,7 +32,7 @@
 const HEADERS_RESERVATIONS = [
   'id','status','created_at','updated_at','checkin','checkout','nights',
   'adults','children','rep_first_name','rep_last_name','rep_email','rep_phone','rep_country',
-  'estimated_total','final_total','payment_method','payment_status',
+  'estimated_total','final_total','ota_price','payment_method','payment_status',
   'stripe_session_id','token','notes','source','user_agent'
 ];
 const HEADERS_GUESTS = [
@@ -156,6 +156,7 @@ function handleReservationRequest(body) {
       case 'rep_phone': return body.representative.phone;
       case 'rep_country': return body.representative.country;
       case 'estimated_total': return body.estimated_total || computeEstimatedTotal_(body.checkin, body.checkout);
+      case 'ota_price': return body.ota_price || '';
       case 'token': return token;
       case 'notes': return body.notes || '';
       case 'source': return body.source || 'lp_direct';
@@ -416,21 +417,22 @@ function notifyAdminPendingApproval_(id, body, nights) {
   const approveFormUrl = baseUrl + '?action=approve_form&id=' + id + '&t=' + adminToken;
   const rejectUrl  = baseUrl + '?action=reject&id='  + id + '&t=' + adminToken;
   const guestName = (body.representative.first_name || '') + ' ' + (body.representative.last_name || '');
-  const subject = '[Komei Hotel] 新規仮予紁E' + id + ' (' + body.checkin + ' 、E' + body.checkout + ')';
+  const subject = '[Komei Hotel] 新規仮予約 ' + id + ' (' + body.checkin + ' ～ ' + body.checkout + ')';
   const html = ''
-    + '<h2>新規予紁E��込</h2>'
+    + '<h2>新規予約申込</h2>'
     + '<table cellpadding="6">'
     + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
-    + '<tr><td>期間</td><td>' + body.checkin + ' 、E' + body.checkout + ' (' + nights + '況E</td></tr>'
-    + '<tr><td>人数</td><td>大人' + body.adults + ' / 孁E + body.children + '</td></tr>'
-    + '<tr><td>代表老E/td><td>' + guestName.trim() + ' (' + body.representative.country + ')</td></tr>'
-    + '<tr><td>連絡允E/td><td>' + body.representative.email + ' / ' + body.representative.phone + '</td></tr>'
-    + '<tr><td>概算��顁E/td><td>¥' + Number(body.estimated_total).toLocaleString() + '</td></tr>'
-    + '<tr><td>備老E/td><td>' + (body.notes || '-') + '</td></tr>'
+    + '<tr><td>期間</td><td>' + body.checkin + ' ～ ' + body.checkout + ' (' + nights + '泊)</td></tr>'
+    + '<tr><td>人数</td><td>大人' + body.adults + ' / 子供' + body.children + '</td></tr>'
+    + '<tr><td>代表者</td><td>' + guestName.trim() + ' (' + body.representative.country + ')</td></tr>'
+    + '<tr><td>連絡先</td><td>' + body.representative.email + ' / ' + body.representative.phone + '</td></tr>'
+    + '<tr><td>概算金額</td><td>¥' + Number(body.estimated_total).toLocaleString() + '</td></tr>'
+    + '<tr><td>OTA参考価格</td><td>' + (body.ota_price ? '¥' + Number(body.ota_price).toLocaleString() : '未入力') + '</td></tr>'
+    + '<tr><td>備考</td><td>' + (body.notes || '-') + '</td></tr>'
     + '</table>'
     + '<p style="margin-top:24px">'
-    + '<a href="' + approveFormUrl + '" style="background:#10b981;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;margin-right:12px">✁E承認する（��額確認！E/a>'
-    + '<a href="' + rejectUrl + '" style="background:#ef4444;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px">❁E却丁E/a>'
+    + '<a href="' + approveFormUrl + '" style="background:#10b981;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;margin-right:12px">✅ 承認する（金額確認）</a>'
+    + '<a href="' + rejectUrl + '" style="background:#ef4444;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px">❌ 却下</a>'
     + '</p>';
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'), subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
 }

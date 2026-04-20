@@ -576,6 +576,7 @@ async function submitForm(e) {
     },
     notes: f('notes') || '',
     estimated_total: currentEstimatedTotal || parseInt(params.get('total') || '0'),
+    ota_price: parseInt(document.getElementById('airbnbPrice').value) || 0,
     source: 'lp_direct',
     submitted_at: new Date().toISOString(),
     user_agent: navigator.userAgent,
