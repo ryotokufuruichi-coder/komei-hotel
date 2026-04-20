@@ -111,8 +111,13 @@
         <div class="text-xs text-slate-400"><span class="lang-ja">承認時に最終確定</span><span class="lang-en">Final on approval</span><span class="lang-zh">审批时最终确定</span><span class="lang-ko">승인 시 최종 확정</span></div>
       </div>
     </div>
-    <!-- Airbnb price comparison -->
-    <div id="airbnbCompareBox" class="mt-3 pt-3 border-t border-amber-100">
+  </div>
+</div>
+
+<!-- OTA price comparison (always visible) -->
+<div class="max-w-3xl mx-auto px-4 mt-4 relative z-10">
+  <div class="bg-white border border-amber-200 rounded-2xl shadow-lg p-5">
+    <div id="airbnbCompareBox">
       <div class="bg-gradient-to-r from-blue-50 to-amber-50 border border-blue-200 rounded-xl p-4">
         <p class="text-sm font-semibold text-slate-700 mb-2">
           <span class="lang-ja">💡 Airbnb / Booking.com で同じ日程の料金をご存知ですか？</span>
@@ -512,41 +517,39 @@ function updateAirbnbComparison() {
   const resultBox = document.getElementById('airbnbResult');
   const airbnbVal = parseInt(airbnbInput.value);
 
-  if (!airbnbVal || airbnbVal < 10000 || !currentEstimatedTotal) {
+  if (!airbnbVal || airbnbVal < 1000) {
     resultBox.classList.add('hidden');
     return;
   }
 
-  const saving = airbnbVal - currentEstimatedTotal;
-  const pct = Math.round((saving / airbnbVal) * 100);
+  const discountRate = 0.10;
+  const saving = Math.round(airbnbVal * discountRate);
+  const ourPrice = airbnbVal - saving;
+  const pct = Math.round(discountRate * 100);
   const lang = document.documentElement.lang;
 
-  if (saving > 0) {
-    resultBox.classList.remove('hidden');
-    const savingLabels = {
-      ja: '最大 ¥' + saving.toLocaleString('ja-JP') + ' おトクになる可能性！',
-      en: 'You could save up to ¥' + saving.toLocaleString('ja-JP') + '!',
-      zh: '最多可节省 ¥' + saving.toLocaleString('ja-JP') + '!',
-      ko: '최대 ¥' + saving.toLocaleString('ja-JP') + ' 절약 가능!'
-    };
-    const priceLabels = {
-      ja: '→ 当サイト概算価格 ',
-      en: '→ Our estimated price ',
-      zh: '→ 本站预估价格 ',
-      ko: '→ 당사이트 예상 가격 '
-    };
-    const badgeLabels = {
-      ja: 'OTAより最大 ' + pct + '%OFF の可能性',
-      en: 'Up to ' + pct + '% OFF vs OTA',
-      zh: '比OTA最多优惠 ' + pct + '%',
-      ko: 'OTA 대비 최대 ' + pct + '%OFF 가능'
-    };
-    document.getElementById('airbnbSaving').textContent = savingLabels[lang] || savingLabels.ja;
-    document.getElementById('airbnbOurPrice').textContent = (priceLabels[lang] || priceLabels.ja) + '¥' + currentEstimatedTotal.toLocaleString('ja-JP');
-    document.getElementById('airbnbBadge').textContent = badgeLabels[lang] || badgeLabels.ja;
-  } else {
-    resultBox.classList.add('hidden');
-  }
+  resultBox.classList.remove('hidden');
+  const savingLabels = {
+    ja: '最大 ¥' + saving.toLocaleString('ja-JP') + ' おトクになる可能性！',
+    en: 'You could save up to ¥' + saving.toLocaleString('ja-JP') + '!',
+    zh: '最多可节省 ¥' + saving.toLocaleString('ja-JP') + '!',
+    ko: '최대 ¥' + saving.toLocaleString('ja-JP') + ' 절약 가능!'
+  };
+  const priceLabels = {
+    ja: '→ 当サイト予想価格 ',
+    en: '→ Our estimated price ',
+    zh: '→ 本站预估价格 ',
+    ko: '→ 당사이트 예상 가격 '
+  };
+  const badgeLabels = {
+    ja: 'OTAより最大 ' + pct + '%OFF の可能性',
+    en: 'Up to ' + pct + '% OFF vs OTA',
+    zh: '比OTA最多优惠 ' + pct + '%',
+    ko: 'OTA 대비 최대 ' + pct + '%OFF 가능'
+  };
+  document.getElementById('airbnbSaving').textContent = savingLabels[lang] || savingLabels.ja;
+  document.getElementById('airbnbOurPrice').textContent = (priceLabels[lang] || priceLabels.ja) + '¥' + ourPrice.toLocaleString('ja-JP');
+  document.getElementById('airbnbBadge').textContent = badgeLabels[lang] || badgeLabels.ja;
 }
 
 async function submitForm(e) {
