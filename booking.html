@@ -25,7 +25,7 @@
 <meta name="twitter:title" content="Book Direct ｜ Komei Hotel 光明荘 — Private Vacation Rental Tokyo">
 <meta name="twitter:description" content="Book direct & save up to 10% vs Airbnb. Private whole-house rental near Asakusa & Skytree, Tokyo. Sleeps 10, rooftop terrace.">
 <meta name="twitter:image" content="https://komei.yoshinarcorp.com/images/p45.jpg">
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/tailwind.min.css">
 <style>
   html { scroll-behavior: smooth; }
   body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
@@ -430,7 +430,7 @@
 // TODO: GAS デプロイ後にここを書き換える
 const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx6JO_l8Hhb5pQCIZkBTgEkChylOcD4e32JuCcCG-XtvuaQ6I5qacd7UuyeHQ8fnOZR/exec';
 // === Demo mode (?demo=1) ===
-const DEMO = new URLSearchParams(location.search).get('demo') === '1';
+const DEMO = location.hostname !== 'komei.yoshinarcorp.com' && new URLSearchParams(location.search).get('demo') === '1';
 function demoReservationId(){ return 'R' + new Date().toISOString().slice(0,10).replace(/-/g,'') + Math.floor(Math.random()*9000+1000); }
 
 function setLang(lang) {
@@ -554,6 +554,20 @@ function updateAirbnbComparison() {
 
 async function submitForm(e) {
   e.preventDefault();
+  // 3-night minimum validation
+  const ciVal = document.getElementById('checkin').value;
+  const coVal = document.getElementById('checkout').value;
+  if (ciVal && coVal) {
+    const ci = new Date(ciVal + 'T00:00:00');
+    const co = new Date(coVal + 'T00:00:00');
+    const nights = Math.round((co - ci) / 86400000);
+    if (nights < 3) {
+      const lang = document.documentElement.lang;
+      const msgs = { ja:'最低3泊からご予約いただけます。', en:'Minimum stay is 3 nights.', zh:'最少入住3晚。', ko:'최소 3박부터 예약 가능합니다.' };
+      alert(msgs[lang] || msgs.ja);
+      return false;
+    }
+  }
   if (typeof gtag === 'function') { gtag('event', 'generate_lead', { event_category: 'booking', event_label: 'booking_form_submit' }); }
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;

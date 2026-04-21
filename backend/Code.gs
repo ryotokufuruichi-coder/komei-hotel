@@ -1,24 +1,24 @@
 /**
  * Komei Hotel  EDirect Booking Backend (Google Apps Script)
  * ----------------------------------------------------------
- * 配置: Google Apps Script プロジェクチE(スプレチE��シート紐付け推奨)
+ * 配置: Google Apps Script プロジェクト(スプレッドシート紐付け推奨)
  *
- * 提供する機�E:
- *   1. doPost  - 仮予紁E��仁E/ 本登録 / 決済�E期化 (フロント�E fetch から呼ぶ)
- *   2. doGet   - 予紁E��報取征E/ 承認リンク処琁E(管琁E��E��メールから踏�Eリンク)
- *   3. メール通知 - 管琁E��E���E承認依頼、ゲスト宛�E承誁E確定通知
- *   4. Stripe Checkout Session 作�E (REST API)
+ * 提供する機能:
+ *   1. doPost  - 仮予約受付 / 本登録 / 決済初期化 (フロントの fetch から呼ぶ)
+ *   2. doGet   - 予約情報取得 / 承認リンク処理(管理者メールから踏むリンク)
+ *   3. メール通知 - 管理者への承認依頼、ゲスト宛の承認・確定通知
+ *   4. Stripe Checkout Session 作成 (REST API)
  *
- * 忁E��な Script Properties (ファイル > プロジェクト�Eプロパティ > スクリプトのプロパティ):
- *   SHEET_ID            … 予紁E��琁E��プレチE��シーチED
- *   ADMIN_EMAIL         … 管琁E��E�E通知允E(侁E komei.hotel@gmail.com)
- *   FROM_NAME           … 送信老E��示吁E(侁E Komei Hotel)
- *   SITE_BASE_URL       … 公開サイト�Eベ�EスURL (侁E https://yoshinarcorp.github.io/komei)
- *   STRIPE_SECRET_KEY   … Stripe の sk_live_... また�E sk_test_...
- *   STRIPE_SUCCESS_PATH … /thanks.html (任愁E
- *   DRIVE_FOLDER_ID     … パスポ�Eト画像保存用フォルダID
+ * 必要な Script Properties (ファイル > プロジェクトのプロパティ > スクリプトのプロパティ):
+ *   SHEET_ID            … 予約管理スプレッドシートID
+ *   ADMIN_EMAIL         … 管理者の通知先(例: komei.hotel@gmail.com)
+ *   FROM_NAME           … 送信者表示名(例: Komei Hotel)
+ *   SITE_BASE_URL       … 公開サイトのベースURL (例: https://yoshinarcorp.github.io/komei)
+ *   STRIPE_SECRET_KEY   … Stripe の sk_live_... または sk_test_...
+ *   STRIPE_SUCCESS_PATH … /thanks.html (任意)
+ *   DRIVE_FOLDER_ID     … パスポート画像保存用フォルダID
  *
- * シート構�E (1シーチE= 1チE�Eブル):
+ * シート構成 (1シート= 1テーブル):
  *   reservations: id, status, created_at, updated_at, checkin, checkout, nights,
  *                 adults, children, rep_first_name, rep_last_name, rep_email, rep_phone, rep_country,
  *                 estimated_total, final_total, payment_method, payment_status,
@@ -48,10 +48,10 @@ const HEADERS_REVIEWS = [
 ];
 
 const STATUS = {
-  REQUESTED:  'requested',     // フロントから仮予紁EPOST 直征E
-  APPROVED:   'approved',      // 管琁E��E��承誁EↁEゲストに本登録URL送仁E
-  REGISTERED: 'registered',    // 本登録完亁EↁE決済征E��
-  PAID:       'paid',          // 決済完亁EↁE確宁E
+  REQUESTED:  'requested',     // フロントから仮予約POST直後
+  APPROVED:   'approved',      // 管理者承認→ゲストに本登録URL送付
+  REGISTERED: 'registered',    // 本登録完了→決済待ち
+  PAID:       'paid',          // 決済完了→確定
   CANCELLED:  'cancelled',
   REJECTED:   'rejected'
 };
@@ -76,6 +76,8 @@ function doPost(e) {
       case 'admin_list':            return jsonResponse(handleAdminList(body));
       case 'admin_detail':          return jsonResponse(handleAdminDetail(body));
       case 'admin_update_status':   return jsonResponse(handleAdminUpdateStatus(body));
+      case 'admin_approve':         return jsonResponse(handleApprovePost(body));
+      case 'admin_reject':          return jsonResponse(handleRejectPost(body));
       case 'admin_reply':           return jsonResponse(handleAdminReply(body));
       // Mypage API
       case 'mypage_message':        return jsonResponse(handleMypageMessage(body));
@@ -183,11 +185,8 @@ function handleApproveForm(p) {
   const estTotal = parseInt(r.row.estimated_total || 0);
   const guestName = fullName_(r.row);
   const baseUrl = ScriptApp.getService().getUrl();
-  const approveAction = baseUrl + '?action=approve&id=' + id + '&t=' + adminToken;
-  const rejectAction  = baseUrl + '?action=reject&id='  + id + '&t=' + adminToken;
-
   return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<title>承誁E E' + id + '</title>'
+    + '<title>承認 ' + esc_(id) + '</title>'
     + '<style>'
     + 'body{font-family:-apple-system,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#1e293b;background:#f8fafc}'
     + '.card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.1);padding:28px;margin-bottom:20px}'
@@ -200,28 +199,33 @@ function handleApproveForm(p) {
     + '.btn-approve{background:#10b981;color:#fff}.btn-reject{background:#ef4444;color:#fff}'
     + '.btn:hover{opacity:.9}'
     + '</style></head><body>'
-    + '<div class="card"><h1>予紁E��誁E/h1>'
+    + '<div class="card"><h1>予約承認</h1>'
     + '<table>'
-    + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
-    + '<tr><td>代表老E/td><td>' + guestName + '</td></tr>'
-    + '<tr><td>期間</td><td>' + toYMDSafe_(r.row.checkin) + ' 、E' + toYMDSafe_(r.row.checkout) + ' (' + r.row.nights + '況E</td></tr>'
-    + '<tr><td>人数</td><td>大人' + r.row.adults + ' / 孁E + r.row.children + '</td></tr>'
-    + '<tr><td>メール</td><td>' + r.row.rep_email + '</td></tr>'
-    + '<tr><td>備老E/td><td>' + (r.row.notes || '-') + '</td></tr>'
+    + '<tr><td>予約ID</td><td><b>' + esc_(id) + '</b></td></tr>'
+    + '<tr><td>代表者</td><td>' + esc_(guestName) + '</td></tr>'
+    + '<tr><td>期間</td><td>' + toYMDSafe_(r.row.checkin) + ' ～ ' + toYMDSafe_(r.row.checkout) + ' (' + r.row.nights + '泊)</td></tr>'
+    + '<tr><td>人数</td><td>大人' + r.row.adults + ' / 子供' + r.row.children + '</td></tr>'
+    + '<tr><td>メール</td><td>' + esc_(r.row.rep_email) + '</td></tr>'
+    + '<tr><td>備考</td><td>' + esc_(r.row.notes || '-') + '</td></tr>'
     + '</table>'
     + '<div class="amount-box">'
-    + '<label>確定��額（税込�E�E/label>'
+    + '<label>確定金額（税込）</label>'
     + '<input type="number" id="finalTotal" value="' + estTotal + '" min="0" step="1000">'
-    + '<p style="color:#92400e;font-size:13px;margin:8px 0 0">概算��顁E ¥' + estTotal.toLocaleString() + '　※変更がなければそ�Eまま承認してください</p>'
+    + '<p style="color:#92400e;font-size:13px;margin:8px 0 0">概算金額: ¥' + estTotal.toLocaleString() + '　※変更がなければそのまま承認してください</p>'
     + '</div>'
     + '<div style="text-align:center;margin-top:24px">'
-    + '<button class="btn btn-approve" onclick="doApprove()">✁E承認すめE/button>'
-    + '<a href="' + rejectAction + '" class="btn btn-reject">❁E却丁E/a>'
+    + '<button class="btn btn-approve" onclick="doAction(\'approve\')">✅ 承認する</button>'
+    + '<button class="btn btn-reject" onclick="doAction(\'reject\')">❌ 却下</button>'
     + '</div></div>'
     + '<script>'
-    + 'function doApprove(){'
-    + '  var t=document.getElementById("finalTotal").value;'
-    + '  window.location="' + approveAction + '&final_total="+encodeURIComponent(t);'
+    + 'function doAction(act){'
+    + '  var body={type:"admin_"+act,admin_token:"' + adminToken + '",id:"' + id + '"};'
+    + '  if(act==="approve") body.final_total=document.getElementById("finalTotal").value;'
+    + '  fetch("' + baseUrl + '",{method:"POST",body:JSON.stringify(body),headers:{"Content-Type":"text/plain;charset=utf-8"},redirect:"follow"})'
+    + '  .then(function(r){return r.json()}).then(function(d){'
+    + '    if(d.ok) document.body.innerHTML="<h1>"+(act==="approve"?"✅ Approved":"❌ Rejected")+"</h1><p>Reservation ' + id + ' processed.</p>";'
+    + '    else document.body.innerHTML="<h1>Error</h1><p>"+(d.error||"Unknown")+"</p>";'
+    + '  }).catch(function(e){alert("Error: "+e)});'
     + '}'
     + '</script></body></html>';
 }
@@ -246,7 +250,7 @@ function handleApprove(p) {
   log_(id, 'approved', 'final_total='+finalTotal);
 
   notifyGuestApproved_(id, r.row, finalTotal);
-  return '<h1>✁EApproved</h1><p>Reservation '+id+' has been approved. Guest notified.</p>';
+  return '<h1>✅ Approved</h1><p>Reservation '+id+' has been approved. Guest notified.</p>';
 }
 
 function handleReject(p) {
@@ -257,7 +261,34 @@ function handleReject(p) {
   updateReservation_(r.rowIndex, { status: STATUS.REJECTED, updated_at: new Date().toISOString() });
   log_(id, 'rejected', '');
   notifyGuestRejected_(id, r.row);
-  return '<h1>❁ERejected</h1><p>Reservation '+id+' rejected.</p>';
+  return '<h1>❌ Rejected</h1><p>Reservation '+id+' rejected.</p>';
+}
+
+/** POST-based approve handler (called from approve form via fetch) */
+function handleApprovePost(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  const id = body.id;
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not found' };
+  if (r.row.status !== STATUS.REQUESTED) return { ok:false, error:'already processed (status=' + r.row.status + ')' };
+  let finalTotal = parseInt(body.final_total || r.row.estimated_total || 0);
+  if (finalTotal <= 0) finalTotal = computeEstimatedTotal_(r.row.checkin, r.row.checkout);
+  updateReservation_(r.rowIndex, { status: STATUS.APPROVED, final_total: finalTotal, updated_at: new Date().toISOString() });
+  log_(id, 'approved', 'final_total=' + finalTotal);
+  notifyGuestApproved_(id, r.row, finalTotal);
+  return { ok:true };
+}
+
+/** POST-based reject handler (called from approve form via fetch) */
+function handleRejectPost(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  const id = body.id;
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not found' };
+  updateReservation_(r.rowIndex, { status: STATUS.REJECTED, updated_at: new Date().toISOString() });
+  log_(id, 'rejected', '');
+  notifyGuestRejected_(id, r.row);
+  return { ok:true };
 }
 
 function handleGetReservation(p) {
@@ -388,8 +419,16 @@ function createStripeCheckoutSession_(id, amount, email) {
  * Wire this to a separate doPost-only deployment.
  */
 function stripeWebhookHandler(e) {
-  // Recommended: use Stripe webhook signature verification.
-  const event = JSON.parse(e.postData.contents);
+  // Stripe webhook signature verification
+  const payload = e.postData.contents;
+  const sigHeader = e.parameter['Stripe-Signature'] || (e.headers && e.headers['Stripe-Signature']) || '';
+  const whSecret = getProp_('STRIPE_WEBHOOK_SECRET');
+  if (whSecret) {
+    if (!verifyStripeSignature_(payload, sigHeader, whSecret)) {
+      return jsonResponse({ error: 'Invalid signature' }, 403);
+    }
+  }
+  const event = JSON.parse(payload);
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const id = session.client_reference_id;
@@ -416,19 +455,19 @@ function notifyAdminPendingApproval_(id, body, nights) {
   const baseUrl = ScriptApp.getService().getUrl();
   const approveFormUrl = baseUrl + '?action=approve_form&id=' + id + '&t=' + adminToken;
   const rejectUrl  = baseUrl + '?action=reject&id='  + id + '&t=' + adminToken;
-  const guestName = (body.representative.first_name || '') + ' ' + (body.representative.last_name || '');
+  const guestName = esc_((body.representative.first_name || '') + ' ' + (body.representative.last_name || ''));
   const subject = '[Komei Hotel] 新規仮予約 ' + id + ' (' + body.checkin + ' ～ ' + body.checkout + ')';
   const html = ''
     + '<h2>新規予約申込</h2>'
     + '<table cellpadding="6">'
-    + '<tr><td>予約ID</td><td><b>' + id + '</b></td></tr>'
-    + '<tr><td>期間</td><td>' + body.checkin + ' ～ ' + body.checkout + ' (' + nights + '泊)</td></tr>'
-    + '<tr><td>人数</td><td>大人' + body.adults + ' / 子供' + body.children + '</td></tr>'
-    + '<tr><td>代表者</td><td>' + guestName.trim() + ' (' + body.representative.country + ')</td></tr>'
-    + '<tr><td>連絡先</td><td>' + body.representative.email + ' / ' + body.representative.phone + '</td></tr>'
+    + '<tr><td>予約ID</td><td><b>' + esc_(id) + '</b></td></tr>'
+    + '<tr><td>期間</td><td>' + esc_(body.checkin) + ' ～ ' + esc_(body.checkout) + ' (' + nights + '泊)</td></tr>'
+    + '<tr><td>人数</td><td>大人' + parseInt(body.adults) + ' / 子供' + parseInt(body.children) + '</td></tr>'
+    + '<tr><td>代表者</td><td>' + guestName.trim() + ' (' + esc_(body.representative.country) + ')</td></tr>'
+    + '<tr><td>連絡先</td><td>' + esc_(body.representative.email) + ' / ' + esc_(body.representative.phone) + '</td></tr>'
     + '<tr><td>概算金額</td><td>¥' + Number(body.estimated_total).toLocaleString() + '</td></tr>'
     + '<tr><td>OTA参考価格</td><td>' + (body.ota_price ? '¥' + Number(body.ota_price).toLocaleString() : '未入力') + '</td></tr>'
-    + '<tr><td>備考</td><td>' + (body.notes || '-') + '</td></tr>'
+    + '<tr><td>備考</td><td>' + esc_(body.notes || '-') + '</td></tr>'
     + '</table>'
     + '<p style="margin-top:24px">'
     + '<a href="' + approveFormUrl + '" style="background:#10b981;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;margin-right:12px">✅ 承認する（金額確認）</a>'
@@ -438,17 +477,17 @@ function notifyAdminPendingApproval_(id, body, nights) {
 }
 
 function notifyGuestRequestReceived_(id, body) {
-  const guestNameFull = ((body.representative.first_name || '') + ' ' + (body.representative.last_name || '')).trim();
+  const guestNameFull = esc_(((body.representative.first_name || '') + ' ' + (body.representative.last_name || '')).trim());
   const subject = '[Komei Hotel] お申込みを受付けました / Reservation request received (' + id + ')';
   const html =
-    '<p>' + guestNameFull + ' 槁E/p>'
-    + '<p>こ�E度は Komei Hotel 光�E荘へのお申込みをいただき、誠にありがとぁE��ざいます、Ebr>'
-    + '以下�E冁E��でお申込みを承りました。担当老E�E確認後、E4時間以冁E��承認�Eご連絡をお送りします、E/p>'
-    + '<table cellpadding="6"><tr><td>予約ID</td><td>' + id + '</td></tr>'
-    + '<tr><td>チェチE��イン</td><td>' + body.checkin + '</td></tr>'
-    + '<tr><td>チェチE��アウチE/td><td>' + body.checkout + '</td></tr>'
-    + '<tr><td>人数</td><td>大人' + body.adults + ' / 孁E + body.children + '</td></tr>'
-    + '<tr><td>概算��顁E/td><td>¥' + Number(body.estimated_total).toLocaleString() + '</td></tr>'
+    '<p>' + guestNameFull + ' 様</p>'
+    + '<p>この度は Komei Hotel 光明荘へのお申込みをいただき、誠にありがとうございます。<br>'
+    + '以下の内容でお申込みを承りました。担当者の確認後、24時間以内に承認のご連絡をお送りします。</p>'
+    + '<table cellpadding="6"><tr><td>予約ID</td><td>' + esc_(id) + '</td></tr>'
+    + '<tr><td>チェックイン</td><td>' + esc_(body.checkin) + '</td></tr>'
+    + '<tr><td>チェックアウト</td><td>' + esc_(body.checkout) + '</td></tr>'
+    + '<tr><td>人数</td><td>大人' + parseInt(body.adults) + ' / 子供' + parseInt(body.children) + '</td></tr>'
+    + '<tr><td>概算金額</td><td>¥' + Number(body.estimated_total).toLocaleString() + '</td></tr>'
     + '</table>'
     + '<hr>'
     + '<p>Dear ' + guestNameFull + ',</p>'
@@ -460,60 +499,60 @@ function notifyGuestApproved_(id, row, finalTotal) {
   const base = getProp_('SITE_BASE_URL');
   const url = base + '/register.html?id=' + id + '&token=' + row.token;
   const name = fullName_(row);
-  const subject = '[Komei Hotel] ご予紁E��承認されました / Approved (' + id + ')';
+  const subject = '[Komei Hotel] ご予約が承認されました / Approved (' + id + ')';
   const html =
-    '<p>' + name + ' 槁E/p>'
-    + '<p>お申込みぁE��だぁE��ご予紁E<b>' + id + '</b> が承認されました、Ebr>'
-    + '以下�Eリンクから宿泊老E��報のご登録とお支払いにお進みください�E�リンクは7日間有効�E�、E/p>'
-    + '<p>確定��顁E <b>¥' + Number(finalTotal).toLocaleString() + '</b></p>'
+    '<p>' + esc_(name) + ' 様</p>'
+    + '<p>お申込みいただいたご予約 <b>' + esc_(id) + '</b> が承認されました。<br>'
+    + '以下のリンクから宿泊者情報のご登録とお支払いにお進みください（リンクは7日間有効です）。</p>'
+    + '<p>確定金額: <b>¥' + Number(finalTotal).toLocaleString() + '</b></p>'
     + '<p><a href="' + url + '" style="background:#f59e0b;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;display:inline-block">本登録に進む / Continue Registration</a></p>'
     + '<hr>'
-    + '<p>Dear ' + name + ',</p>'
-    + '<p>Your reservation <b>' + id + '</b> has been approved. Total: <b>¥' + Number(finalTotal).toLocaleString() + '</b>. Please complete guest registration and payment via the link above (valid for 7 days).</p>';
+    + '<p>Dear ' + esc_(name) + ',</p>'
+    + '<p>Your reservation <b>' + esc_(id) + '</b> has been approved. Total: <b>¥' + Number(finalTotal).toLocaleString() + '</b>. Please complete guest registration and payment via the link above (valid for 7 days).</p>';
   GmailApp.sendEmail(row.rep_email, subject, '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
 }
 
 function notifyGuestRejected_(id, row) {
   GmailApp.sendEmail(row.rep_email,
-    '[Komei Hotel] お申込みにつぁE�� / Regarding your request (' + id + ')',
+    '[Komei Hotel] お申込みについて / Regarding your request (' + id + ')',
     '',
-    { htmlBody: '<p>誠に恐れ入りますが、ご希望の日程ではご案�Eが難しい状況です、Ebr>別日程でのご検討をお願いぁE��します、E/p><hr><p>We are unable to accommodate your requested dates. Please consider alternative dates.</p>',
+    { htmlBody: '<p>誠に恐れ入りますが、ご希望の日程ではご案内が難しい状況です。<br>別日程でのご検討をお願いいたします。</p><hr><p>We are unable to accommodate your requested dates. Please consider alternative dates.</p>',
       name: getProp_('FROM_NAME', 'Komei Hotel') });
 }
 
 function notifyGuestBankInstructions_(id, row, total) {
   const html =
-    '<p>' + fullName_(row) + ' 槁E/p>'
-    + '<p>下記口座へ <b>3営業日以冁E/b> にお振込ください、Ebr>振込人名義の前に予約ID、E + id + '」をご記�Eください、E/p>'
-    + '<p>金顁E <b>¥' + Number(total).toLocaleString() + '</b></p>'
-    + '<p>銀行名: 三井住友銀衁E/ 支庁E 赤坂支庁E/ 普送E9527788 / 名義: カ�E�コウケンショウジ</p>'
-    + '<p>入金確認後、確定メールをお送りします、E/p>';
-  GmailApp.sendEmail(row.rep_email, '[Komei Hotel] お振込のご案�E / Bank transfer instructions (' + id + ')', '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
+    '<p>' + esc_(fullName_(row)) + ' 様</p>'
+    + '<p>下記口座へ <b>3営業日以内</b> にお振込ください。<br>振込人名義の前に予約ID「' + esc_(id) + '」をご記入ください。</p>'
+    + '<p>金額: <b>¥' + Number(total).toLocaleString() + '</b></p>'
+    + '<p>銀行名: 三井住友銀行 / 支店: 赤坂支店 / 普通 9527788 / 名義: カ）コウケンショウジ</p>'
+    + '<p>入金確認後、確定メールをお送りします。</p>';
+  GmailApp.sendEmail(row.rep_email, '[Komei Hotel] お振込のご案内 / Bank transfer instructions (' + id + ')', '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
 }
 
 function notifyAdminBankPending_(id, row, total) {
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
-    '[Komei Hotel] 銀行振込征E�� ' + id,
+    '[Komei Hotel] 銀行振込待ち ' + id,
     '',
-    { htmlBody: '<p>予紁E' + id + ' が銀行振込を選択しました。�E金確認後、シートで status めEpaid に更新してください、E/p><p>金顁E ¥' + Number(total).toLocaleString() + '</p>' });
+    { htmlBody: '<p>予約 ' + esc_(id) + ' が銀行振込を選択しました。入金確認後、シートで status を paid に更新してください。</p><p>金額: ¥' + Number(total).toLocaleString() + '</p>' });
 }
 
 function notifyGuestConfirmed_(id, row) {
   const name = fullName_(row);
   const html =
-    '<p>' + name + ' 槁E/p>'
-    + '<p>お支払いが完亁E��、ご予紁E<b>' + id + '</b> が確定いたしました、Ebr>'
-    + 'チェチE��イン日が近づきましたら、�E室方法等�E詳細をご案�EぁE��します、E/p>'
-    + '<p>チェチE��イン: ' + toYMDSafe_(row.checkin) + ' 16:00、Ebr>チェチE��アウチE ' + toYMDSafe_(row.checkout) + ' 、E0:00</p>'
-    + '<hr><p>Dear ' + name + ',<br>Your reservation <b>' + id + '</b> is now confirmed. We will send check-in details closer to your arrival date.</p>';
-  GmailApp.sendEmail(row.rep_email, '[Komei Hotel] ご予紁E��定�Eお知らせ / Reservation Confirmed (' + id + ')', '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
+    '<p>' + esc_(name) + ' 様</p>'
+    + '<p>お支払いが完了し、ご予約 <b>' + esc_(id) + '</b> が確定いたしました。<br>'
+    + 'チェックイン日が近づきましたら、入室方法等の詳細をご案内いたします。</p>'
+    + '<p>チェックイン: ' + toYMDSafe_(row.checkin) + ' 16:00<br>チェックアウト: ' + toYMDSafe_(row.checkout) + ' 10:00</p>'
+    + '<hr><p>Dear ' + esc_(name) + ',<br>Your reservation <b>' + esc_(id) + '</b> is now confirmed. We will send check-in details closer to your arrival date.</p>';
+  GmailApp.sendEmail(row.rep_email, '[Komei Hotel] ご予約確定のお知らせ / Reservation Confirmed (' + id + ')', '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
 }
 
 function notifyAdminConfirmed_(id, row) {
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
-    '[Komei Hotel] 決済完亁E' + id,
+    '[Komei Hotel] 決済完了 ' + id,
     '',
-    { htmlBody: '<p>予紁E' + id + ' が決済完亁E��確定しました、E/p>' });
+    { htmlBody: '<p>予約 ' + esc_(id) + ' が決済完了し確定しました。</p>' });
 }
 
 // ============ Drive (Passport) ============
@@ -587,6 +626,44 @@ function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
+
+/** Stripe webhook signature verification (HMAC-SHA256) */
+function verifyStripeSignature_(payload, sigHeader, secret) {
+  try {
+    var pairs = {};
+    sigHeader.split(',').forEach(function(part) {
+      var kv = part.trim().split('=');
+      if (kv.length === 2) pairs[kv[0]] = kv[1];
+    });
+    var timestamp = pairs['t'];
+    var expectedSig = pairs['v1'];
+    if (!timestamp || !expectedSig) return false;
+    // Reject events older than 5 minutes (tolerance for clock skew)
+    var age = Math.floor(Date.now() / 1000) - parseInt(timestamp);
+    if (Math.abs(age) > 300) return false;
+    var signedPayload = timestamp + '.' + payload;
+    var mac = Utilities.computeHmacSha256Signature(signedPayload, secret);
+    var computed = mac.map(function(b) {
+      var hex = (b < 0 ? b + 256 : b).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+    return computed === expectedSig;
+  } catch (err) {
+    log_(null, 'stripe_sig_error', err.toString());
+    return false;
+  }
+}
+
+/** HTML-escape to prevent XSS in admin email HTML */
+function esc_(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 function htmlResponse(html) {
   return HtmlService.createHtmlOutput(html);
 }
@@ -615,7 +692,7 @@ function nightsBetween_(ci, co) {
 }
 
 /**
- * Mask a name for privacy: '山田太郁E ↁE'山***', 'John Smith' ↁE'J*** S***'
+ * Mask a name for privacy: '山田太郁E →'山***', 'John Smith' →'J*** S***'
  */
 function maskName_(name) {
   if (!name) return '';
@@ -629,7 +706,7 @@ function maskName_(name) {
 }
 
 /**
- * Mask an email for privacy: 'user@example.com' ↁE'u***@e***.com'
+ * Mask an email for privacy: 'user@example.com' →'u***@e***.com'
  */
 function maskEmail_(email) {
   if (!email) return '';
@@ -910,15 +987,15 @@ function handleAdminReply(body) {
   const mypageUrl  = base + '/mypage.html?id=' + id + '&email=' + encodeURIComponent(r.row.rep_email);
   const name       = fullName_(r.row);
   const html =
-    '<p>' + name + ' 槁E/p>'
-    + '<p>Komei Hotel からメチE��ージが届いてぁE��す！E/p>'
+    '<p>' + name + ' 様/p>'
+    + '<p>Komei Hotel からメッセージが届いています！</p>'
     + '<blockquote style="border-left:4px solid #f59e0b;padding:12px;background:#fffbeb;margin:12px 0">'
     + message.replace(/\n/g,'<br>') + '</blockquote>'
-    + '<p><a href="' + mypageUrl + '" style="background:#f59e0b;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px">マイペ�Eジで確誁EↁE/a></p>'
+    + '<p><a href="' + mypageUrl + '" style="background:#f59e0b;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px">マイページで確認する</a></p>'
     + '<hr><p>Dear ' + name + ', you have a new message from Komei Hotel. '
-    + '<a href="' + mypageUrl + '">View on My Page ↁE/a></p>';
+    + '<a href="' + mypageUrl + '">View on My Page →/a></p>';
   GmailApp.sendEmail(r.row.rep_email,
-    '[Komei Hotel] ホストからメチE��ージ / Message from Host (' + id + ')',
+    '[Komei Hotel] ホストからメッセージ / Message from Host (' + id + ')',
     '', { htmlBody:html, name:getProp_('FROM_NAME','Komei Hotel') });
 
   return { ok:true };
@@ -980,12 +1057,12 @@ function handleMypageMessage(body) {
 
   const adminUrl = getProp_('SITE_BASE_URL') + '/admin.html';
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
-    '[Komei Hotel] ゲストからメチE��ージ / Guest Message (' + id + ')',
+    '[Komei Hotel] ゲストからメッセージ / Guest Message (' + id + ')',
     '',
-    { htmlBody: '<p>予紁E<b>' + id + '</b>�E�E + fullName_(r.row) + '�E�からメチE��ージ�E�E/p>'
+    { htmlBody: '<p>予約 <b>' + id + '</b>（' + esc_(fullName_(r.row)) + '）からメッセージ。</p>'
         + '<blockquote style="border-left:4px solid #f59e0b;padding:12px;background:#fffbeb">'
         + message.replace(/\n/g,'<br>') + '</blockquote>'
-        + '<p><a href="' + adminUrl + '">管琁E��面で確誁EↁE/a></p>' });
+        + '<p><a href="' + adminUrl + '">管理画面で確認する</a></p>' });
 
   return { ok:true };
 }
@@ -1001,7 +1078,7 @@ function handleMypageChangeRequest(body) {
   if (!r) return { ok:false, error:'not_found' };
   if (String(r.row.rep_email).trim().toLowerCase() !== email) return { ok:false, error:'not_found' };
 
-  const typeLabel = ({ date:'日程変更', guests:'人数変更', other:'そ�E仁E })[changeType] || changeType;
+  const typeLabel = ({ date:'日程変更', guests:'人数変更', other:'その他' })[changeType] || changeType;
   const fullMsg   = '[変更リクエスチE ' + typeLabel + ']\n' + detail;
   addMessage_(id, 'guest', fullMsg);
   log_(id, 'change_request', changeType + ': ' + detail.substring(0, 100));
@@ -1010,11 +1087,11 @@ function handleMypageChangeRequest(body) {
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
     '[Komei Hotel] 変更リクエスチE/ Change Request (' + id + ')',
     '',
-    { htmlBody: '<p>予紁E<b>' + id + '</b>�E�E + fullName_(r.row) + '�E�から�E変更リクエスト！E/p>'
-        + '<p>種顁E <b>' + typeLabel + '</b></p>'
+    { htmlBody: '<p>予約 <b>' + id + '</b>（' + esc_(fullName_(r.row)) + '）からの変更リクエスト！</p>'
+        + '<p>種額 <b>' + typeLabel + '</b></p>'
         + '<blockquote style="border-left:4px solid #f59e0b;padding:12px;background:#fffbeb">'
         + detail.replace(/\n/g,'<br>') + '</blockquote>'
-        + '<p><a href="' + adminUrl + '">管琁E��面で確誁EↁE/a></p>' });
+        + '<p><a href="' + adminUrl + '">管理画面で確認する</a></p>' });
 
   return { ok:true };
 }
@@ -1157,9 +1234,9 @@ function handleSubmitReview(body) {
       + '<p><b>予約ID:</b> ' + body.reservation_id + '<br>'
       + '<b>ゲスチE</b> ' + repName + '<br>'
       + '<b>総合評価:</b> ' + '☁E.repeat(body.overall) + ' (' + body.overall + '/5)<br>'
-      + '<b>コメンチE</b><br>' + (body.comment || '(なぁE').replace(/\n/g, '<br>') + '</p>'
-      + (body.private_feedback ? '<p><b>プライベ�EトフィードバチE��:</b><br>' + body.private_feedback.replace(/\n/g, '<br>') + '</p>' : '')
-      + '<p><a href="' + getProp_('SITE_BASE_URL') + '/admin.html">管琁E��面で確誁E/a></p>';
+      + '<b>コメント</b><br>' + (body.comment || '(ない').replace(/\n/g, '<br>') + '</p>'
+      + (body.private_feedback ? '<p><b>プライベートフィードバック:</b><br>' + body.private_feedback.replace(/\n/g, '<br>') + '</p>' : '')
+      + '<p><a href="' + getProp_('SITE_BASE_URL') + '/admin.html">管理画面で確認</a></p>';
     MailApp.sendEmail({ to: adminEmail, subject: subject, htmlBody: html, name: getProp_('FROM_NAME') || 'Komei Hotel' });
   } catch (e) {
     log_(body.reservation_id, 'review_notify_error', e.toString());
@@ -1312,21 +1389,21 @@ function sendReviewRequestEmails() {
     const mypageUrl = baseUrl + '/mypage.html?id=' + rid + '&email=' + encodeURIComponent(email);
     const googleReviewUrl = getProp_('GOOGLE_REVIEW_URL') || 'https://www.google.com/maps/search/Komei+Hotel+光明荘+東駒形';
 
-    const subject = '【Komei Hotel】ご宿泊ありがとぁE��ざいました  Eレビューのお願い';
+    const subject = '【Komei Hotel】ご宿泊ありがとうございました  Eレビューのお願い';
     const html = '<div style="max-width:600px;margin:0 auto;font-family:sans-serif;">'
-      + '<h2 style="color:#d97706;">Komei Hotel 光�E荁E/h2>'
-      + '<p>' + name + ' 槁E/p>'
-      + '<p>こ�E度はKomei Hotelにご宿泊いただき、誠にありがとぁE��ざいました、E/p>'
-      + '<p>ご滞在はぁE��がでしたか？今後�Eサービス向上�Eため、ぜひレビューをお聞かせください、E/p>'
+      + '<h2 style="color:#d97706;">Komei Hotel 光明荘/h2>'
+      + '<p>' + name + ' 様/p>'
+      + '<p>この度はKomei Hotelにご宿泊いただき、誠にありがとうございました</p>'
+      + '<p>ご滞在はいかがでしたか？今後のサービス向上のため、ぜひレビューをお聞かせください</p>'
       + '<p style="text-align:center;margin:30px 0;">'
-      + '<a href="' + mypageUrl + '" style="display:inline-block;background:#f59e0b;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">レビューを書ぁE/a>'
+      + '<a href="' + mypageUrl + '" style="display:inline-block;background:#f59e0b;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">レビューを書い/a>'
       + '</p>'
       + '<p style="text-align:center;margin:20px 0;">'
-      + '<a href="' + googleReviewUrl + '" style="display:inline-block;background:#4285f4;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">📍 Googleにもレビューを書ぁE/a>'
+      + '<a href="' + googleReviewUrl + '" style="display:inline-block;background:#4285f4;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">📍 Googleにもレビューを書い/a>'
       + '</p>'
-      + '<p style="color:#94a3b8;font-size:13px;">マイペ�Eジにログイン後、「レビュー」タブからご記�EぁE��だけます、Ebr>Googleレビューもいただけると大変嬉しぁE��す、E/p>'
+      + '<p style="color:#94a3b8;font-size:13px;">マイページにログイン後、「レビュー」タブからご記入いただけます<br>Googleレビューもいただけると大変嬉しいです</p>'
       + '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">'
-      + '<p style="color:#94a3b8;font-size:12px;">Komei Hotel 光�E荁Ebr>、E30-0005 東京都墨田区東駒形20-5<br>komei.hotel@gmail.com</p>'
+      + '<p style="color:#94a3b8;font-size:12px;">Komei Hotel 光明荘<br>〒130-0005 東京都墨田区東駒形20-5<br>komei.hotel@gmail.com</p>'
       + '</div>';
 
     try {
