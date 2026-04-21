@@ -1079,13 +1079,13 @@ function handleMypageChangeRequest(body) {
   if (String(r.row.rep_email).trim().toLowerCase() !== email) return { ok:false, error:'not_found' };
 
   const typeLabel = ({ date:'日程変更', guests:'人数変更', other:'その他' })[changeType] || changeType;
-  const fullMsg   = '[変更リクエスチE ' + typeLabel + ']\n' + detail;
+  const fullMsg   = '[変更リクエスト ' + typeLabel + ']\n' + detail;
   addMessage_(id, 'guest', fullMsg);
   log_(id, 'change_request', changeType + ': ' + detail.substring(0, 100));
 
   const adminUrl = getProp_('SITE_BASE_URL') + '/admin.html';
   GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
-    '[Komei Hotel] 変更リクエスチE/ Change Request (' + id + ')',
+    '[Komei Hotel] 変更リクエスト/ Change Request (' + id + ')',
     '',
     { htmlBody: '<p>予約 <b>' + id + '</b>（' + esc_(fullName_(r.row)) + '）からの変更リクエスト！</p>'
         + '<p>種額 <b>' + typeLabel + '</b></p>'
@@ -1229,12 +1229,12 @@ function handleSubmitReview(body) {
   // Notify admin
   try {
     const adminEmail = getProp_('ADMIN_EMAIL');
-    const subject = '【Komei Hotel】新しいレビュー (' + repName + ' ☁E + body.overall + ')';
+    const subject = '【Komei Hotel】新しいレビュー (' + esc_(repName) + ' ★' + body.overall + ')';
     const html = '<h3>新しいレビューが投稿されました</h3>'
-      + '<p><b>予約ID:</b> ' + body.reservation_id + '<br>'
-      + '<b>ゲスチE</b> ' + repName + '<br>'
-      + '<b>総合評価:</b> ' + '☁E.repeat(body.overall) + ' (' + body.overall + '/5)<br>'
-      + '<b>コメント</b><br>' + (body.comment || '(ない').replace(/\n/g, '<br>') + '</p>'
+      + '<p><b>予約ID:</b> ' + esc_(body.reservation_id) + '<br>'
+      + '<b>ゲスト:</b> ' + esc_(repName) + '<br>'
+      + '<b>総合評価:</b> ' + '★'.repeat(body.overall) + ' (' + body.overall + '/5)<br>'
+      + '<b>コメント</b><br>' + esc_(body.comment || '(なし)').replace(/\n/g, '<br>') + '</p>'
       + (body.private_feedback ? '<p><b>プライベートフィードバック:</b><br>' + body.private_feedback.replace(/\n/g, '<br>') + '</p>' : '')
       + '<p><a href="' + getProp_('SITE_BASE_URL') + '/admin.html">管理画面で確認</a></p>';
     MailApp.sendEmail({ to: adminEmail, subject: subject, htmlBody: html, name: getProp_('FROM_NAME') || 'Komei Hotel' });
