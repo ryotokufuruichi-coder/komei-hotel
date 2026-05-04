@@ -220,6 +220,15 @@
 </style>
 </head>
 <body class="text-slate-800 bg-white">
+<script>
+// 初回アクセス時のみゲートウェイページへリダイレクト
+(function(){
+  if (!sessionStorage.getItem('gw_visited')) {
+    sessionStorage.setItem('gw_visited', '1');
+    window.location.replace('gateway.html');
+  }
+})();
+</script>
 
 <!-- Header -->
 <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur shadow-sm">
@@ -239,6 +248,7 @@
       <a href="#reviews" class="hover:text-amber-600"><span class="lang-ja">レビュー</span><span class="lang-en">Reviews</span><span class="lang-zh">评价</span><span class="lang-ko">리뷰</span></a>
       <a href="#faq" class="hover:text-amber-600"><span class="lang-ja">FAQ</span><span class="lang-en">FAQ</span><span class="lang-zh">常见问题</span><span class="lang-ko">FAQ</span></a>
       <a href="mypage.html" class="hover:text-amber-600"><span class="lang-ja">マイページ</span><span class="lang-en">My Page</span><span class="lang-zh">我的页面</span><span class="lang-ko">마이페이지</span></a>
+      <a href="partner.html" class="hover:text-amber-600"><span class="lang-ja">パートナー</span><span class="lang-en">Partners</span><span class="lang-zh">合作伙伴</span><span class="lang-ko">파트너</span></a>
       <a href="booking.html" class="px-4 py-2 rounded-full bg-amber-500 text-white font-semibold hover:bg-amber-600 transition">
         <span class="lang-ja">直接予約</span><span class="lang-en">Book Now</span><span class="lang-zh">直接预订</span><span class="lang-ko">직접 예약</span>
       </a>

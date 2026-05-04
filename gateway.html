@@ -119,6 +119,9 @@
 </div>
 
 <script>
+// ゲートウェイを経由したことを記録（index.htmlの再リダイレクト防止）
+sessionStorage.setItem('gw_visited', '1');
+
 function setLang(lang) {
   document.documentElement.lang = lang;
   document.getElementById('langSel').value = lang;
