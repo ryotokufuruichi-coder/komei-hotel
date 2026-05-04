@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>協賛・パートナー募集 — 光明荘 Komei Hotel</title>
+<meta name="description" content="光明荘の協賛プロダクト・サービス紹介プログラム。協賛企業様・運営代行業者様・物件オーナー様向けのパートナーシップのご案内。">
+<link rel="stylesheet" href="css/tailwind.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+    color: #1e293b;
+    background: #f8fafc;
+    -webkit-font-smoothing: antialiased;
+    font-size: 16px;
+  }
+  .section { padding: 64px 24px; max-width: 960px; margin: 0 auto; }
+  .section-title { font-size: 28px; font-weight: 700; margin: 0 0 8px; color: #1e293b; }
+  .section-accent { width: 48px; height: 3px; background: #3b82f6; border-radius: 2px; margin-bottom: 32px; }
+  .card {
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    padding: 28px; margin-bottom: 20px;
+  }
+  .btn-primary {
+    display: inline-block; background: #3b82f6; color: #fff;
+    padding: 14px 36px; border-radius: 8px; font-weight: 600; font-size: 17px;
+    text-decoration: none; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #2563eb; }
+  .stat-num { font-size: 40px; font-weight: 700; color: #3b82f6; }
+  .stat-label { font-size: 16px; font-weight: 600; color: #1e293b; margin-top: 4px; }
+  .stat-desc { font-size: 14px; color: #64748b; margin-top: 4px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .hero-inner { flex-direction: column !important; text-align: center !important; }
+  }
+  .icon-circle {
+    width: 52px; height: 52px; border-radius: 50%; background: #dbeafe;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-num {
+    width: 40px; height: 40px; border-radius: 50%; background: #3b82f6; color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px; flex-shrink: 0;
+  }
+  .tab-btn {
+    padding: 14px 32px; border: none; background: transparent; font-size: 17px;
+    font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  /* Form styles */
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 15px; font-weight: 600; margin-bottom: 6px; color: #1e293b; }
+  .form-label .req { color: #ef4444; margin-left: 4px; font-size: 13px; }
+  .form-input, .form-textarea, .form-select {
+    width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px;
+    font-size: 16px; font-family: inherit; color: #1e293b; background: #fff;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus {
+    outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  }
+  .form-textarea { resize: vertical; min-height: 100px; }
+  .form-radio-group { display: flex; flex-direction: column; gap: 10px; }
+  .form-radio-label { display: flex; align-items: center; gap: 8px; font-size: 15px; cursor: pointer; }
+  .form-radio-label input[type="radio"] { width: 18px; height: 18px; accent-color: #3b82f6; }
+  .form-check-group { display: flex; flex-wrap: wrap; gap: 12px; }
+  .form-check-label { display: flex; align-items: center; gap: 6px; font-size: 15px; cursor: pointer; }
+  .form-check-label input[type="checkbox"] { width: 18px; height: 18px; accent-color: #3b82f6; }
+  .form-submit {
+    display: inline-block; background: #3b82f6; color: #fff; border: none;
+    padding: 14px 48px; border-radius: 8px; font-weight: 600; font-size: 17px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .form-submit:hover { background: #2563eb; }
+  .conditional-field { display: none; }
+  .conditional-field.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ─── Header ─── -->
+<header style="background:#fff;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:50;">
+  <div style="max-width:960px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;">
+    <a href="gateway.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+      <div style="width:40px;height:40px;background:#f59e0b;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;">K</div>
+      <div>
+        <div style="font-size:18px;font-weight:700;">Komei Hotel</div>
+        <div style="font-size:12px;color:#64748b;">光明荘</div>
+      </div>
+    </a>
+    <a href="#contact" class="btn-primary" style="padding:10px 24px;font-size:15px;">お問い合わせ</a>
+  </div>
+</header>
+
+<!-- ─── Hero ─── -->
+<section style="background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:#fff;padding:64px 24px;">
+  <div class="hero-inner" style="max-width:960px;margin:0 auto;display:flex;align-items:center;gap:48px;">
+    <div style="flex:1;">
+      <div style="font-size:15px;color:#60a5fa;font-weight:600;margin-bottom:12px;letter-spacing:2px;">PARTNER PROGRAM</div>
+      <h1 style="font-size:36px;font-weight:700;line-height:1.4;margin:0 0 16px;">
+        民泊 × 物販・サービス<br>協賛プログラム
+      </h1>
+      <p style="font-size:17px;color:#94a3b8;line-height:1.7;margin:0 0 28px;">
+        協賛企業様の商品やサービスを民泊施設で紹介し、<br>
+        宿泊ゲストの「体験」から「購入・利用」へつなげる新しい仕組みです。
+      </p>
+      <a href="#contact" class="btn-primary">お問い合わせはこちら</a>
+    </div>
+    <div style="flex:0 0 auto;">
+      <div style="display:flex;gap:16px;">
+        <div style="text-align:center;background:rgba(255,255,255,0.08);border-radius:12px;padding:20px 24px;">
+          <div class="stat-num" style="color:#60a5fa;">90%+</div>
+          <div style="font-size:14px;color:#94a3b8;margin-top:4px;">稼働率</div>
+        </div>
+        <div style="text-align:center;background:rgba(255,255,255,0.08);border-radius:12px;padding:20px 24px;">
+          <div class="stat-num" style="color:#60a5fa;">90%+</div>
+          <div style="font-size:14px;color:#94a3b8;margin-top:4px;">外国人比率</div>
+        </div>
+        <div style="text-align:center;background:rgba(255,255,255,0.08);border-radius:12px;padding:20px 24px;">
+          <div class="stat-num" style="color:#60a5fa;">4-6泊</div>
+          <div style="font-size:14px;color:#94a3b8;margin-top:4px;">平均滞在</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Tab Switcher ─── -->
+<div id="tab-bar" style="background:#fff;border-bottom:1px solid #e2e8f0;text-align:center;">
+  <button class="tab-btn active" onclick="switchTab('sponsor',this)">協賛企業の方</button>
+  <button class="tab-btn" onclick="switchTab('agency',this)">運営代行業者の方</button>
+  <button class="tab-btn" onclick="switchTab('owner',this)">物件オーナーの方</button>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: 協賛企業向け -->
+<!-- ════════════════════════════════════════════ -->
+<div id="tab-sponsor" class="tab-content active">
+
+  <!-- 仕組み -->
+  <div class="section">
+    <h2 class="section-title">仕組み</h2>
+    <div class="section-accent"></div>
+    <p style="color:#64748b;margin:0 0 28px;line-height:1.8;font-size:16px;">
+      協賛企業様の商品やサービス（飲食・体験・移動など）を弊施設内で紹介。宿泊ゲストが実際に体験し、気に入った商品をその場で購入、またはサービスを予約・利用できる仕組みです。
+    </p>
+    <div class="grid-3">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">🏠</div>
+        <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;">商品の設置・サービスの案内</h3>
+        <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">客室内に商品や案内カード（日英）を配置。飲食・体験・タクシーなどのサービスもゲストに紹介します。</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">✨</div>
+        <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;">体験してもらう</h3>
+        <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">中長期滞在（平均4〜6泊）のゲストが商品を試用したり、おすすめサービスを体験。滞在中の接点が購入・利用の起点に。</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">🛒</div>
+        <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;">購入・利用につなげる</h3>
+        <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">商品はその場購入またはEC経由で購入。サービスはQRコードから予約・利用。商品の発送は協賛企業様にてご対応いただきます。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提供方法 -->
+  <div style="background:#fff;">
+    <div class="section">
+      <h2 class="section-title">ゲストへの提供方法</h2>
+      <div class="section-accent"></div>
+      <div class="grid-3">
+        <div class="card" style="border-left:4px solid #3b82f6;">
+          <h3 style="font-size:18px;font-weight:700;margin:0 0 8px;color:#3b82f6;">① その場購入</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">
+            施設内の専用収納から、遠隔ロック解除で商品をその場で購入・受け取り。スタッフ不在でも完結します。
+          </p>
+        </div>
+        <div class="card" style="border-left:4px solid #1e293b;">
+          <h3 style="font-size:18px;font-weight:700;margin:0 0 8px;color:#1e293b;">② 海外配送</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">
+            案内カードのQRコードからブランドECサイトへ誘導。帰国後に自宅から注文が可能です。商品の発送は協賛企業様にてご対応いただきます。
+          </p>
+        </div>
+        <div class="card" style="border-left:4px solid #10b981;">
+          <h3 style="font-size:18px;font-weight:700;margin:0 0 8px;color:#10b981;">③ サービス予約・利用</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">
+            飲食店・体験アクティビティ・タクシーなどの移動手段をQRコードや案内カードから予約・利用いただけます。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 費用（オーダーメイド型） -->
+  <div class="section">
+    <h2 class="section-title">費用について</h2>
+    <div class="section-accent"></div>
+    <div class="card">
+      <div style="display:flex;flex-direction:column;gap:20px;">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div class="icon-circle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>
+          </div>
+          <div>
+            <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">協賛費用</h3>
+            <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">占有棚数・商品サイズ・サービス内容等に応じて変動します。</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div class="icon-circle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M20 12V8H6a2 2 0 0 1 0-4h12V2"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+          </div>
+          <div>
+            <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">商品提供・サービス連携（任意）</h3>
+            <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">体験用の商品をご提供いただける場合やサービス連携をご希望の場合、設置・訴求は弊社が対応いたします。</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div class="icon-circle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div>
+            <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">販売・紹介手数料</h3>
+            <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">商品の販売やサービスの利用が発生した場合に、手数料をいただきます。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:16px 20px;margin-top:8px;text-align:center;">
+      <p style="margin:0;font-size:16px;font-weight:600;color:#3b82f6;">
+        クライアント様の状況に応じてオーダーメイドでご相談可能です。まずはお気軽にお問い合わせください。
+      </p>
+    </div>
+  </div>
+
+  <!-- 施設の特徴 -->
+  <div style="background:#fff;">
+    <div class="section">
+      <h2 class="section-title">施設の特徴</h2>
+      <div class="section-accent"></div>
+      <div class="grid-3">
+        <div style="text-align:center;">
+          <div class="stat-num">90%+</div>
+          <div class="stat-label">稼働率</div>
+          <div class="stat-desc">年間を通じて高い稼働を維持</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="stat-num">90%+</div>
+          <div class="stat-label">外国人比率</div>
+          <div class="stat-desc">アジア・欧米圏を中心に多国籍</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="stat-num">4-6泊</div>
+          <div class="stat-label">平均滞在</div>
+          <div class="stat-desc">最低3泊、中長期滞在が中心</div>
+        </div>
+      </div>
+      <p style="text-align:center;font-size:15px;color:#64748b;margin-top:28px;line-height:1.7;">
+        宿泊者はアジア圏（台湾・韓国・中国）と欧米圏（アメリカ・オーストラリア・フランス等）が中心。<br>
+        中長期滞在のため日用品や飲食・体験・移動サービスへの関心が高く、商品もサービスも利用につながりやすい環境です。
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: 運営代行業者向け -->
+<!-- ════════════════════════════════════════════ -->
+<div id="tab-agency" class="tab-content">
+
+  <!-- プログラム概要 -->
+  <div class="section">
+    <h2 class="section-title">プログラム概要</h2>
+    <div class="section-accent"></div>
+    <p style="color:#64748b;margin:0 0 28px;line-height:1.8;font-size:16px;">
+      自社運営の民泊施設（光明荘）で実証済みの「協賛プロダクト・サービス紹介プログラム」を、貴社の管理物件に展開するパートナーシップのご提案です。
+    </p>
+    <div class="grid-3">
+      <div class="card" style="text-align:center;">
+        <div class="icon-circle" style="margin:0 auto 12px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;">新たな収益源</h3>
+        <p style="font-size:15px;color:#64748b;margin:0;">紹介した施設分の導入紹介料で、新たな収益チャネルを獲得できます。</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="icon-circle" style="margin:0 auto 12px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;">運用負荷ゼロ</h3>
+        <p style="font-size:15px;color:#64748b;margin:0;">設備設置・商品配備・サービス連携・在庫管理・決済はすべて吉成が対応します。</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div class="icon-circle" style="margin:0 auto 12px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;">オーナー満足度UP</h3>
+        <p style="font-size:15px;color:#64748b;margin:0;">オーナーにも収入が発生。管理物件の付加価値向上に貢献します。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 収益モデル -->
+  <div style="background:#fff;">
+    <div class="section">
+      <h2 class="section-title">収益モデル</h2>
+      <div class="section-accent"></div>
+      <div class="card">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div class="icon-circle" style="background:#dbeafe;flex-shrink:0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div>
+            <h3 style="font-size:18px;font-weight:700;margin:0 0 8px;">導入紹介料</h3>
+            <p style="font-size:16px;color:#64748b;margin:0;line-height:1.7;">
+              紹介した施設分の導入規模に応じた導入紹介料をお支払いします。
+            </p>
+          </div>
+        </div>
+      </div>
+      <div style="background:#eff6ff;border-radius:8px;padding:16px 20px;margin-top:8px;text-align:center;">
+        <p style="margin:0;font-size:16px;font-weight:600;color:#1e293b;">
+          初期費用ゼロ
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 導入の流れ -->
+  <div class="section">
+    <h2 class="section-title">導入の流れ</h2>
+    <div class="section-accent"></div>
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div class="card" style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="step-num">1</div>
+        <div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">オーナーへご紹介</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;">管理物件のオーナーへ本プログラムをご紹介いただきます。</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="step-num">2</div>
+        <div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">設備設置・商品配備・サービス連携</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;">オーナー合意後、収納デバイスの設置・商品配備・サービス案内の整備を行います。</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="step-num">3</div>
+        <div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">運用開始</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;">在庫管理・決済・補充・サービス運営はすべて対応します。</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="step-num">4</div>
+        <div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">月次レポート共有</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;">販売・利用実績を月次で共有し、改善提案を継続実施します。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- TAB: 物件オーナー向け -->
+<!-- ════════════════════════════════════════════ -->
+<div id="tab-owner" class="tab-content">
+
+  <!-- メインメッセージ -->
+  <div class="section" style="text-align:center;">
+    <div style="font-size:56px;margin-bottom:16px;">💰</div>
+    <h2 style="font-size:32px;font-weight:700;margin:0 0 8px;color:#1e293b;">新たな収益源！！</h2>
+    <p style="font-size:18px;color:#64748b;margin:0 0 32px;line-height:1.7;">
+      入居率は上限に達している。でも、もっと収益を伸ばしたい。<br>
+      そんなオーナー様に、宿泊収入に上乗せできる新しい収益モデルをご提案します。
+    </p>
+    <div class="card" style="max-width:640px;margin:0 auto;background:linear-gradient(135deg,#1e293b 0%,#334155 100%);color:#fff;text-align:center;">
+      <p style="font-size:16px;color:#94a3b8;margin:0 0 8px;">宿泊収入だけじゃない</p>
+      <p style="font-size:26px;font-weight:700;margin:0 0 8px;color:#60a5fa;">物販・サービス収益を宿泊収入にプラス</p>
+      <p style="font-size:15px;color:#94a3b8;margin:0;">
+        客室に商品を設置＆サービスを案内 → ゲストが購入・利用 → オーナー様に収益が発生
+      </p>
+    </div>
+  </div>
+
+  <!-- 仕組み -->
+  <div style="background:#fff;">
+    <div class="section">
+      <h2 class="section-title">仕組み</h2>
+      <div class="section-accent"></div>
+      <div class="grid-3">
+        <div class="card" style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">📦</div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;">商品設置＆サービス案内</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;">お部屋に商品棚を設置し、飲食・体験・移動などのサービスも案内カードで紹介します。</p>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">🛍️</div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;">ゲストが購入・利用</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;">宿泊中に気に入った商品をその場購入、またはサービスを予約・利用。</p>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:12px;">💴</div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 8px;">収益が発生</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;">導入規模に応じた収入がオーナー様に入ります。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- メリット -->
+  <div class="section">
+    <h2 class="section-title">オーナー様のメリット</h2>
+    <div class="section-accent"></div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card" style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="icon-circle" style="background:#fef3c7;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">入居率が上限でも収益アップ</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">稼働率が頭打ちでも、物販・サービス紹介による追加収入で施設全体の収益性が向上します。</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="icon-circle" style="background:#fef3c7;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">手間ゼロで導入</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">設備設置・商品配備・サービス連携・在庫管理・決済対応はすべてお任せ。オーナー様の作業はありません。</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="icon-circle" style="background:#fef3c7;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <div>
+          <h3 style="font-size:17px;font-weight:700;margin:0 0 4px;">施設の付加価値向上</h3>
+          <p style="font-size:15px;color:#64748b;margin:0;line-height:1.7;">ゲストが買い物やサービスも楽しめる施設として、口コミや評価の向上にもつながります。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 費用 -->
+  <div style="background:#fff;">
+    <div class="section">
+      <h2 class="section-title">費用について</h2>
+      <div class="section-accent"></div>
+      <div class="card" style="text-align:center;padding:40px 28px;">
+        <div style="font-size:56px;margin-bottom:16px;">🆓</div>
+        <h3 style="font-size:26px;font-weight:700;margin:0 0 12px;color:#3b82f6;">初期費用なし</h3>
+        <p style="font-size:17px;color:#64748b;margin:0;line-height:1.7;">
+          商品棚やサービス案内の導入費用はオーナー様のご負担はありません。<br>
+          設備・案内ツールは弊社が全額負担で設置いたします。
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- 共通: お問い合わせフォーム -->
+<!-- ════════════════════════════════════════════ -->
+<div id="contact" class="section">
+  <h2 class="section-title">お問い合わせ</h2>
+  <div class="section-accent"></div>
+  <p style="color:#64748b;margin:0 0 24px;line-height:1.7;font-size:16px;">
+    協賛・パートナーシップにご興味をお持ちの方は、以下のフォームよりお問い合わせください。
+  </p>
+  <div class="card" style="padding:36px;">
+    <form action="https://formsubmit.co/ryotoku.furuichi@yoshinarcorp.com" method="POST">
+      <!-- FormSubmit settings -->
+      <input type="hidden" name="_subject" value="【光明荘】パートナーお問い合わせ">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_template" value="table">
+      <input type="text" name="_honey" style="display:none">
+
+      <!-- お問い合わせ種別 -->
+      <div class="form-group">
+        <label class="form-label">お問い合わせ種別<span class="req">*必須</span></label>
+        <div class="form-radio-group">
+          <label class="form-radio-label">
+            <input type="radio" name="inquiry_type" value="協賛企業として" required onchange="toggleFields()">
+            協賛企業として（商品・サービスを提供したい）
+          </label>
+          <label class="form-radio-label">
+            <input type="radio" name="inquiry_type" value="運営代行業者として" onchange="toggleFields()">
+            運営代行業者として（管理物件に導入したい）
+          </label>
+          <label class="form-radio-label">
+            <input type="radio" name="inquiry_type" value="物件オーナーとして" onchange="toggleFields()">
+            物件オーナーとして（自分の施設に導入したい）
+          </label>
+          <label class="form-radio-label">
+            <input type="radio" name="inquiry_type" value="その他" onchange="toggleFields()">
+            その他
+          </label>
+        </div>
+      </div>
+
+      <!-- 会社名 -->
+      <div class="form-group">
+        <label class="form-label" for="company">会社名・屋号<span class="req">*必須</span></label>
+        <input type="text" class="form-input" id="company" name="company" required placeholder="例：株式会社○○">
+      </div>
+
+      <!-- お名前 -->
+      <div class="form-group">
+        <label class="form-label" for="name">ご担当者名<span class="req">*必須</span></label>
+        <input type="text" class="form-input" id="name" name="name" required placeholder="例：山田 太郎">
+      </div>
+
+      <!-- メール -->
+      <div class="form-group">
+        <label class="form-label" for="email">メールアドレス<span class="req">*必須</span></label>
+        <input type="email" class="form-input" id="email" name="email" required placeholder="例：info@example.com">
+      </div>
+
+      <!-- 電話 -->
+      <div class="form-group">
+        <label class="form-label" for="phone">電話番号（任意）</label>
+        <input type="tel" class="form-input" id="phone" name="phone" placeholder="例：03-1234-5678">
+      </div>
+
+      <!-- ▼ 協賛企業向けフィールド -->
+      <div id="sponsor-fields" class="conditional-field">
+        <div class="form-group">
+          <label class="form-label">提供内容の種類<span class="req">*</span></label>
+          <div class="form-check-group">
+            <label class="form-check-label"><input type="checkbox" name="offering_type" value="商品（物販）"> 商品（物販）</label>
+            <label class="form-check-label"><input type="checkbox" name="offering_type" value="飲食サービス"> 飲食サービス</label>
+            <label class="form-check-label"><input type="checkbox" name="offering_type" value="体験・アクティビティ"> 体験・アクティビティ</label>
+            <label class="form-check-label"><input type="checkbox" name="offering_type" value="移動・タクシー"> 移動・タクシー</label>
+            <label class="form-check-label"><input type="checkbox" name="offering_type" value="その他サービス"> その他サービス</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="offering_detail">商品・サービスの概要</label>
+          <textarea class="form-textarea" id="offering_detail" name="offering_detail" placeholder="提供予定の商品やサービスの概要をお聞かせください。"></textarea>
+        </div>
+      </div>
+
+      <!-- ▼ 運営代行業者向けフィールド -->
+      <div id="agency-fields" class="conditional-field">
+        <div class="form-group">
+          <label class="form-label" for="managed_properties">管理物件数（おおよそ）</label>
+          <select class="form-select" id="managed_properties" name="managed_properties">
+            <option value="">選択してください</option>
+            <option value="1〜5件">1〜5件</option>
+            <option value="6〜20件">6〜20件</option>
+            <option value="21〜50件">21〜50件</option>
+            <option value="51件以上">51件以上</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="property_area">主な管理エリア</label>
+          <input type="text" class="form-input" id="property_area" name="property_area" placeholder="例：大阪市内、京都市内">
+        </div>
+      </div>
+
+      <!-- ▼ 物件オーナー向けフィールド -->
+      <div id="owner-fields" class="conditional-field">
+        <div class="form-group">
+          <label class="form-label" for="property_type">物件の種類・エリア</label>
+          <input type="text" class="form-input" id="property_type" name="property_type" placeholder="例：民泊マンション（大阪市中央区）">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="room_count">部屋数（おおよそ）</label>
+          <select class="form-select" id="room_count" name="room_count">
+            <option value="">選択してください</option>
+            <option value="1〜3部屋">1〜3部屋</option>
+            <option value="4〜10部屋">4〜10部屋</option>
+            <option value="11〜30部屋">11〜30部屋</option>
+            <option value="31部屋以上">31部屋以上</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 自由記入 -->
+      <div class="form-group">
+        <label class="form-label" for="message">お問い合わせ内容・ご質問</label>
+        <textarea class="form-textarea" id="message" name="message" placeholder="ご質問やご要望がありましたらご記入ください。"></textarea>
+      </div>
+
+      <!-- 送信ボタン -->
+      <div style="text-align:center;margin-top:28px;">
+        <button type="submit" class="form-submit">送信する</button>
+      </div>
+    </form>
+  </div>
+  <p style="text-align:center;margin-top:16px;font-size:15px;color:#64748b;">
+    メールでのお問い合わせ: <a href="mailto:ryotoku.furuichi@yoshinarcorp.com" style="color:#3b82f6;">ryotoku.furuichi@yoshinarcorp.com</a>
+  </p>
+</div>
+
+<!-- ─── Footer ─── -->
+<footer style="background:#1e293b;color:#94a3b8;padding:32px 24px;text-align:center;">
+  <p style="margin:0 0 8px;font-size:16px;color:#fff;font-weight:600;">吉成株式会社</p>
+  <p style="margin:0;font-size:14px;">
+    <a href="gateway.html" style="color:#60a5fa;text-decoration:none;">トップに戻る</a>
+    &nbsp;|&nbsp;
+    <a href="index.html" style="color:#60a5fa;text-decoration:none;">宿泊サイト</a>
+  </p>
+</footer>
+
+<script>
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+  window.scrollTo({ top: document.getElementById('tab-bar').offsetTop, behavior: 'smooth' });
+}
+
+function toggleFields() {
+  var selected = document.querySelector('input[name="inquiry_type"]:checked');
+  var val = selected ? selected.value : '';
+  document.getElementById('sponsor-fields').className = 'conditional-field' + (val === '協賛企業として' ? ' show' : '');
+  document.getElementById('agency-fields').className = 'conditional-field' + (val === '運営代行業者として' ? ' show' : '');
+  document.getElementById('owner-fields').className = 'conditional-field' + (val === '物件オーナーとして' ? ' show' : '');
+}
+</script>
+</body>
+</html>
