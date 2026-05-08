@@ -46,6 +46,9 @@ const HEADERS_REVIEWS = [
   'checkin','communication','location','value','rooms','comment','private_feedback',
   'created_at','published'
 ];
+const HEADERS_AUTO_REPLIES = [
+  'intent','label','priority','enabled','keywords_ja','keywords_en','reply_ja','reply_en','updated_at'
+];
 
 const STATUS = {
   REQUESTED:  'requested',     // フロントから仮予約POST直後
@@ -86,6 +89,11 @@ function doPost(e) {
       case 'submit_review':         return jsonResponse(handleSubmitReview(body));
       case 'admin_list_reviews':    return jsonResponse(handleAdminListReviews(body));
       case 'admin_toggle_review':   return jsonResponse(handleAdminToggleReview(body));
+      // Auto-reply API
+      case 'admin_list_auto_replies':   return jsonResponse(handleAdminListAutoReplies(body));
+      case 'admin_update_auto_reply':   return jsonResponse(handleAdminUpdateAutoReply(body));
+      case 'admin_reset_auto_replies':  return jsonResponse(handleAdminResetAutoReplies(body));
+      case 'admin_test_auto_reply':     return jsonResponse(handleAdminTestAutoReply(body));
       default: return jsonResponse({ ok:false, error:'unknown type' });
     }
   } catch (err) {
@@ -1064,7 +1072,21 @@ function handleMypageMessage(body) {
         + message.replace(/\n/g,'<br>') + '</blockquote>'
         + '<p><a href="' + adminUrl + '">管理画面で確認する</a></p>' });
 
-  return { ok:true };
+  // ----- Auto-reply: deterministic, template-based -----
+  let autoReply = null;
+  try {
+    const lang  = detectLang_(message);
+    const match = matchAutoReply_(message, lang);
+    if (match && match.reply) {
+      addMessage_(id, 'auto', match.reply);
+      log_(id, 'auto_reply', match.intent + ' (' + lang + ')');
+      autoReply = { intent: match.intent, label: match.label, reply: match.reply };
+    }
+  } catch (autoErr) {
+    log_(id, 'auto_reply_error', String(autoErr).substring(0, 200));
+  }
+
+  return { ok:true, auto_reply: autoReply };
 }
 
 function handleMypageChangeRequest(body) {
@@ -1442,8 +1464,317 @@ function initialize() {
   ensureHeaders_(sheet_('logs'), HEADERS_LOGS);
   ensureHeaders_(sheet_('messages'), HEADERS_MESSAGES);
   ensureHeaders_(sheet_('reviews'), HEADERS_REVIEWS);
+  ensureHeaders_(sheet_('auto_replies'), HEADERS_AUTO_REPLIES);
+  seedAutoReplies_(false); // false = do not overwrite existing
   generateAndStoreAdminToken_();
   Logger.log('Initialized. ADMIN_TOKEN=' + getProp_('ADMIN_TOKEN'));
 }
 
 // manualResend wrapper removed (was one-time debug tool)
+
+// ============================================================
+// Auto-reply system
+// Templates extracted from past Airbnb host conversations.
+// Stored in `auto_replies` sheet so admins can edit without code changes.
+// ============================================================
+
+/**
+ * Default auto-reply templates. The 18 intents below cover the recurring
+ * questions we saw across past Airbnb conversations (passport submission,
+ * check-in/-out times, smart-lock code, WiFi, address, garbage rules,
+ * smoking, noise, late check-out, transfers, tours, scam warning, etc.).
+ *
+ * Matching is keyword-based with priority order; higher priority wins
+ * when multiple intents match. `fallback` matches anything as a safety
+ * net so every guest message gets an instant acknowledgement.
+ */
+function defaultAutoReplies_() {
+  return [
+    {
+      intent:'passport_register', label:'パスポート登録案内', priority:90,
+      keywords_ja:'パスポート,名簿,ゲスト情報,本人確認,onestay',
+      keywords_en:'passport,guest info,guest information,register,roster,onestay,check-in form',
+      reply_ja:'ご連絡ありがとうございます。チェックインの手続きとして、ご予約確認メールに記載のオンラインチェックインリンクから、全ゲストの情報（国籍・パスポート番号・氏名・住所・連絡先）をご登録ください。リンクが見つからない場合はお知らせください、再送いたします。\n\n光明荘',
+      reply_en:'Thank you for your message. To complete your check-in, please submit guest information (nationality, passport number, name, address, contact) for all guests via the online check-in link sent in your booking confirmation email. If you cannot find the link, please let us know and we will resend it.\n\nKomei Hotel'
+    },
+    {
+      intent:'checkin_time', label:'チェックイン時間', priority:80,
+      keywords_ja:'チェックイン時間,何時から,入室時間,いつ入れる',
+      keywords_en:'check-in time,what time can,arrival time,checkin time,when can we check in',
+      reply_ja:'チェックインは16:00（午後4:00）以降ご利用いただけます。ご到着予定時刻をお知らせいただけますと、スムーズにお迎えできます。\n\n光明荘',
+      reply_en:'Check-in is available from 4:00 PM (16:00) onwards. Please let us know your estimated arrival time so we can prepare for your stay.\n\nKomei Hotel'
+    },
+    {
+      intent:'checkout_time', label:'チェックアウト時間', priority:80,
+      keywords_ja:'チェックアウト時間,何時まで,退室時間,出る時間',
+      keywords_en:'check-out time,checkout time,what time leave,departure time',
+      reply_ja:'チェックアウトは午前10:00までとなっております。次のゲストのご案内のため、レイトチェックアウトは原則お受けできません。事情がある場合は事前にご相談ください。\n\n光明荘',
+      reply_en:'Check-out is by 10:00 AM. Late check-out is generally not available because we need to prepare the room for the next guest. If you have special circumstances, please contact us in advance.\n\nKomei Hotel'
+    },
+    {
+      intent:'late_checkout', label:'レイトチェックアウト依頼', priority:85,
+      keywords_ja:'レイトチェックアウト,延長,延泊,遅く出',
+      keywords_en:'late check-out,late checkout,extend,stay later,extend stay',
+      reply_ja:'レイトチェックアウトは原則お受けできません。次のゲストの清掃に支障が出る場合、追加料金を頂戴することがございます。延泊をご希望の場合は、チェックアウト前日18:00までにご連絡をお願いいたします。\n\n光明荘',
+      reply_en:'Late check-out is generally not available. If your delay impacts cleaning for the next guest, additional fees may apply. To extend your stay, please contact us by 6:00 PM the day before check-out.\n\nKomei Hotel'
+    },
+    {
+      intent:'smartlock_code', label:'入室暗証番号', priority:85,
+      keywords_ja:'暗証番号,鍵,スマートロック,入室方法,ドア,開かない',
+      keywords_en:'access code,door code,key,smart lock,smartlock,how to enter,how to get in,door won\'t open,can\'t open',
+      reply_ja:'スマートロックの暗証番号は、チェックイン日の前日にチェックインガイドと一緒にメールでお送りします。すでにチェックイン済みで暗証番号にお困りの場合は、本メッセージにご返信のうえ、緊急時は03-6899-5681までお電話ください。\n\n光明荘',
+      reply_en:'The smart-lock access code is emailed to you the day before check-in along with the check-in guide. If you have already checked in and are having trouble with the code, please reply here, and call 03-6899-5681 for emergencies.\n\nKomei Hotel'
+    },
+    {
+      intent:'wifi', label:'Wi-Fi情報', priority:75,
+      keywords_ja:'wifi,wi-fi,ワイファイ,インターネット,パスワード',
+      keywords_en:'wifi,wi-fi,internet,password,network',
+      reply_ja:'館内全体でWiFiをご利用いただけます。SSIDは「Komei-Guest」、パスワードはチェックイン前日にチェックインガイドと一緒にメールでお知らせします。\n\n光明荘',
+      reply_en:'WiFi is available throughout the property. The SSID is "Komei-Guest" and the password will be sent to you the day before check-in together with the check-in guide.\n\nKomei Hotel'
+    },
+    {
+      intent:'address', label:'住所・アクセス', priority:75,
+      keywords_ja:'住所,場所,行き方,地図,アクセス,どこ',
+      keywords_en:'address,location,where is,how to get there,map,directions,google map',
+      reply_ja:'住所：〒130-0005 東京都墨田区東駒形4-20-5\nGoogleマップ：https://maps.app.goo.gl/jVzhawyQTeTFfkLcA\n\nGoogleマップに加え、チェックインガイドの写真付きアクセスマップも併せてご確認ください。\n\n光明荘',
+      reply_en:'Property address: 4-20-5 Higashikomagata, Sumida-ku, Tokyo 130-0005, Japan\nGoogle Maps: https://maps.app.goo.gl/jVzhawyQTeTFfkLcA\n\nWhen visiting, please use the access map with photos in the check-in guide together with Google Maps.\n\nKomei Hotel'
+    },
+    {
+      intent:'garbage_rules', label:'ゴミ出しルール', priority:70,
+      keywords_ja:'ゴミ,ごみ,分別,捨て方,袋',
+      keywords_en:'garbage,trash,rubbish,waste,recycle,separate,bin',
+      reply_ja:'ゴミは、燃えるゴミ・瓶・缶・ペットボトルに分別をお願いいたします。\n施設で用意した45L指定袋のみをご利用ください（紙袋など他の袋は使用不可）。\n長期滞在の方には、収集日を別途メッセージでご案内いたします。\n\n光明荘',
+      reply_en:'Please separate burnable garbage, glass bottles, cans, and PET bottles.\nUse only the 45L garbage bags provided by our facility (paper bags or other bags are not allowed).\nFor long-term stays, collection days will be communicated separately.\n\nKomei Hotel'
+    },
+    {
+      intent:'smoking', label:'禁煙ルール', priority:65,
+      keywords_ja:'タバコ,たばこ,煙草,喫煙,吸って',
+      keywords_en:'smoke,smoking,cigarette,vape,vaping',
+      reply_ja:'当宿は屋内・バルコニーを含む屋外も含め、敷地内すべて禁煙となっております。何卒ご理解とご協力をお願いいたします。\n\n光明荘',
+      reply_en:'Smoking is strictly prohibited anywhere on the property, including indoors and outdoors (terrace included). Thank you for your understanding and cooperation.\n\nKomei Hotel'
+    },
+    {
+      intent:'noise', label:'騒音・近隣配慮', priority:65,
+      keywords_ja:'騒音,うるさい,音,パーティー,深夜',
+      keywords_en:'noise,loud,party,quiet,neighbor,complain',
+      reply_ja:'当宿は住宅街にございます。通常の会話は問題ございませんが、大声でのパーティーや電話通話はお控えください。21:00以降は特にお静かにお過ごしいただきますようお願いいたします。繰り返し苦情が寄せられた場合、警察への通報や追加料金が発生することがございます。\n\n光明荘',
+      reply_en:'We are located in a residential area. Normal conversation is fine, but please avoid loud parties and phone calls. Please keep noise to a minimum, especially after 9:00 PM. Repeated complaints may result in police involvement and additional charges.\n\nKomei Hotel'
+    },
+    {
+      intent:'arrival_time', label:'到着予定時刻のお伺い', priority:60,
+      keywords_ja:'到着,到着予定,何時に着,つきます,着きます',
+      keywords_en:'arrive,arrival,arriving,we will arrive,coming at',
+      reply_ja:'ご到着予定時刻をお知らせいただきありがとうございます。事前にご準備を整えてお迎えいたします。お気をつけてお越しください。\n\n光明荘',
+      reply_en:'Thank you for letting us know your estimated arrival time. We will have everything ready for you. Have a safe trip!\n\nKomei Hotel'
+    },
+    {
+      intent:'transfer', label:'送迎・空港シャトル', priority:55,
+      keywords_ja:'送迎,シャトル,空港,タクシー,ピックアップ',
+      keywords_en:'transfer,shuttle,airport pickup,airport pick-up,taxi,pick up',
+      reply_ja:'有料の送迎サービス（空港送迎を含む）をご用意しております。手荷物の心配なく快適にご移動いただけます。\n詳細はこちら：https://tokyo-door-to-door.netlify.app/#tours\n\nご希望の場合はその旨ご返信ください。\n\n光明荘',
+      reply_en:'We offer paid transfer services including airport pickup. Travel comfortably with no luggage hassle or transfers.\nDetails: https://tokyo-door-to-door.netlify.app/#tours\n\nIf you would like to book, please reply to this message.\n\nKomei Hotel'
+    },
+    {
+      intent:'tour', label:'観光ツアー', priority:50,
+      keywords_ja:'ツアー,観光,富士山,日光,体験',
+      keywords_en:'tour,sightseeing,fuji,nikko,experience,day trip',
+      reply_ja:'富士山・日光などへの1日プライベートツアーをご用意しております。信頼できる地元のガイドによる、上質な体験をお楽しみいただけます。\n詳細はこちら：https://tokyo-experience.web.app\n\n光明荘',
+      reply_en:'We offer 1-day private tours to Mt. Fuji, Nikko, and other destinations. Enjoy private, high-quality experiences crafted through trusted local connections.\nDetails: https://tokyo-experience.web.app\n\nKomei Hotel'
+    },
+    {
+      intent:'payment_security', label:'決済詐欺への警告', priority:99,
+      keywords_ja:'クレジットカード,カード番号,支払い情報,銀行振込,暗号資産',
+      keywords_en:'credit card,card number,payment info,bank transfer,wire transfer,bitcoin,gift card',
+      reply_ja:'⚠️【安全のお知らせ】Komei Hotelは、本チャットでクレジットカードや支払い情報をお伺いすることは絶対にございません。第三者から決済情報を求められた場合は、必ず本アプリまたは公式メール（komei.hotel@gmail.com）から直接ご確認ください。\n\n光明荘',
+      reply_en:'⚠️ For your safety: Komei Hotel will NEVER ask for credit card or payment information via chat. If you are asked for payment details by anyone, please verify directly with us through this app or our official email (komei.hotel@gmail.com).\n\nKomei Hotel'
+    },
+    {
+      intent:'emergency', label:'緊急時連絡先', priority:95,
+      keywords_ja:'緊急,救急,事故,怪我,火事,警察',
+      keywords_en:'emergency,urgent,accident,injury,fire,police,help me',
+      reply_ja:'緊急の際は、03-6899-5681までお電話、または komei.hotel@gmail.com にメールでご連絡ください。スタッフが早急に対応いたします。\n\n光明荘',
+      reply_en:'For emergencies, please call 03-6899-5681 directly, or email komei.hotel@gmail.com. Our team will respond as quickly as possible.\n\nKomei Hotel'
+    },
+    {
+      intent:'thanks', label:'お礼への返信', priority:30,
+      keywords_ja:'ありがとう,感謝,助かりました',
+      keywords_en:'thank you,thanks,appreciate,grateful',
+      reply_ja:'温かいお言葉をありがとうございます！素敵なご滞在となりますように。何かございましたらお気軽にご連絡ください 😊\n\n光明荘',
+      reply_en:'Thank you so much for your kind words! We hope you have a wonderful stay. Please do not hesitate to reach out if you need anything 😊\n\nKomei Hotel'
+    },
+    {
+      intent:'greeting', label:'挨拶への返信', priority:20,
+      keywords_ja:'こんにちは,はじめまして,お世話になります,よろしく',
+      keywords_en:'hello,hi there,good morning,good evening,nice to meet',
+      reply_ja:'ご連絡ありがとうございます。Komei Hotelへようこそ。スタッフより通常12時間以内にご返信いたします。お急ぎの場合は03-6899-5681までお電話ください。\n\n光明荘',
+      reply_en:'Thank you for your message and welcome to Komei Hotel. Our team will get back to you within 12 hours. For urgent matters, please call 03-6899-5681.\n\nKomei Hotel'
+    },
+    {
+      intent:'fallback', label:'デフォルト返信（該当なし）', priority:1,
+      keywords_ja:'*',
+      keywords_en:'*',
+      reply_ja:'ご連絡ありがとうございます。スタッフに通知され、通常12時間以内にご返信いたします。お急ぎの場合は03-6899-5681、または komei.hotel@gmail.com までご連絡ください。\n\n光明荘',
+      reply_en:'Thank you for your message. Our team has been notified and will respond within 12 hours. For urgent matters, please call 03-6899-5681 or email komei.hotel@gmail.com.\n\nKomei Hotel'
+    }
+  ];
+}
+
+/**
+ * Insert defaults into the auto_replies sheet. If `overwrite` is true,
+ * existing rows are wiped first; otherwise only intents not already
+ * present are appended.
+ */
+function seedAutoReplies_(overwrite) {
+  const sh = sheet_('auto_replies');
+  ensureHeaders_(sh, HEADERS_AUTO_REPLIES);
+
+  const defaults = defaultAutoReplies_();
+  const now = new Date().toISOString();
+
+  if (overwrite && sh.getLastRow() > 1) {
+    sh.getRange(2, 1, sh.getLastRow() - 1, HEADERS_AUTO_REPLIES.length).clearContent();
+  }
+
+  const existingIntents = {};
+  if (sh.getLastRow() > 1) {
+    const data = sh.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) existingIntents[String(data[i][0])] = true;
+  }
+
+  const rows = [];
+  defaults.forEach(function(d) {
+    if (!overwrite && existingIntents[d.intent]) return;
+    rows.push([
+      d.intent, d.label, d.priority, true,
+      d.keywords_ja, d.keywords_en,
+      d.reply_ja, d.reply_en, now
+    ]);
+  });
+  if (rows.length > 0) {
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, HEADERS_AUTO_REPLIES.length).setValues(rows);
+  }
+}
+
+/**
+ * Read all auto-reply rules from the sheet, sorted by priority desc.
+ */
+function getAutoReplies_() {
+  const sh = sheet_('auto_replies');
+  ensureHeaders_(sh, HEADERS_AUTO_REPLIES);
+  if (sh.getLastRow() <= 1) {
+    seedAutoReplies_(false);
+    if (sh.getLastRow() <= 1) return [];
+  }
+  const data = sh.getDataRange().getValues();
+  const headers = data[0];
+  const rules = [];
+  for (let i = 1; i < data.length; i++) {
+    const o = {};
+    headers.forEach(function(h, j) { o[h] = data[i][j]; });
+    o.priority = Number(o.priority) || 0;
+    o.enabled  = (o.enabled === true || String(o.enabled).toLowerCase() === 'true');
+    rules.push(o);
+  }
+  rules.sort(function(a, b) { return b.priority - a.priority; });
+  return rules;
+}
+
+/**
+ * Find the auto-reply rule whose keyword list (for the given language)
+ * has the strongest match against the message. Returns null when only
+ * the wildcard fallback would match and we want to skip auto-reply.
+ */
+function matchAutoReply_(message, lang) {
+  const rules = getAutoReplies_();
+  const lc = String(message).toLowerCase();
+  let best = null;
+
+  for (let i = 0; i < rules.length; i++) {
+    const r = rules[i];
+    if (!r.enabled) continue;
+    const kwField = (lang === 'ja') ? r.keywords_ja : r.keywords_en;
+    const kws = String(kwField || '').split(',').map(function(s){ return s.trim().toLowerCase(); }).filter(Boolean);
+    if (kws.length === 0) continue;
+
+    if (kws.indexOf('*') !== -1) {
+      if (!best) best = r; // fallback only if nothing else matched yet
+      continue;
+    }
+
+    let hits = 0;
+    for (let k = 0; k < kws.length; k++) {
+      if (lc.indexOf(kws[k]) !== -1) hits++;
+    }
+    if (hits > 0) { best = r; break; } // priority-sorted, first hit wins
+  }
+  if (!best) return null;
+
+  return {
+    intent: best.intent,
+    label:  best.label,
+    reply:  (lang === 'ja') ? best.reply_ja : best.reply_en
+  };
+}
+
+/**
+ * Crude language detection. If the message contains Japanese script
+ * (hiragana/katakana/CJK), return 'ja'; otherwise 'en'. Sufficient for
+ * picking which template variant to send back.
+ */
+function detectLang_(text) {
+  if (!text) return 'en';
+  return /[぀-ヿ㐀-鿿]/.test(text) ? 'ja' : 'en';
+}
+
+// ============ Auto-reply admin handlers ============
+
+function handleAdminListAutoReplies(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  return { ok:true, rules: getAutoReplies_() };
+}
+
+function handleAdminUpdateAutoReply(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  const intent = (body.intent || '').trim();
+  if (!intent) return { ok:false, error:'no intent' };
+
+  const sh = sheet_('auto_replies');
+  ensureHeaders_(sh, HEADERS_AUTO_REPLIES);
+  const data = sh.getDataRange().getValues();
+  const headers = data[0];
+  const idx = {};
+  headers.forEach(function(h, j) { idx[h] = j; });
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][idx.intent]) === intent) {
+      const r = i + 1;
+      if (body.label       != null) sh.getRange(r, idx.label       + 1).setValue(body.label);
+      if (body.priority    != null) sh.getRange(r, idx.priority    + 1).setValue(Number(body.priority) || 0);
+      if (body.enabled     != null) sh.getRange(r, idx.enabled     + 1).setValue(body.enabled === true || body.enabled === 'true');
+      if (body.keywords_ja != null) sh.getRange(r, idx.keywords_ja + 1).setValue(body.keywords_ja);
+      if (body.keywords_en != null) sh.getRange(r, idx.keywords_en + 1).setValue(body.keywords_en);
+      if (body.reply_ja    != null) sh.getRange(r, idx.reply_ja    + 1).setValue(body.reply_ja);
+      if (body.reply_en    != null) sh.getRange(r, idx.reply_en    + 1).setValue(body.reply_en);
+      sh.getRange(r, idx.updated_at + 1).setValue(new Date().toISOString());
+      log_(null, 'auto_reply_update', intent);
+      return { ok:true };
+    }
+  }
+  return { ok:false, error:'intent not found' };
+}
+
+function handleAdminResetAutoReplies(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  seedAutoReplies_(true); // overwrite all
+  log_(null, 'auto_reply_reset', 'all defaults restored');
+  return { ok:true };
+}
+
+function handleAdminTestAutoReply(body) {
+  if (!verifyAdminToken_(body.admin_token)) return { ok:false, error:'unauthorized' };
+  const message = (body.message || '').trim();
+  if (!message) return { ok:false, error:'no message' };
+  const lang  = body.lang || detectLang_(message);
+  const match = matchAutoReply_(message, lang);
+  return { ok:true, lang:lang, match:match };
+}

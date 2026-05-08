@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -50,6 +50,7 @@
         <h1 class="text-lg font-bold">Komei Hotel <span class="text-amber-500">Admin</span></h1>
       </div>
       <div class="flex items-center gap-4">
+        <button onclick="showAutoRepliesPanel()" class="text-sm text-amber-600 hover:text-amber-700 font-medium">🤖 自動返信</button>
         <button onclick="showReviewsPanel()" class="text-sm text-amber-600 hover:text-amber-700 font-medium">⭐ レビュー管理</button>
         <button onclick="loadReservations();showListView()" class="text-sm text-slate-500 hover:text-amber-600" title="更新">&#x21BB; 更新</button>
         <button onclick="doLogout()" class="text-sm text-slate-500 hover:text-red-500">ログアウト</button>
@@ -197,6 +198,106 @@
     <!-- Review List -->
     <div id="reviewsList" class="space-y-4"></div>
     <div id="reviewsEmpty" class="hidden text-center py-12 text-slate-400 bg-white rounded-xl shadow-sm">レビューはまだありません</div>
+  </div>
+
+  <!-- ====== Auto-Reply Templates Panel ====== -->
+  <div id="autoRepliesPanel" class="hidden max-w-7xl mx-auto px-4 py-4">
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="text-xl font-bold">🤖 自動返信テンプレート管理</h2>
+        <p class="text-xs text-slate-500 mt-1">マイページからゲストがメッセージを送信した際、キーワードに一致するテンプレートが自動返信されます。優先度の高いものから判定。</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="openAutoReplyTester()" class="px-3 py-1.5 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg">📝 テスト</button>
+        <button onclick="resetAutoReplies()" class="px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">初期値に戻す</button>
+        <button onclick="showListView()" class="text-sm text-slate-500 hover:text-amber-600">← 予約一覧に戻る</button>
+      </div>
+    </div>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800 mb-4">
+      <b>⚠️ ご注意：</b>
+      自動返信はあらかじめ登録したテンプレートのみが返されます。AIが文章を勝手に生成することはありません。キーワード・本文を修正する場合は各行の「編集」ボタンから保存してください。
+    </div>
+
+    <!-- Auto-reply rule cards -->
+    <div id="autoRepliesList" class="space-y-3"></div>
+    <div id="autoRepliesEmpty" class="hidden text-center py-12 text-slate-400 bg-white rounded-xl shadow-sm">テンプレートがまだありません。「初期値に戻す」を押してください。</div>
+  </div>
+
+  <!-- Auto-reply edit modal -->
+  <div id="autoReplyEditModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+        <h3 class="text-lg font-bold">テンプレート編集</h3>
+        <button onclick="closeAutoReplyEdit()" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">識別キー (intent)</label>
+            <input id="arIntent" readonly class="w-full border bg-slate-50 rounded-lg px-3 py-2 text-sm font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">表示名</label>
+            <input id="arLabel" class="w-full border rounded-lg px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">優先度 (0–100)</label>
+            <input id="arPriority" type="number" min="0" max="100" class="w-full border rounded-lg px-3 py-2 text-sm">
+          </div>
+          <div class="flex items-end gap-2">
+            <label class="inline-flex items-center gap-2 text-sm">
+              <input id="arEnabled" type="checkbox" class="w-4 h-4">
+              <span>有効化する</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">キーワード（日本語）<span class="text-slate-400 font-normal">— カンマ区切り、「*」はワイルドカード</span></label>
+          <input id="arKeywordsJa" class="w-full border rounded-lg px-3 py-2 text-sm font-mono">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">キーワード（英語）<span class="text-slate-400 font-normal">— カンマ区切り、小文字推奨</span></label>
+          <input id="arKeywordsEn" class="w-full border rounded-lg px-3 py-2 text-sm font-mono">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">返信文（日本語）</label>
+          <textarea id="arReplyJa" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">返信文（英語）</label>
+          <textarea id="arReplyEn" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
+        </div>
+      </div>
+      <div class="sticky bottom-0 bg-white border-t px-6 py-3 flex justify-end gap-2">
+        <button onclick="closeAutoReplyEdit()" class="px-4 py-2 text-sm rounded-lg bg-slate-100 hover:bg-slate-200">キャンセル</button>
+        <button onclick="saveAutoReply()" class="px-5 py-2 text-sm rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-medium">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auto-reply tester modal -->
+  <div id="autoReplyTesterModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl">
+      <div class="border-b px-6 py-4 flex items-center justify-between">
+        <h3 class="text-lg font-bold">📝 自動返信テスト</h3>
+        <button onclick="closeAutoReplyTester()" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-6 space-y-3">
+        <p class="text-xs text-slate-500">仮のゲストメッセージを入力して、どのテンプレートが返信されるか確認できます。実際の送信や保存は行われません。</p>
+        <textarea id="arTestInput" rows="4" placeholder="例: What time is check-in?" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
+        <div class="flex items-center gap-3">
+          <label class="text-xs text-slate-600">言語:</label>
+          <select id="arTestLang" class="border rounded-lg px-2 py-1 text-sm">
+            <option value="">自動判定</option>
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
+          <button onclick="runAutoReplyTest()" class="ml-auto px-4 py-1.5 text-sm rounded-lg bg-amber-500 hover:bg-amber-600 text-white">判定</button>
+        </div>
+        <div id="arTestResult" class="hidden mt-3 p-3 bg-slate-50 rounded-lg text-sm whitespace-pre-wrap"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Loading overlay -->
@@ -510,15 +611,21 @@ function renderMessages(messages) {
     el.innerHTML = '<p class="text-slate-400 text-center py-8">メッセージなし</p>';
     return;
   }
-  el.innerHTML = messages.map(m => `
-    <div class="chat-msg ${m.sender === 'host' ? 'chat-host' : 'chat-guest'} px-4 py-2.5">
-      <div class="flex items-center gap-2 mb-1">
-        <span class="text-xs font-medium ${m.sender === 'host' ? 'text-blue-700' : 'text-amber-700'}">${m.sender === 'host' ? 'ホスト' : 'ゲスト'}</span>
-        <span class="text-xs text-slate-400">${formatDate(m.timestamp)}</span>
-      </div>
-      <div class="text-sm whitespace-pre-wrap">${esc(m.message)}</div>
-    </div>
-  `).join('');
+  el.innerHTML = messages.map(m => {
+    const isGuest = m.sender === 'guest';
+    const isAuto  = m.sender === 'auto';
+    const cls     = isGuest ? 'chat-guest' : 'chat-host';
+    const label   = isGuest ? 'ゲスト' : (isAuto ? '🤖 自動返信' : 'ホスト');
+    const labelCls = isGuest ? 'text-amber-700' : (isAuto ? 'text-emerald-700' : 'text-blue-700');
+    return `
+      <div class="chat-msg ${cls} px-4 py-2.5">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-xs font-medium ${labelCls}">${label}</span>
+          <span class="text-xs text-slate-400">${formatDate(m.timestamp)}</span>
+        </div>
+        <div class="text-sm whitespace-pre-wrap">${esc(m.message)}</div>
+      </div>`;
+  }).join('');
   el.scrollTop = el.scrollHeight;
 }
 
@@ -544,6 +651,7 @@ function showLoading(show) {
 // ============ Reviews ============
 function showListView() {
   document.getElementById('reviewsPanel').classList.add('hidden');
+  document.getElementById('autoRepliesPanel').classList.add('hidden');
   document.getElementById('statsBar').classList.remove('hidden');
   document.getElementById('listView').classList.remove('hidden');
   document.getElementById('filtersBar').classList.remove('hidden'); // filters
@@ -554,6 +662,7 @@ async function showReviewsPanel() {
   document.getElementById('statsBar').classList.add('hidden');
   document.getElementById('listView').classList.add('hidden');
   document.getElementById('filtersBar').classList.add('hidden'); // filters
+  document.getElementById('autoRepliesPanel').classList.add('hidden');
   document.getElementById('reviewsPanel').classList.remove('hidden');
 
   showLoading(true);
@@ -621,6 +730,172 @@ async function toggleReview(reviewId) {
     alert('操作エラー: ' + e.message);
   }
   showLoading(false);
+}
+
+// ============ Auto-reply Templates ============
+async function showAutoRepliesPanel() {
+  document.getElementById('statsBar').classList.add('hidden');
+  document.getElementById('listView').classList.add('hidden');
+  document.getElementById('filtersBar').classList.add('hidden');
+  document.getElementById('reviewsPanel').classList.add('hidden');
+  document.getElementById('autoRepliesPanel').classList.remove('hidden');
+  await loadAutoReplies();
+}
+
+async function loadAutoReplies() {
+  showLoading(true);
+  try {
+    const res = await api('admin_list_auto_replies');
+    if (!res.ok) { alert('エラー: ' + res.error); return; }
+    renderAutoReplies(res.rules || []);
+  } catch (e) {
+    alert('読み込みエラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+function renderAutoReplies(rules) {
+  const list = document.getElementById('autoRepliesList');
+  const empty = document.getElementById('autoRepliesEmpty');
+  if (!rules || rules.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  window._autoReplies = rules;
+
+  list.innerHTML = rules.map(r => {
+    const previewJa = (r.reply_ja || '').slice(0, 90);
+    const previewEn = (r.reply_en || '').slice(0, 90);
+    const kwJa = esc(r.keywords_ja || '');
+    const kwEn = esc(r.keywords_en || '');
+    return `
+      <div class="bg-white rounded-xl shadow-sm border ${r.enabled ? 'border-green-200' : 'border-slate-200 opacity-60'}">
+        <div class="px-4 py-3 flex items-center gap-3 border-b">
+          <span class="inline-flex items-center justify-center w-9 h-9 rounded-full ${r.enabled ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-400'} text-xs font-bold">P${r.priority}</span>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm">${esc(r.label || r.intent)}</div>
+            <div class="text-xs text-slate-400 font-mono">${esc(r.intent)}</div>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-xs font-medium ${r.enabled ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-500'}">${r.enabled ? 'ON' : 'OFF'}</span>
+          <button onclick="toggleAutoReplyEnabled('${esc(r.intent)}', ${!r.enabled})" class="text-xs px-3 py-1.5 rounded-lg ${r.enabled ? 'bg-slate-100 hover:bg-red-100 hover:text-red-700' : 'bg-amber-100 hover:bg-amber-200 text-amber-800'}">${r.enabled ? '無効化' : '有効化'}</button>
+          <button onclick="openAutoReplyEdit('${esc(r.intent)}')" class="text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-800 text-white">編集</button>
+        </div>
+        <div class="px-4 py-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div>
+            <div class="text-slate-400 mb-1">🇯🇵 キーワード</div>
+            <div class="font-mono text-slate-700 break-all">${kwJa || '<span class="text-slate-300">（なし）</span>'}</div>
+            <div class="text-slate-400 mt-2 mb-1">🇯🇵 返信プレビュー</div>
+            <div class="text-slate-700 whitespace-pre-wrap">${esc(previewJa)}${(r.reply_ja || '').length > 90 ? '…' : ''}</div>
+          </div>
+          <div>
+            <div class="text-slate-400 mb-1">🇺🇸 Keywords</div>
+            <div class="font-mono text-slate-700 break-all">${kwEn || '<span class="text-slate-300">(none)</span>'}</div>
+            <div class="text-slate-400 mt-2 mb-1">🇺🇸 Reply preview</div>
+            <div class="text-slate-700 whitespace-pre-wrap">${esc(previewEn)}${(r.reply_en || '').length > 90 ? '…' : ''}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function toggleAutoReplyEnabled(intent, enabled) {
+  showLoading(true);
+  try {
+    const res = await api('admin_update_auto_reply', { intent: intent, enabled: enabled });
+    if (!res.ok) { alert('更新エラー: ' + res.error); return; }
+    await loadAutoReplies();
+  } catch (e) {
+    alert('更新エラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+function openAutoReplyEdit(intent) {
+  const rule = (window._autoReplies || []).find(r => r.intent === intent);
+  if (!rule) return;
+  document.getElementById('arIntent').value     = rule.intent;
+  document.getElementById('arLabel').value      = rule.label || '';
+  document.getElementById('arPriority').value   = rule.priority || 0;
+  document.getElementById('arEnabled').checked  = !!rule.enabled;
+  document.getElementById('arKeywordsJa').value = rule.keywords_ja || '';
+  document.getElementById('arKeywordsEn').value = rule.keywords_en || '';
+  document.getElementById('arReplyJa').value    = rule.reply_ja || '';
+  document.getElementById('arReplyEn').value    = rule.reply_en || '';
+  document.getElementById('autoReplyEditModal').classList.remove('hidden');
+}
+
+function closeAutoReplyEdit() {
+  document.getElementById('autoReplyEditModal').classList.add('hidden');
+}
+
+async function saveAutoReply() {
+  const payload = {
+    intent:      document.getElementById('arIntent').value.trim(),
+    label:       document.getElementById('arLabel').value.trim(),
+    priority:    Number(document.getElementById('arPriority').value) || 0,
+    enabled:     document.getElementById('arEnabled').checked,
+    keywords_ja: document.getElementById('arKeywordsJa').value.trim(),
+    keywords_en: document.getElementById('arKeywordsEn').value.trim(),
+    reply_ja:    document.getElementById('arReplyJa').value,
+    reply_en:    document.getElementById('arReplyEn').value
+  };
+  if (!payload.intent) return;
+  showLoading(true);
+  try {
+    const res = await api('admin_update_auto_reply', payload);
+    if (!res.ok) { alert('保存エラー: ' + res.error); return; }
+    closeAutoReplyEdit();
+    await loadAutoReplies();
+  } catch (e) {
+    alert('保存エラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+async function resetAutoReplies() {
+  if (!confirm('すべてのテンプレートを初期値に上書きします。よろしいですか？\n（編集した内容は失われます）')) return;
+  showLoading(true);
+  try {
+    const res = await api('admin_reset_auto_replies');
+    if (!res.ok) { alert('エラー: ' + res.error); return; }
+    await loadAutoReplies();
+  } catch (e) {
+    alert('エラー: ' + e.message);
+  }
+  showLoading(false);
+}
+
+function openAutoReplyTester() {
+  document.getElementById('arTestInput').value = '';
+  document.getElementById('arTestLang').value  = '';
+  document.getElementById('arTestResult').classList.add('hidden');
+  document.getElementById('autoReplyTesterModal').classList.remove('hidden');
+}
+function closeAutoReplyTester() {
+  document.getElementById('autoReplyTesterModal').classList.add('hidden');
+}
+async function runAutoReplyTest() {
+  const message = document.getElementById('arTestInput').value.trim();
+  const lang    = document.getElementById('arTestLang').value;
+  if (!message) return;
+  const resultEl = document.getElementById('arTestResult');
+  resultEl.classList.remove('hidden');
+  resultEl.textContent = '判定中...';
+  try {
+    const res = await api('admin_test_auto_reply', { message: message, lang: lang });
+    if (!res.ok) { resultEl.textContent = 'エラー: ' + res.error; return; }
+    if (!res.match) {
+      resultEl.textContent = '判定言語: ' + res.lang + '\n\n（一致するテンプレートはありません — このメッセージには自動返信されません）';
+      return;
+    }
+    resultEl.textContent = '判定言語: ' + res.lang
+      + '\n一致テンプレート: ' + res.match.label + ' (' + res.match.intent + ')'
+      + '\n\n--- 返信内容 ---\n' + res.match.reply;
+  } catch (e) {
+    resultEl.textContent = '通信エラー: ' + e.message;
+  }
 }
 
 // ============ Init ============
