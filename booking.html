@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <!-- Google tag (gtag.js) -->
@@ -20,7 +20,7 @@
 <meta property="og:url" content="https://komei.yoshinarcorp.com/booking.html">
 <meta property="og:image" content="https://komei.yoshinarcorp.com/images/p45.jpg">
 <meta property="og:site_name" content="Komei Hotel 光明荘">
-<meta property="og:locale" content="ja_JP">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Book Direct ｜ Komei Hotel 光明荘 — Private Vacation Rental Tokyo">
 <meta name="twitter:description" content="Book direct & save up to 10% vs Airbnb. Private whole-house rental near Asakusa & Skytree, Tokyo. Sleeps 10, rooftop terrace.">
@@ -29,15 +29,16 @@
 <style>
   html { scroll-behavior: smooth; }
   body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
-  .lang-en { display: none; }
-  html[lang="en"] .lang-ja { display: none; }
-  html[lang="en"] .lang-en { display: inline; }
-  html[lang="en"] .lang-en-block { display: block; }
+  .lang-ja { display: none; }
+  .lang-en-block { display: block; }
+  html[lang="ja"] .lang-en, html[lang="ja"] .lang-en-block { display: none; }
+  html[lang="ja"] .lang-ja { display: inline; }
+  html[lang="ja"] .lang-ja-block { display: block; }
   .lang-zh, .lang-ko { display: none; }
-  html[lang="zh"] .lang-ja { display: none; }
+  html[lang="zh"] .lang-en, html[lang="zh"] .lang-en-block { display: none; }
   html[lang="zh"] .lang-zh { display: inline; }
   html[lang="zh"] .lang-zh-block { display: block; }
-  html[lang="ko"] .lang-ja { display: none; }
+  html[lang="ko"] .lang-en, html[lang="ko"] .lang-en-block { display: none; }
   html[lang="ko"] .lang-ko { display: inline; }
   html[lang="ko"] .lang-ko-block { display: block; }
   input:focus, select:focus, textarea:focus {
@@ -63,7 +64,7 @@
       </a>
       <a href="mailto:komei.hotel@gmail.com" class="text-slate-600 hover:text-amber-600">✉ komei.hotel@gmail.com</a>
     </nav>
-    <select onchange="setLang(this.value)" id="langSel" class="md:ml-4 text-sm px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer"><option value="ja" selected>日本語</option><option value="en">EN</option><option value="zh">中文</option><option value="ko">한국어</option></select>
+    <select onchange="setLang(this.value)" id="langSel" class="md:ml-4 text-sm px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer"><option value="ja">日本語</option><option value="en" selected>EN</option><option value="zh">中文</option><option value="ko">한국어</option></select>
   </div>
 </header>
 

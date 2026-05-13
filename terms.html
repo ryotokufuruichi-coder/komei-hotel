@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <!-- Google tag (gtag.js) -->
@@ -20,7 +20,7 @@
 <meta property="og:url" content="https://komei.yoshinarcorp.com/terms.html">
 <meta property="og:image" content="https://komei.yoshinarcorp.com/images/p45.jpg">
 <meta property="og:site_name" content="Komei Hotel 光明荘">
-<meta property="og:locale" content="ja_JP">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Terms & Cancellation Policy ｜ Komei Hotel 光明荘">
 <meta name="twitter:description" content="Terms of service, cancellation policy and house rules for Komei Hotel — private whole-house short-term rental near Asakusa, Tokyo.">
@@ -28,13 +28,13 @@
 <link rel="stylesheet" href="css/tailwind.min.css">
 <style>
   body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
-  .lang-en { display: none; }
+  .lang-ja { display: none; }
   .lang-zh, .lang-ko { display: none; }
-  html[lang="en"] .lang-ja { display: none; }
-  html[lang="en"] .lang-en { display: inline; }
-  html[lang="zh"] .lang-ja { display: none; }
+  html[lang="ja"] .lang-en { display: none; }
+  html[lang="ja"] .lang-ja { display: inline; }
+  html[lang="zh"] .lang-en { display: none; }
   html[lang="zh"] .lang-zh { display: inline; }
-  html[lang="ko"] .lang-ja { display: none; }
+  html[lang="ko"] .lang-en { display: none; }
   html[lang="ko"] .lang-ko { display: inline; }
   h2 { scroll-margin-top: 80px; }
 </style>
@@ -48,7 +48,7 @@
       <span class="font-bold text-lg tracking-wide">Komei Hotel</span>
       <span class="hidden sm:inline text-xs text-slate-500">光明荘</span>
     </a>
-    <select onchange="setLang(this.value)" id="langSel" class="text-sm px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer"><option value="ja" selected>日本語</option><option value="en">EN</option><option value="zh">中文</option><option value="ko">한국어</option></select>
+    <select onchange="setLang(this.value)" id="langSel" class="text-sm px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer"><option value="ja">日本語</option><option value="en" selected>EN</option><option value="zh">中文</option><option value="ko">한국어</option></select>
   </div>
 </header>
 

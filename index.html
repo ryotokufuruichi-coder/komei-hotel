@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <!-- Google tag (gtag.js) -->
@@ -26,8 +26,8 @@
 <meta property="og:title" content="光明荘 (Komei Hotel) ｜ 東京・墨田区の一棟貸し民泊">
 <meta property="og:description" content="Private whole-house vacation rental in Tokyo — an Airbnb alternative with direct booking savings. Entire house sleeps 10, rooftop terrace. 10 min to Senso-ji Temple, 15 min to Skytree. Short-term rental in Sumida.">
 <meta property="og:type" content="website">
-<meta property="og:locale" content="ja_JP">
-<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ja_JP">
 <meta property="og:locale:alternate" content="zh_CN">
 <meta property="og:locale:alternate" content="ko_KR">
 <meta property="og:site_name" content="Komei Hotel 光明荘">
@@ -206,15 +206,16 @@
   .photo-ph-warm { background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%); }
   .photo-ph-cool { background: linear-gradient(135deg, #bae6fd 0%, #0284c7 100%); }
   .photo-ph-night { background: linear-gradient(135deg, #1e1b4b 0%, #6366f1 100%); }
-  .lang-en { display: none; }
-  html[lang="en"] .lang-ja { display: none; }
-  html[lang="en"] .lang-en { display: inline; }
-  html[lang="en"] .lang-en-block { display: block; }
+  .lang-ja { display: none; }
+  .lang-en-block { display: block; }
+  html[lang="ja"] .lang-en, html[lang="ja"] .lang-en-block { display: none; }
+  html[lang="ja"] .lang-ja { display: inline; }
+  html[lang="ja"] .lang-ja-block { display: block; }
   .lang-zh, .lang-ko { display: none; }
-  html[lang="zh"] .lang-ja, html[lang="zh"] .lang-en { display: none; }
+  html[lang="zh"] .lang-en, html[lang="zh"] .lang-en-block { display: none; }
   html[lang="zh"] .lang-zh { display: inline; }
   html[lang="zh"] .lang-zh-block { display: block; }
-  html[lang="ko"] .lang-ja, html[lang="ko"] .lang-en { display: none; }
+  html[lang="ko"] .lang-en, html[lang="ko"] .lang-en-block { display: none; }
   html[lang="ko"] .lang-ko { display: inline; }
   html[lang="ko"] .lang-ko-block { display: block; }
 </style>
@@ -253,7 +254,7 @@
         <span class="lang-ja">予約</span><span class="lang-en">Book</span><span class="lang-zh">预订</span><span class="lang-ko">예약</span>
       </a>
     </nav>
-    <select onchange="setLang(this.value)" id="langSel" class="text-xs px-2 py-1 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer shrink-0"><option value="ja" selected>JP</option><option value="en">EN</option><option value="zh">中文</option><option value="ko">한국</option></select>
+    <select onchange="setLang(this.value)" id="langSel" class="text-xs px-2 py-1 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer shrink-0"><option value="ja">JP</option><option value="en" selected>EN</option><option value="zh">中文</option><option value="ko">한국</option></select>
   </div>
 </header>
 
@@ -863,7 +864,7 @@
       if(data.avg.overall % 1 >= 0.5) stars += '★';
       for(var i=stars.length;i<5;i++) stars += '☆';
       document.getElementById('reviewAvgStars').textContent = stars;
-      var l = document.documentElement.lang || 'ja';
+      var l = document.documentElement.lang || 'en';
       var countText = { ja: data.count + '件のレビュー', en: data.count + ' reviews', zh: data.count + '条评价', ko: data.count + '개 리뷰' };
       document.getElementById('reviewCount').textContent = countText[l] || countText.ja;
 
