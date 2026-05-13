@@ -1,0 +1,49 @@
+name: Update review aggregate
+
+# Refreshes AggregateRating + Review entries inside the LodgingBusiness JSON-LD
+# in index.html from the public_reviews GAS endpoint. Runs daily and on demand.
+#
+# The injector script is idempotent — when nothing changes, no commit is made.
+
+on:
+  schedule:
+    # 03:00 JST every day (18:00 UTC previous day)
+    - cron: "0 18 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-reviews
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # We need to push a commit back, so use the default token.
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Inject reviews from GAS API into index.html
+        run: python scripts/inject_reviews.py --soft-fail
+
+      - name: Commit + push if changed
+        run: |
+          if [[ -z "$(git status --porcelain index.html)" ]]; then
+            echo "No changes to index.html — done."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "auto: refresh AggregateRating from GAS reviews API
+
+          Updated by .github/workflows/update-reviews.yml"
+          git push
