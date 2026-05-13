@@ -32,6 +32,14 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://komei.yoshinarcorp.com/asakusa-guide.html"/>
   </url>
   <url>
+    <loc>https://komei.yoshinarcorp.com/sumida-fireworks.html</loc>
+    <lastmod>2026-05-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://komei.yoshinarcorp.com/sumida-fireworks.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://komei.yoshinarcorp.com/sumida-fireworks.html"/>
+  </url>
+  <url>
     <loc>https://komei.yoshinarcorp.com/partner.html</loc>
     <lastmod>2026-05-13</lastmod>
     <changefreq>monthly</changefreq>
