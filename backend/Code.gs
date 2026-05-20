@@ -1778,3 +1778,249 @@ function handleAdminTestAutoReply(body) {
   const match = matchAutoReply_(message, lang);
   return { ok:true, lang:lang, match:match };
 }
+
+// =====================================================================
+// Review Request Automation
+// ---------------------------------------------------------------------
+// Daily cron sends a single review-request email per reservation, the day
+// after checkout. Idempotent — re-running the cron won't double-send because
+// we record a 'review_request_sent' entry in the logs sheet and skip
+// reservations that already have one.
+//
+// Setup steps (one-time):
+//   1. In the Apps Script editor, run `setupReviewRequestTrigger()` once.
+//   2. Authorize MailApp + ScriptApp scopes when prompted.
+//   3. From then on, the trigger fires daily at ~09:00 JST and sends emails.
+//
+// Manual test / fire now:
+//   - Run `sendReviewRequestEmails()` directly in the editor.
+//   - Run `sendReviewRequestEmails({dryRun: true})` to log without sending.
+// =====================================================================
+
+/** Window for picking up post-stay reservations (days since checkout). */
+const REVIEW_REQUEST_DAYS_AFTER_CHECKOUT_MIN = 1;
+const REVIEW_REQUEST_DAYS_AFTER_CHECKOUT_MAX = 14; // grace window for missed cron runs
+
+/** One-time setup: install a daily 09:00 JST trigger for sendReviewRequestEmails. */
+function setupReviewRequestTrigger() {
+  // Remove any existing triggers for the same function to keep it idempotent.
+  const existing = ScriptApp.getProjectTriggers();
+  existing.forEach(function(t) {
+    if (t.getHandlerFunction() === 'sendReviewRequestEmails') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+  ScriptApp.newTrigger('sendReviewRequestEmails')
+    .timeBased()
+    .atHour(9)
+    .everyDays(1)
+    .inTimezone('Asia/Tokyo')
+    .create();
+  Logger.log('Daily review-request trigger installed (09:00 JST)');
+}
+
+/**
+ * Main cron job. Iterates paid reservations whose checkout date is within the
+ * post-stay window and sends a single review-request email per reservation.
+ *
+ * @param {{dryRun?:boolean}} opts - dryRun=true logs what would happen but
+ *     does not send emails or mark logs.
+ * @return {{considered:number, sent:number, skipped:number, errors:number}}
+ */
+function sendReviewRequestEmails(opts) {
+  opts = opts || {};
+  const dryRun = !!opts.dryRun;
+
+  const sh = sheet_('reservations');
+  ensureHeaders_(sh, HEADERS_RESERVATIONS);
+  if (sh.getLastRow() < 2) {
+    return { considered:0, sent:0, skipped:0, errors:0 };
+  }
+
+  const values = sh.getRange(2, 1, sh.getLastRow() - 1, HEADERS_RESERVATIONS.length).getValues();
+  const idx = {};
+  HEADERS_RESERVATIONS.forEach(function(h, i) { idx[h] = i; });
+
+  const alreadySent = collectReviewRequestSentIds_();
+  const now = new Date();
+  const todayStr = formatDateJst_(now);
+
+  let considered = 0;
+  let sent = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i];
+    const reservationId = row[idx.id];
+    const status = row[idx.status];
+    const checkoutRaw = row[idx.checkout];
+    const email = row[idx.rep_email];
+    if (!reservationId || !email) continue;
+    if (status !== STATUS.PAID) continue;
+
+    const checkout = parseDate_(checkoutRaw);
+    if (!checkout) continue;
+    const daysSince = daysBetween_(checkout, now);
+    if (daysSince < REVIEW_REQUEST_DAYS_AFTER_CHECKOUT_MIN) continue;
+    if (daysSince > REVIEW_REQUEST_DAYS_AFTER_CHECKOUT_MAX) continue;
+
+    considered++;
+    if (alreadySent[reservationId]) {
+      skipped++;
+      continue;
+    }
+
+    const rowObj = {};
+    HEADERS_RESERVATIONS.forEach(function(h, j) { rowObj[h] = row[j]; });
+
+    try {
+      if (!dryRun) {
+        sendReviewRequestEmail_(rowObj);
+        log_(reservationId, 'review_request_sent', todayStr + ' to ' + email);
+      } else {
+        log_(reservationId, 'review_request_sent_dryrun', todayStr + ' to ' + email);
+      }
+      sent++;
+    } catch (e) {
+      errors++;
+      log_(reservationId, 'review_request_error', String(e));
+    }
+  }
+
+  const summary = { considered:considered, sent:sent, skipped:skipped, errors:errors };
+  Logger.log('Review request cron: ' + JSON.stringify(summary) + (dryRun ? ' [dry-run]' : ''));
+  return summary;
+}
+
+/** Gather reservation IDs that already received a request (or had a dry-run logged). */
+function collectReviewRequestSentIds_() {
+  const sh = sheet_('logs');
+  ensureHeaders_(sh, HEADERS_LOGS);
+  const seen = {};
+  if (sh.getLastRow() < 2) return seen;
+  const logs = sh.getRange(2, 1, sh.getLastRow() - 1, HEADERS_LOGS.length).getValues();
+  const actionIdx = HEADERS_LOGS.indexOf('action');
+  const resIdx = HEADERS_LOGS.indexOf('reservation_id');
+  for (let i = 0; i < logs.length; i++) {
+    const a = logs[i][actionIdx];
+    if (a === 'review_request_sent' || a === 'review_request_sent_dryrun') {
+      seen[logs[i][resIdx]] = true;
+    }
+  }
+  return seen;
+}
+
+/** Compose + send the review request email (language picked from rep_country). */
+function sendReviewRequestEmail_(row) {
+  const adminEmail = getProp_('ADMIN_EMAIL', '');
+  const fromName = getProp_('FROM_NAME', 'Komei Hotel');
+  const baseUrl = getProp_('SITE_BASE_URL', 'https://komei.yoshinarcorp.com');
+  const mypageUrl = baseUrl + '/mypage.html?id=' + encodeURIComponent(row.id)
+    + '&email=' + encodeURIComponent(row.rep_email)
+    + '#reviewSection';
+  const googleReviewUrl = 'https://search.google.com/local/writereview?placeid=' + (getProp_('GOOGLE_PLACE_ID', '') || '');
+
+  const isJa = isJapaneseGuest_(row);
+  const subject = isJa
+    ? 'ご滞在ありがとうございました — レビューのお願い ｜ Komei Hotel 光明荘'
+    : 'Thank you for staying — share your experience ｜ Komei Hotel';
+
+  const body = isJa
+    ? buildReviewRequestBodyJa_(row, mypageUrl, googleReviewUrl)
+    : buildReviewRequestBodyEn_(row, mypageUrl, googleReviewUrl);
+
+  const options = { name: fromName };
+  if (adminEmail) options.bcc = adminEmail;
+  MailApp.sendEmail(row.rep_email, subject, body, options);
+}
+
+/** Heuristic: prefer Japanese if rep_country is JP or contains Japanese chars. */
+function isJapaneseGuest_(row) {
+  const country = String(row.rep_country || '').trim().toUpperCase();
+  if (country === 'JP' || country === 'JAPAN' || country === '日本') return true;
+  const name = String(row.rep_first_name || '') + String(row.rep_last_name || '');
+  // Hiragana / Katakana / CJK Unified Ideographs ranges
+  return /[぀-ゟ゠-ヿ一-鿿]/.test(name);
+}
+
+function buildReviewRequestBodyJa_(row, mypageUrl, googleReviewUrl) {
+  const name = fullName_(row) || 'お客様';
+  const lines = [];
+  lines.push(name + ' 様');
+  lines.push('');
+  lines.push('先日は Komei Hotel 光明荘にご宿泊いただき、誠にありがとうございました。');
+  lines.push('滞在中にお気づきの点や、印象に残ったことがあれば、ぜひ短いレビューを');
+  lines.push('お寄せいただけませんでしょうか。');
+  lines.push('');
+  lines.push('▼ 1分でレビューを投稿（マイページ）');
+  lines.push(mypageUrl);
+  lines.push('');
+  if (googleReviewUrl && !googleReviewUrl.endsWith('placeid=')) {
+    lines.push('▼ Google マップにもレビューをいただけると大変励みになります');
+    lines.push(googleReviewUrl);
+    lines.push('');
+  }
+  lines.push('お声は今後の運営とサービス改善の何よりの参考にさせていただきます。');
+  lines.push('またのご来訪を心よりお待ち申し上げております。');
+  lines.push('');
+  lines.push('--');
+  lines.push('Komei Hotel 光明荘');
+  lines.push('東京都墨田区東駒形20-5');
+  lines.push('https://komei.yoshinarcorp.com/');
+  return lines.join('\n');
+}
+
+function buildReviewRequestBodyEn_(row, mypageUrl, googleReviewUrl) {
+  const name = fullName_(row) || 'Guest';
+  const lines = [];
+  lines.push('Dear ' + name + ',');
+  lines.push('');
+  lines.push('Thank you for staying with us at Komei Hotel. We hope you enjoyed your time');
+  lines.push('in Asakusa and Sumida.');
+  lines.push('');
+  lines.push('If you have a minute, we would deeply appreciate a short review of your stay.');
+  lines.push('It helps us improve and helps other travelers decide.');
+  lines.push('');
+  lines.push('▸ Leave a review in 1 minute (your guest page):');
+  lines.push('  ' + mypageUrl);
+  lines.push('');
+  if (googleReviewUrl && !googleReviewUrl.endsWith('placeid=')) {
+    lines.push('▸ Or share on Google Maps:');
+    lines.push('  ' + googleReviewUrl);
+    lines.push('');
+  }
+  lines.push('Thank you again — we hope to welcome you back to Tokyo someday.');
+  lines.push('');
+  lines.push('--');
+  lines.push('Komei Hotel 光明荘');
+  lines.push('20-5 Higashikomagata, Sumida, Tokyo, Japan');
+  lines.push('https://komei.yoshinarcorp.com/');
+  return lines.join('\n');
+}
+
+/** Parse a checkout cell which may be a Date object or a YYYY-MM-DD string. */
+function parseDate_(v) {
+  if (!v) return null;
+  if (v instanceof Date) return v;
+  const s = String(v).trim();
+  if (!s) return null;
+  // Sheets normally returns dates as Date objects; this is a defensive fallback.
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/** Whole-day delta between two dates (b - a) in days, JST-anchored midnight. */
+function daysBetween_(a, b) {
+  const tz = 'Asia/Tokyo';
+  const aStr = Utilities.formatDate(a, tz, 'yyyy-MM-dd');
+  const bStr = Utilities.formatDate(b, tz, 'yyyy-MM-dd');
+  const aMid = new Date(aStr + 'T00:00:00+09:00');
+  const bMid = new Date(bStr + 'T00:00:00+09:00');
+  return Math.round((bMid.getTime() - aMid.getTime()) / 86400000);
+}
+
+function formatDateJst_(d) {
+  return Utilities.formatDate(d, 'Asia/Tokyo', 'yyyy-MM-dd');
+}
+
