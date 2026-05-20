@@ -1919,7 +1919,12 @@ function sendReviewRequestEmail_(row) {
   const mypageUrl = baseUrl + '/mypage.html?id=' + encodeURIComponent(row.id)
     + '&email=' + encodeURIComponent(row.rep_email)
     + '#reviewSection';
-  const googleReviewUrl = 'https://search.google.com/local/writereview?placeid=' + (getProp_('GOOGLE_PLACE_ID', '') || '');
+  // Use GOOGLE_REVIEW_URL Script Property if set (any valid review URL, e.g.
+  // a g.page/r/.../review link, or maps.google.com/?cid=XXX). Falls back to
+  // empty so the "leave a Google review" CTA is simply omitted from the email
+  // when not configured. Note: writereview?placeid= only accepts the ChIJ
+  // form, so we never construct it ourselves anymore — store the full URL.
+  const googleReviewUrl = getProp_('GOOGLE_REVIEW_URL', '') || '';
 
   const isJa = isJapaneseGuest_(row);
   const subject = isJa
@@ -1956,7 +1961,7 @@ function buildReviewRequestBodyJa_(row, mypageUrl, googleReviewUrl) {
   lines.push('▼ 1分でレビューを投稿（マイページ）');
   lines.push(mypageUrl);
   lines.push('');
-  if (googleReviewUrl && !googleReviewUrl.endsWith('placeid=')) {
+  if (googleReviewUrl) {
     lines.push('▼ Google マップにもレビューをいただけると大変励みになります');
     lines.push(googleReviewUrl);
     lines.push('');
@@ -1985,7 +1990,7 @@ function buildReviewRequestBodyEn_(row, mypageUrl, googleReviewUrl) {
   lines.push('▸ Leave a review in 1 minute (your guest page):');
   lines.push('  ' + mypageUrl);
   lines.push('');
-  if (googleReviewUrl && !googleReviewUrl.endsWith('placeid=')) {
+  if (googleReviewUrl) {
     lines.push('▸ Or share on Google Maps:');
     lines.push('  ' + googleReviewUrl);
     lines.push('');
