@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TBDRC88R6Y"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TBDRC88R6Y');
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="keywords" content="{{keywords}}">
+<link rel="canonical" href="https://komei.yoshinarcorp.com/{{slug}}.html">
+<link rel="alternate" hreflang="en" href="https://komei.yoshinarcorp.com/{{slug}}.html">
+<link rel="alternate" hreflang="ja" href="https://komei.yoshinarcorp.com/{{slug}}.html">
+<link rel="alternate" hreflang="x-default" href="https://komei.yoshinarcorp.com/{{slug}}.html">
+<meta name="robots" content="index,follow">
+<meta property="og:title" content="{{og_title}}">
+<meta property="og:description" content="{{og_description}}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://komei.yoshinarcorp.com/{{slug}}.html">
+<meta property="og:image" content="https://komei.yoshinarcorp.com/images/{{og_image}}">
+<meta property="og:site_name" content="Komei Hotel 光明荘">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{og_title}}">
+<meta name="twitter:description" content="{{og_description}}">
+<meta name="twitter:image" content="https://komei.yoshinarcorp.com/images/{{og_image}}">
+{{jsonld_blocks}}
+<link rel="stylesheet" href="css/tailwind.min.css">
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif; color: #1e293b; background: #f8fafc; }
+  .container-narrow { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+  .hero {
+    background: {{hero_gradient}};
+    color: #fff; padding: 80px 24px 64px;
+    position: relative; overflow: hidden;
+  }
+  .hero .eyebrow { color: {{accent_light}}; font-weight: 600; letter-spacing: 0.2em; font-size: 13px; margin: 0 0 12px; }
+  .hero h1 { font-size: 38px; font-weight: 700; line-height: 1.25; margin: 0 0 16px; }
+  .hero .lead { font-size: 17px; opacity: 0.95; margin: 0 0 20px; max-width: 680px; }
+  .hero .meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 14px; }
+  .hero .meta span { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); padding: 6px 12px; border-radius: 999px; }
+  .section { padding: 56px 0; border-bottom: 1px solid #e2e8f0; }
+  .section h2 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
+  .section .accent { width: 48px; height: 3px; background: {{accent_color}}; border-radius: 2px; margin-bottom: 24px; }
+  .section .walk-time { display: inline-block; background: {{accent_bg_soft}}; color: {{accent_color_dark}}; font-size: 13px; padding: 3px 10px; border-radius: 999px; margin-bottom: 14px; font-weight: 600; }
+  .section p { font-size: 17px; line-height: 1.8; margin: 0 0 16px; color: #334155; }
+  .section h3 { font-size: 19px; font-weight: 700; margin: 28px 0 10px; color: #1e293b; }
+  .section ul, .section ol { padding-left: 22px; line-height: 1.9; color: #334155; }
+  .section a { color: {{accent_color_dark}}; text-decoration: underline; }
+  .callout {
+    background: {{accent_bg_soft}};
+    border: 1px solid {{accent_border}}; border-radius: 12px;
+    padding: 20px 24px; margin: 28px 0;
+  }
+  .callout strong { color: {{accent_color_dark}}; }
+  .toc { background: #fff; border-radius: 12px; padding: 24px 28px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); margin: 32px 0; }
+  .toc h2 { font-size: 18px; margin: 0 0 12px; }
+  .toc ol { padding-left: 22px; line-height: 1.9; }
+  .cta {
+    background: {{hero_gradient}};
+    color: #fff; padding: 60px 24px; text-align: center;
+  }
+  .cta h2 { font-size: 28px; font-weight: 700; margin: 0 0 12px; }
+  .cta p { font-size: 17px; opacity: 0.95; margin: 0 0 24px; }
+  .cta .btn {
+    display: inline-block; background: #fff; color: {{accent_color_dark}};
+    padding: 14px 40px; border-radius: 999px; font-weight: 700; font-size: 17px;
+    text-decoration: none; transition: transform 0.2s;
+  }
+  .cta .btn:hover { transform: translateY(-2px); }
+  header.site-header {
+    background: #fff; border-bottom: 1px solid #e2e8f0;
+    position: sticky; top: 0; z-index: 50;
+  }
+  header.site-header .inner {
+    max-width: 760px; margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header.site-header a.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; }
+  header.site-header .logo {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: {{accent_color}}; color: #fff; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  header.site-header .brand-text { font-weight: 700; font-size: 17px; }
+  header.site-header .brand-sub { font-size: 12px; color: #64748b; }
+  header.site-header a.back { color: #64748b; text-decoration: none; font-size: 14px; }
+  header.site-header a.back:hover { color: {{accent_color_dark}}; }
+  footer.site-footer { text-align: center; padding: 32px 24px; color: #64748b; font-size: 14px; }
+  footer.site-footer a { color: {{accent_color_dark}}; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <a href="index.html" class="brand">
+      <span class="logo">K</span>
+      <span>
+        <div class="brand-text">Komei Hotel</div>
+        <div class="brand-sub">光明荘 — Tokyo Sumida</div>
+      </span>
+    </a>
+    <a href="index.html" class="back">← Back to home</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container-narrow">
+    <p class="eyebrow">{{hero_eyebrow}}</p>
+    <h1>{{hero_h1}}</h1>
+    <p class="lead">{{hero_lead}}</p>
+    {{hero_meta_html}}
+  </div>
+</section>
+
+<div class="container-narrow">
+
+{{toc_block}}
+
+{{sections_html}}
+
+</div>
+
+<section class="cta">
+  <h2>{{cta_h2}}</h2>
+  <p>{{cta_lead}}</p>
+  <a href="booking.html" class="btn">{{cta_btn_label}}</a>
+</section>
+
+<footer class="site-footer">
+  <p>Komei Hotel 光明荘 — Higashi-Komagata, Sumida, Tokyo · <a href="index.html">Home</a> · <a href="asakusa-guide.html">Asakusa Guide</a> · <a href="booking.html">Book</a> · <a href="mailto:komei.hotel@gmail.com">komei.hotel@gmail.com</a></p>
+</footer>
+
+</body>
+</html>
