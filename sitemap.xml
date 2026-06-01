@@ -1,68 +1,59 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<!--
+  Komei Hotel 光明荘 — XML sitemap
+
+  Notes for SEO:
+  - mypage.html and admin.html are excluded because they have
+    <meta name="robots" content="noindex">.
+  - gateway.html / register.html / payment.html / thanks.html /
+    demo_stripe.html are intentionally omitted (transient flow pages).
+  - hreflang annotations are temporarily removed: the site currently
+    serves a single URL per page and switches languages client-side
+    via ?lang=xx, so pointing hreflang at the same URL for every
+    locale adds no value and risks confusing crawlers. Restore once
+    we serve distinct URLs (e.g., /en/, /ja/) per locale.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://komei.yoshinarcorp.com/</loc>
-    <lastmod>2026-05-20</lastmod>
+    <lastmod>2026-05-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://komei.yoshinarcorp.com/"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://komei.yoshinarcorp.com/"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://komei.yoshinarcorp.com/"/>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://komei.yoshinarcorp.com/"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://komei.yoshinarcorp.com/"/>
   </url>
   <url>
     <loc>https://komei.yoshinarcorp.com/booking.html</loc>
-    <lastmod>2026-05-20</lastmod>
+    <lastmod>2026-05-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://komei.yoshinarcorp.com/booking.html"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="https://komei.yoshinarcorp.com/booking.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://komei.yoshinarcorp.com/booking.html"/>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://komei.yoshinarcorp.com/booking.html"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://komei.yoshinarcorp.com/booking.html"/>
   </url>
   <url>
     <loc>https://komei.yoshinarcorp.com/asakusa-guide.html</loc>
-    <lastmod>2026-05-20</lastmod>
+    <lastmod>2026-05-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://komei.yoshinarcorp.com/asakusa-guide.html"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://komei.yoshinarcorp.com/asakusa-guide.html"/>
   </url>
   <url>
     <loc>https://komei.yoshinarcorp.com/sumida-fireworks.html</loc>
-    <lastmod>2026-05-20</lastmod>
+    <lastmod>2026-05-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://komei.yoshinarcorp.com/sumida-fireworks.html"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://komei.yoshinarcorp.com/sumida-fireworks.html"/>
+  </url>
+  <url>
+    <loc>https://komei.yoshinarcorp.com/rainy-asakusa.html</loc>
+    <lastmod>2026-05-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://komei.yoshinarcorp.com/partner.html</loc>
-    <lastmod>2026-05-20</lastmod>
+    <lastmod>2026-05-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://komei.yoshinarcorp.com/terms.html</loc>
-    <lastmod>2026-05-20</lastmod>
+    <lastmod>2026-05-29</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://komei.yoshinarcorp.com/mypage.html</loc>
-    <lastmod>2026-05-20</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.4</priority>
-  </url>
-  <url>
-    <loc>https://komei.yoshinarcorp.com/rainy-asakusa.html</loc>
-    <lastmod>2026-05-20</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="en" href="https://komei.yoshinarcorp.com/rainy-asakusa.html"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://komei.yoshinarcorp.com/rainy-asakusa.html"/>
   </url>
 </urlset>

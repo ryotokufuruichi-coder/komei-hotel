@@ -15,6 +15,10 @@
 <meta name="description" content="Komei Hotel 光明荘 予約者マイページ。予約内容の確認、チェックイン情報、ホストへの連絡ができます。">
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="css/tailwind.min.css">
+<link rel="stylesheet" href="css/brand.css">
+<link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="images/favicon-180.png">
+<meta name="theme-color" content="#B89A78">
 <style>
   html { scroll-behavior: smooth; }
   body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
@@ -28,10 +32,10 @@
   html[lang="ko"] .lang-ko { display: inline; }
   input:focus, select:focus, textarea:focus {
     outline: none;
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    border-color: #B89A78;
+    box-shadow: 0 0 0 3px rgba(184, 154, 120, 0.18);
   }
-  .tab-btn.active { border-color: #f59e0b; color: #d97706; background: #fffbeb; }
+  .tab-btn.active { border-color: #B89A78; color: #A38560; background: #FAF5EC; }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
   .chat-msg { max-width: 80%; }
@@ -50,7 +54,7 @@
   .star-btn { width:36px; height:36px; cursor:pointer; transition:transform 0.15s; display:inline-flex; align-items:center; justify-content:center; }
   .star-btn:hover { transform:scale(1.2); }
   .star-btn svg { width:28px; height:28px; }
-  .star-btn.active svg { fill:#f59e0b; stroke:#f59e0b; }
+  .star-btn.active svg { fill:#B89A78; stroke:#B89A78; }
   .star-btn:not(.active) svg { fill:#e2e8f0; stroke:#cbd5e1; }
 </style>
 </head>
@@ -60,7 +64,7 @@
 <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur shadow-sm">
   <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
     <a href="index.html" class="flex items-center gap-2">
-      <span class="w-9 h-9 rounded-full bg-slate-800 text-white grid place-items-center font-bold">K</span>
+      <span class="bunchou-logo bunchou-logo-md" role="img" aria-label="白文鳥（光明荘のマスコット）"></span>
       <span class="font-bold text-lg tracking-wide">Komei Hotel</span>
       <span class="hidden sm:inline text-xs text-slate-500">光明荘</span>
     </a>
@@ -79,7 +83,7 @@
 <div id="loginScreen" class="min-h-screen flex items-center justify-center px-4 pt-20">
   <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
     <div class="text-center mb-6">
-      <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-600 grid place-items-center mx-auto mb-3 text-2xl font-bold">K</div>
+      <div class="bunchou-logo bunchou-logo-xl mx-auto mb-3" role="img" aria-label="白文鳥（光明荘のマスコット）"></div>
       <h1 class="text-2xl font-bold">
         <span class="lang-ja">マイページ</span><span class="lang-en">My Page</span><span class="lang-zh">我的页面</span><span class="lang-ko">마이페이지</span>
       </h1>
@@ -256,7 +260,7 @@
     <div class="bg-white rounded-2xl shadow flex flex-col" style="height: 500px;">
       <!-- Chat header -->
       <div class="px-5 py-3 border-b flex items-center gap-3">
-        <div class="w-8 h-8 rounded-full bg-slate-800 text-white grid place-items-center text-sm font-bold">K</div>
+        <span class="bunchou-logo" style="width:2rem;height:2rem;" role="img" aria-label="白文鳥（光明荘のマスコット）"></span>
         <div class="flex-1">
           <p class="font-bold text-sm">Komei Hotel</p>
           <p class="text-xs text-slate-400">
