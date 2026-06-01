@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Komei Hotel — Shironbunchou logo mark (3/4 view).
+  Pure SVG, no external assets, scales pixel-perfect 16px → 1024px.
+
+  Palette:
+    Body  : white with greige soft edge   (#FFFFFF → #C8BEB0)
+    Beak  : coral red                     (#F0A88C → #D85F45)
+    Eye   : near-black with highlight     (#1A1612)
+    Wing  : soft greige line              (#B5A78F)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"
+     role="img" aria-label="白文鳥 — 光明荘マスコット">
+  <defs>
+    <radialGradient id="bodyGrad" cx="42%" cy="36%" r="68%">
+      <stop offset="0%"   stop-color="#FFFFFF"/>
+      <stop offset="65%"  stop-color="#FBF7EE"/>
+      <stop offset="100%" stop-color="#DBD2C0"/>
+    </radialGradient>
+    <linearGradient id="beakGrad" x1="0%" y1="0%" x2="100%" y2="65%">
+      <stop offset="0%"   stop-color="#F2A88C"/>
+      <stop offset="55%"  stop-color="#E47A5C"/>
+      <stop offset="100%" stop-color="#C84B33"/>
+    </linearGradient>
+    <linearGradient id="wingShade" x1="0%" y1="0%" x2="40%" y2="100%">
+      <stop offset="0%"   stop-color="#FAF5EC"/>
+      <stop offset="100%" stop-color="#C8BEB0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Body + head as a single plump silhouette (3/4 view).
+       The bird sits slightly turned, head tipped 10°, beak right. -->
+  <path d="M 122 26
+           C 168 26, 202 58, 204 102
+           C 206 138, 198 178, 162 200
+           C 132 218,  82 215,  56 188
+           C  30 162,  34 118,  56  86
+           C  78  54, 102  26, 122  26 Z"
+        fill="url(#bodyGrad)"
+        stroke="#9E8D75" stroke-width="2.2"
+        stroke-linejoin="round"/>
+
+  <!-- Wing — soft watercolor shading on the left flank -->
+  <path d="M 60 116
+           C  62 150,  78 188, 118 196
+           C  92 192,  68 174,  58 152 Z"
+        fill="url(#wingShade)"
+        stroke="#A89580" stroke-width="1.5"
+        stroke-linejoin="round"/>
+
+  <!-- Wing feather strokes -->
+  <path d="M 70 142 Q 95 172 130 184"
+        fill="none" stroke="#B5A78F"
+        stroke-width="2.4" stroke-linecap="round" opacity="0.7"/>
+  <path d="M 80 158 Q 105 180 138 186"
+        fill="none" stroke="#B5A78F"
+        stroke-width="2.0" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- Beak — the iconic feature. Two parts (upper & lower mandible). -->
+  <!-- Upper mandible -->
+  <path d="M 197 96
+           L 232 87
+           Q 236 90, 235 96
+           L 200 110 Z"
+        fill="url(#beakGrad)"
+        stroke="#8E3823" stroke-width="1.6"
+        stroke-linejoin="round"/>
+  <!-- Lower mandible -->
+  <path d="M 200 110
+           L 232 110
+           Q 230 117, 222 119
+           L 199 115 Z"
+        fill="url(#beakGrad)"
+        stroke="#8E3823" stroke-width="1.6"
+        stroke-linejoin="round"/>
+  <!-- Beak parting highlight -->
+  <line x1="200" y1="110" x2="232" y2="108"
+        stroke="#7A2E1A" stroke-width="1.3" stroke-linecap="round"/>
+
+  <!-- Eye -->
+  <circle cx="167" cy="86" r="10.5" fill="#1A1612"/>
+  <circle cx="170" cy="83" r="3.4"  fill="#FFFFFF"/>
+  <!-- Subtle eye-ring -->
+  <circle cx="167" cy="86" r="12"
+          fill="none" stroke="#C8BEB0" stroke-width="1.2" opacity="0.6"/>
+
+  <!-- Tail hint at lower right -->
+  <path d="M 165 200
+           Q 195 215, 188 230
+           Q 175 222, 158 215 Z"
+        fill="url(#bodyGrad)"
+        stroke="#9E8D75" stroke-width="1.8"
+        stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,138 @@
+/* ================================================================
+   Komei Hotel — Shironbunchou Brand Palette
+   ----------------------------------------------------------------
+   Logo mark: a SINGLE white bunchou (white Java sparrow).
+   Body accents: the trio (white + sakura + nami bunchou) may appear
+   as soft watercolor decorations inside hero / CTA / section
+   dividers, but never as the logo.
+   Re-skins Tailwind's amber/orange utilities to the watercolor-mocha
+   palette shared with the Instagram brand assets.
+   ================================================================ */
+
+:root {
+  --brand-ivory:      #F8F4ED;  /* Warm Ivory  — page bg, panels */
+  --brand-sand:       #E8E0D2;  /* Sand Mist   — sub bg */
+  --brand-mocha:      #B89A78;  /* Champagne Mocha — primary accent */
+  --brand-mocha-dark: #A38560;  /* Darker mocha — hover/active */
+  --brand-mocha-deep: #6F5A40;  /* Deep mocha   — strong text accent */
+  --brand-coral:      #D4A697;  /* Soft Coral   — seasonal accent only */
+  --brand-sumi:       #2C2826;  /* Soft Sumi    — primary text */
+  --brand-greige:     #8C8074;  /* Greige       — secondary text */
+}
+
+/* ---- Re-skin Tailwind amber.* utilities ----------------------- */
+
+.bg-amber-50               { background-color: #FAF5EC !important; }
+.bg-amber-100              { background-color: #F0E5D2 !important; }
+.bg-amber-200              { background-color: #E0CFB4 !important; }
+.bg-amber-300              { background-color: #D4B89A !important; }
+.bg-amber-400              { background-color: #C9A782 !important; }
+.bg-amber-500              { background-color: var(--brand-mocha) !important; }
+.bg-amber-600              { background-color: var(--brand-mocha-dark) !important; }
+.bg-amber-700              { background-color: var(--brand-mocha-deep) !important; }
+
+.hover\:bg-amber-50:hover  { background-color: #F4ECDC !important; }
+.hover\:bg-amber-100:hover { background-color: #E8D7BC !important; }
+.hover\:bg-amber-500:hover { background-color: var(--brand-mocha) !important; }
+.hover\:bg-amber-600:hover { background-color: var(--brand-mocha-dark) !important; }
+
+.text-amber-300            { color: #E8D7C0 !important; }
+.text-amber-400            { color: #D4B89A !important; }
+.text-amber-500            { color: var(--brand-mocha) !important; }
+.text-amber-600            { color: var(--brand-mocha-dark) !important; }
+.text-amber-700            { color: var(--brand-mocha-deep) !important; }
+.text-amber-800            { color: #5A4A35 !important; }
+
+.hover\:text-amber-300:hover { color: #E8D7C0 !important; }
+.hover\:text-amber-400:hover { color: #D4B89A !important; }
+.hover\:text-amber-500:hover { color: var(--brand-mocha) !important; }
+.hover\:text-amber-600:hover { color: var(--brand-mocha-dark) !important; }
+.hover\:text-amber-700:hover { color: var(--brand-mocha-deep) !important; }
+
+.border-amber-100          { border-color: #F0E5D2 !important; }
+.border-amber-200          { border-color: #E0CFB4 !important; }
+.border-amber-500          { border-color: var(--brand-mocha) !important; }
+.border-amber-600          { border-color: var(--brand-mocha-dark) !important; }
+
+.ring-amber-200            { --tw-ring-color: #E0CFB4 !important; }
+.ring-amber-300            { --tw-ring-color: #D4B89A !important; }
+.ring-amber-500            { --tw-ring-color: var(--brand-mocha) !important; }
+
+/* Gradients used on hero overlays, CTAs, and seasonal banners */
+.from-amber-500            { --tw-gradient-from: var(--brand-mocha) !important;
+                              --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(184,154,120,0)) !important; }
+.from-amber-400            { --tw-gradient-from: #C9A782 !important;
+                              --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(201,167,130,0)) !important; }
+.to-amber-500              { --tw-gradient-to: var(--brand-mocha) !important; }
+.to-amber-600              { --tw-gradient-to: var(--brand-mocha-dark) !important; }
+.to-orange-400             { --tw-gradient-to: #D4B89A !important; }
+.to-orange-500             { --tw-gradient-to: var(--brand-coral) !important; }
+.to-orange-600             { --tw-gradient-to: #B98570 !important; }
+
+/* Yellow accent tones (used for status badges, sticky notes) tied
+   into the same palette so warm UI elements share a single hue */
+.bg-yellow-50              { background-color: #FAF5EC !important; }
+.bg-yellow-100             { background-color: #F0E5D2 !important; }
+.bg-amber-50\/60           { background-color: rgba(248,245,236,0.6) !important; }
+
+/* ---- New semantic utilities (use these for new markup) -------- */
+.bg-brand-ivory            { background-color: var(--brand-ivory); }
+.bg-brand-sand             { background-color: var(--brand-sand); }
+.bg-brand-mocha            { background-color: var(--brand-mocha); }
+.text-brand-sumi           { color: var(--brand-sumi); }
+.text-brand-greige         { color: var(--brand-greige); }
+.text-brand-mocha          { color: var(--brand-mocha); }
+.text-brand-mocha-dark     { color: var(--brand-mocha-dark); }
+.border-brand-mocha        { border-color: var(--brand-mocha); }
+
+/* ---- Bunchou logo standard sizes ------------------------------ */
+/* The logo disc uses a Sand Mist background so the WHITE bunchou
+   stands out (a near-white bird on near-white paper would vanish).
+   background-size:contain keeps the whole bird visible — including
+   the red beak — without aggressive cropping. */
+.bunchou-logo {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background-color: #EFE6D4;          /* sand mist — contrasts the white body */
+  background-image: url('../images/bunchou_white.png');
+  background-size: 96%;               /* slight inset so feathers don't touch ring */
+  background-position: center 52%;
+  background-repeat: no-repeat;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(184,154,120,0.28);
+  flex-shrink: 0;
+}
+.bunchou-logo.bunchou-logo-md { width: 2.25rem; height: 2.25rem; }
+.bunchou-logo.bunchou-logo-lg { width: 3rem;    height: 3rem; }
+.bunchou-logo.bunchou-logo-xl { width: 4rem;    height: 4rem; }
+
+/* Subtle "this is a mascot, not a pet policy" caption that sits
+   under the logo. Hidden by default; revealed on hover/focus. */
+.mascot-tip {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 0.5rem;
+  white-space: nowrap;
+  background: var(--brand-sumi);
+  color: #FFFCF6;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+  z-index: 60;
+}
+.bunchou-logo-wrap { position: relative; }
+.bunchou-logo-wrap:hover .mascot-tip,
+.bunchou-logo-wrap:focus-within .mascot-tip { opacity: 1; }
+
+/* Hero / section decorative trio accent */
+.bunchou-accent {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.85;
+}

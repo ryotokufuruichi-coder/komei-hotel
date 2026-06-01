@@ -18,10 +18,14 @@
 <meta name="robots" content="index,follow">
 <meta name="google-site-verification" content="lKcmfaSsl2WBQHXOflLbXPW2D_pkH0mbv_qd5hSzpaY" />
 <link rel="canonical" href="https://komei.yoshinarcorp.com/">
-<link rel="alternate" hreflang="ja" href="https://komei.yoshinarcorp.com/">
-<link rel="alternate" hreflang="en" href="https://komei.yoshinarcorp.com/">
-<link rel="alternate" hreflang="zh-Hans" href="https://komei.yoshinarcorp.com/">
-<link rel="alternate" hreflang="ko" href="https://komei.yoshinarcorp.com/">
+<!-- hreflang — each locale gets a distinct URL via ?lang=xx so Google
+     can serve the right version in localised SERPs. The canonical
+     still points at the bare domain so all four URLs consolidate
+     equity into the root document. -->
+<link rel="alternate" hreflang="ja"      href="https://komei.yoshinarcorp.com/?lang=ja">
+<link rel="alternate" hreflang="en"      href="https://komei.yoshinarcorp.com/?lang=en">
+<link rel="alternate" hreflang="zh-Hans" href="https://komei.yoshinarcorp.com/?lang=zh">
+<link rel="alternate" hreflang="ko"      href="https://komei.yoshinarcorp.com/?lang=ko">
 <link rel="alternate" hreflang="x-default" href="https://komei.yoshinarcorp.com/">
 <meta property="og:title" content="Komei Hotel 光明荘 — Tokyo Sumida Private Vacation Rental">
 <meta property="og:description" content="Private whole-house vacation rental in Tokyo — an Airbnb alternative with direct booking savings. Entire house sleeps 10, rooftop terrace. 10 min to Senso-ji Temple, 15 min to Skytree. Short-term rental in Sumida.">
@@ -199,6 +203,14 @@
         "@type": "Answer",
         "text": "専用駐車場はございませんが、近隣にコインパーキングが複数ございます。都営浅草線が至近のため、公共交通機関でのアクセスが便利です。"
       }
+    },
+    {
+      "@type": "Question",
+      "name": "ペット同伴は可能ですか？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "大変恐縮ですが、ペットの同伴はご遠慮いただいております。なお、サイトロゴの白文鳥は当宿のマスコットで、実際の文鳥が館内にいるわけではありませんので、鳥アレルギーをお持ちの方もご安心ください。"
+      }
     }
   ]
 }
@@ -313,18 +325,22 @@
 }
 </script>
 <link rel="stylesheet" href="css/tailwind.min.css">
+<link rel="stylesheet" href="css/brand.css">
+<link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="images/favicon-180.png">
+<meta name="theme-color" content="#B89A78">
 <style>
   html { scroll-behavior: smooth; }
   body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
   .hero-bg {
     background:
-      linear-gradient(135deg, rgba(15,23,42,0.65) 0%, rgba(15,23,42,0.35) 100%),
-      linear-gradient(135deg, #1e3a5f 0%, #2c5282 50%, #4a7ba6 100%);
+      linear-gradient(135deg, rgba(44,40,38,0.62) 0%, rgba(44,40,38,0.30) 100%),
+      linear-gradient(135deg, #3d3530 0%, #5a4a3a 55%, #7a6754 100%);
   }
-  .photo-ph { background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%); }
-  .photo-ph-warm { background: linear-gradient(135deg, #fde68a 0%, #f59e0b 100%); }
-  .photo-ph-cool { background: linear-gradient(135deg, #bae6fd 0%, #0284c7 100%); }
-  .photo-ph-night { background: linear-gradient(135deg, #1e1b4b 0%, #6366f1 100%); }
+  .photo-ph { background: linear-gradient(135deg, #e8e0d2 0%, #8c8074 100%); }
+  .photo-ph-warm { background: linear-gradient(135deg, #f0e5d2 0%, #b89a78 100%); }
+  .photo-ph-cool { background: linear-gradient(135deg, #cdd9d4 0%, #5a7a73 100%); }
+  .photo-ph-night { background: linear-gradient(135deg, #2c2826 0%, #4a3f3a 100%); }
   .lang-ja { display: none; }
   .lang-en-block { display: block; }
   html[lang="ja"] .lang-en, html[lang="ja"] .lang-en-block { display: none; }
@@ -342,10 +358,43 @@
 <body class="text-slate-800 bg-white">
 <script>
 // 初回アクセス時のみゲートウェイページへリダイレクト
+//
+// 重要 — SEO対策:
+// クローラー(Googlebot, Bingbot等) はセッションを保持しないため、
+// 何の制御もないと毎回 gateway.html へリダイレクトされ、index.html
+// 本体および ?lang=xx 等の URL がインデックスから外れる
+// (GSC で「ページにリダイレクトがあります」として検出済み)。
+// 以下の条件のいずれかに当てはまる場合はリダイレクトを行わない:
+//   1. User-Agent が検索エンジン or プレビュー bot
+//   2. リファラが検索エンジンドメイン（検索流入は直接 LP へ）
+//   3. URL に ?ref=*, ?utm_*, ?gclid 等の流入トラッキングパラメータ
+//   4. URL に ?lang=xx の言語切替パラメータ（言語別の検索結果も保護）
+//   5. URL に #anchor がある（記事リンクからの直接ジャンプを尊重）
+//   6. document.referrer が自ドメイン以外（外部からの直接流入）
 (function(){
-  if (!sessionStorage.getItem('gw_visited')) {
+  try {
+    if (sessionStorage.getItem('gw_visited')) return;
+
+    var ua = (navigator.userAgent || '').toLowerCase();
+    var BOT_PATTERN = /bot|crawler|spider|crawling|googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|embedly|whatsapp|telegrambot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|chrome-lighthouse|headlesschrome/i;
+    if (BOT_PATTERN.test(ua)) return;
+
+    var ref = document.referrer || '';
+    var SEARCH_REF = /^https?:\/\/(www\.)?(google|bing|yahoo|duckduckgo|baidu|naver|yandex|ecosia|brave)\./i;
+    if (SEARCH_REF.test(ref)) return;
+
+    var qs = location.search || '';
+    if (/[?&](ref|utm_[a-z]+|gclid|fbclid|msclkid|yclid|lang)=/i.test(qs)) return;
+
+    if (location.hash && location.hash.length > 1) return;
+
+    // 自ドメイン以外からの参照は直接 LP を表示
+    if (ref && ref.indexOf(location.host) === -1) return;
+
     sessionStorage.setItem('gw_visited', '1');
     window.location.replace('gateway.html');
+  } catch (e) {
+    // sessionStorage がブロックされている等 — リダイレクトせず素のLPを表示
   }
 })();
 </script>
@@ -353,9 +402,12 @@
 <!-- Header -->
 <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur shadow-sm">
   <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-    <a href="#top" class="flex items-center gap-2 shrink-0">
-      <span class="w-8 h-8 rounded-full bg-slate-800 text-white grid place-items-center font-bold text-sm">K</span>
+    <a href="#top" class="flex items-center gap-2 shrink-0 bunchou-logo-wrap" aria-label="Komei Hotel 光明荘 — home">
+      <span class="bunchou-logo" role="img" aria-label="白文鳥（光明荘のマスコット）"></span>
       <span class="font-bold text-lg tracking-wide">光明荘</span>
+      <span class="mascot-tip">
+        <span class="lang-ja">白文鳥はマスコットです。実際のペット同伴はご遠慮ください。</span><span class="lang-en">Our shironbunchou mascot — real pets unfortunately not allowed.</span><span class="lang-zh">白文鸟是吉祥物 — 实际宠物恕不能同行。</span><span class="lang-ko">백문조는 마스코트 — 반려동물 동반은 어렵습니다.</span>
+      </span>
     </a>
     <nav class="hidden md:flex items-center gap-4 text-sm whitespace-nowrap">
       <a href="#about" class="hover:text-amber-600 transition"><span class="lang-ja">物件紹介</span><span class="lang-en">About</span><span class="lang-zh">房源介绍</span><span class="lang-ko">숙소 소개</span></a>
@@ -379,7 +431,13 @@
 
 <!-- Hero -->
 <section id="top" class="hero-bg text-white pt-24 pb-20 md:pt-32 md:pb-32 relative overflow-hidden">
-  <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-10 items-center">
+  <!-- decorative bunchou trio (white + sakura + nami) perched at the
+       bottom-right of the hero — body accent only, the LOGO uses the
+       single white bunchou. -->
+  <img src="images/bunchou_trio_transparent.png" alt="" aria-hidden="true"
+       class="bunchou-accent hidden md:block"
+       style="right:-40px; bottom:-30px; width:300px; opacity:0.55; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.25));">
+  <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-10 items-center relative z-10">
     <div>
       <p class="text-amber-300 font-semibold tracking-widest text-base mb-3">
         <span class="lang-ja">浅草・スカイツリー徒歩圏</span>
@@ -387,11 +445,11 @@
       </p>
       <h1 class="text-5xl md:text-6xl font-bold leading-tight mb-5">
         <span class="lang-ja">光明荘で下町に泊まる、<br>東京を歩く。</span>
-        <span class="lang-en">Stay in Shitamachi,<br>walk the city.</span><span class="lang-zh">住在下町，<br>漫步东京。</span><span class="lang-ko">시타마치에 머물며,<br>도쿄를 걷다.</span>
+        <span class="lang-en">Tokyo Asakusa<br>vacation rental.</span><span class="lang-zh">东京浅草<br>整栋民宿。</span><span class="lang-ko">도쿄 아사쿠사<br>통째 민박.</span>
       </h1>
       <p class="text-xl md:text-2xl text-slate-100 mb-8 leading-relaxed">
-        <span class="lang-ja">一棟貸しで叶える、家族・グループの東京滞在。<br>墨田区東駒形より、心からのおもてなしを。</span>
-        <span class="lang-en">Private whole-house vacation rentals for families and groups — your Airbnb alternative in the heart of historic Sumida, Tokyo.</span><span class="lang-zh">整栋出租，为家庭和团体打造完美的东京之旅。</span><span class="lang-ko">가족·그룹을 위한 통째 민박 임대, 역사적인 스미다의 중심부.</span>
+        <span class="lang-ja">東京・墨田区東駒形の<b>一棟貸し民泊</b>。浅草寺まで徒歩10分、東京スカイツリー徒歩15分。最大10名でご家族・グループでの東京旅行に。Airbnbより最大10%お得な直接予約。</span>
+        <span class="lang-en">A <b>private whole-house vacation rental in Tokyo's Sumida ward</b> — 10 min walk to Senso-ji Temple, 15 min to Tokyo Skytree. Sleeps up to 10 guests. The Asakusa Airbnb alternative for families and groups, with up to 10% off direct booking.</span><span class="lang-zh">东京墨田区东驹形<b>整栋出租</b>民宿。步行至浅草寺10分钟、晴空塔15分钟。最多10人，家庭与团体的东京之旅首选。直接预订比Airbnb便宜10%。</span><span class="lang-ko">도쿄 스미다구 히가시코마가타의 <b>통째 대여 민박</b>. 센소지 도보 10분, 도쿄 스카이트리 도보 15분. 최대 10명, 가족·그룹 여행에 최적. 직접 예약 시 Airbnb보다 최대 10% 할인.</span>
       </p>
       <div class="flex flex-wrap gap-3">
         <a href="booking.html" class="px-7 py-3 rounded-full bg-amber-500 hover:bg-amber-600 font-semibold shadow-lg transition">
@@ -422,10 +480,28 @@
 <section id="about" class="py-20 px-4">
   <div class="max-w-5xl mx-auto">
     <p class="text-amber-600 font-semibold tracking-widest text-base mb-2">ABOUT</p>
-    <h2 class="text-4xl md:text-5xl font-bold mb-8">
-      <span class="lang-ja">下町情緒と利便性が共存する宿</span>
-      <span class="lang-en">Where Shitamachi meets convenience</span><span class="lang-zh">下町与便利的交汇</span><span class="lang-ko">시타마치 정취를 만나는 편리함</span>
+    <h2 class="text-4xl md:text-5xl font-bold mb-3">
+      <span class="lang-ja">東京・浅草の一棟貸し民泊 ｜ 下町情緒と利便性</span>
+      <span class="lang-en">Tokyo Asakusa private vacation rental — Shitamachi meets convenience</span><span class="lang-zh">东京浅草整栋出租民宿 — 下町与便利的交汇</span><span class="lang-ko">도쿄 아사쿠사 통째 민박 — 시타마치 정취와 편리함</span>
     </h2>
+    <!-- SEO summary — concentrated target keywords so crawlers immediately
+         classify the page as a Tokyo / Asakusa / Sumida vacation rental. -->
+    <p class="text-lg text-slate-700 leading-relaxed mb-6 max-w-3xl">
+      <span class="lang-ja"><b>光明荘（Komei Hotel）</b>は、<b>東京・墨田区東駒形</b>に位置する<b>一棟貸しの民泊</b>です。<b>浅草寺</b>まで徒歩約10分、<b>東京スカイツリー</b>まで徒歩約15分。最大10名様までご宿泊いただける<b>東京一棟貸し</b>で、ご家族・グループ・長期滞在のビジネス利用にも最適。Airbnbや Booking.com に掲載している<b>浅草・墨田区エリアの民泊</b>と同じ宿を、直接予約で<b>最大10%お得</b>にご利用いただけます。</span>
+      <span class="lang-en">Komei Hotel is a <b>private whole-house vacation rental in Tokyo</b>, located in Higashi-Komagata, Sumida ward. A 10-minute walk to Senso-ji Temple in Asakusa and a 15-minute walk to Tokyo Skytree, this <b>Tokyo vacation rental near Asakusa</b> sleeps up to 10 guests and is ideal for families, groups, and extended business stays. Book direct as a smarter <b>Airbnb alternative in Tokyo</b> — save up to 10% versus our Airbnb listing for the same Sumida whole-house rental.</span>
+      <span class="lang-zh"><b>光明荘（Komei Hotel）</b>位于<b>东京墨田区东驹形</b>，是一栋<b>整栋出租的民宿</b>。步行至<b>浅草寺</b>约10分钟，至<b>东京晴空塔</b>约15分钟，最多可容纳10位客人，非常适合家庭、团体或长期住宿。直接预订比Airbnb便宜最多10%——这是您选择<b>东京浅草整栋民宿</b>的更聪明方式。</span>
+      <span class="lang-ko"><b>광명장(Komei Hotel)</b>은 <b>도쿄 스미다구 히가시코마가타</b>에 위치한 <b>통째 대여 민박</b>입니다. <b>센소지</b>까지 도보 약 10분, <b>도쿄 스카이트리</b>까지 도보 약 15분. 최대 10명 숙박 가능한 <b>도쿄 아사쿠사 통째 민박</b>으로 가족·그룹·장기 비즈니스 숙박에 최적. 직접 예약으로 Airbnb보다 최대 10% 할인됩니다.</span>
+    </p>
+    <!-- bunchou cultural one-liner -->
+    <div class="flex items-start gap-3 mb-8 text-slate-500 text-sm leading-relaxed">
+      <span class="bunchou-logo bunchou-logo-md mt-0.5" role="img" aria-label="白文鳥"></span>
+      <p>
+        <span class="lang-ja">江戸の下町で愛玩鳥として親しまれてきた小さな歌うたい、<b>白文鳥</b>。光明荘では、そんな下町らしいやわらかな時間を、皆さまの東京滞在に少しだけお持ち帰りいただけたらと願っています。</span>
+        <span class="lang-en"><b>Shironbunchou</b> (white Java sparrow) — a small songbird cherished as a companion in old-Edo Tokyo. We hope Komei Hotel lets you take home a little of that gentle shitamachi rhythm.</span>
+        <span class="lang-zh"><b>白文鸟</b>是江户下町深受喜爱的小型鸣鸟。希望光明荘能让您带回一点这片老街区柔和的时光。</span>
+        <span class="lang-ko"><b>백문조</b>는 옛 도쿄 시타마치에서 사랑받아온 작은 새입니다. 광명장이 그 부드러운 시타마치의 시간을 조금이나마 가져가게 해 드리고 싶습니다.</span>
+      </p>
+    </div>
     <div class="grid md:grid-cols-2 gap-10 items-center">
       <div class="space-y-4 text-slate-700 leading-loose">
         <p class="lang-ja">Komei Hotel（光明荘）は、東京・墨田区東駒形に位置する一棟貸し中心の宿泊施設です。最寄り駅は都営浅草線「本所吾妻橋」駅から徒歩約4分、東京メトロ銀座線「浅草」駅・都営大江戸線「蔵前」駅からも徒歩圏内。浅草寺・雷門まで約10分、東京スカイツリーまで約15分という、東京観光の二大ランドマークを徒歩で巡れる絶好のロケーションです。</p>
@@ -1029,8 +1105,12 @@
 </script>
 
 <!-- CTA -->
-<section class="py-16 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center">
-  <div class="max-w-3xl mx-auto">
+<section class="py-16 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-center relative overflow-hidden">
+  <!-- subtle trio accent at top-left for warmth -->
+  <img src="images/bunchou_trio_transparent.png" alt="" aria-hidden="true"
+       class="bunchou-accent hidden md:block"
+       style="left:-30px; top:-20px; width:160px; opacity:0.35; transform:scaleX(-1);">
+  <div class="max-w-3xl mx-auto relative z-10">
     <h2 class="text-4xl md:text-5xl font-bold mb-4">
       <span class="lang-ja">直接予約で、特別価格を。</span>
       <span class="lang-en">Book direct for the best price.</span><span class="lang-zh">直接预订以获得最优价格。</span><span class="lang-ko">최적의 가격을 위해 직접 예약하세요.</span>
@@ -1279,6 +1359,21 @@
           <span class="lang-ko">전용 주차장은 없지만, 근처에 코인 주차장이 있습니다.</span>
         </p>
       </details>
+      <details class="bg-white rounded-xl shadow p-5 group">
+        <summary class="font-bold text-lg cursor-pointer list-none flex justify-between items-center">
+          <span class="lang-ja">ペット同伴は可能ですか？</span>
+          <span class="lang-en">Are pets allowed?</span>
+          <span class="lang-zh">可以带宠物吗？</span>
+          <span class="lang-ko">반려동물 동반 가능한가요?</span>
+          <span class="text-amber-500 group-open:rotate-180 transition-transform">▼</span>
+        </summary>
+        <p class="mt-3 text-slate-600 leading-relaxed">
+          <span class="lang-ja">大変恐縮ですが、ペットの同伴はご遠慮いただいております。<br>※サイトロゴの白文鳥は当宿のマスコットで、実際の文鳥が館内にいるわけではありません。アレルギーをお持ちの方もご安心ください。</span>
+          <span class="lang-en">Unfortunately, pets are not permitted indoors.<br>※ Our white bunchou logo is a mascot only — there is no real bird inside the property, so guests with allergies can stay with peace of mind.</span>
+          <span class="lang-zh">很抱歉，本宿不可携带宠物入住。<br>※ 网站上的白文鸟为本宿吉祥物，并非实际饲养的鸟类，对鸟类过敏的客人亦可放心入住。</span>
+          <span class="lang-ko">죄송하지만 반려동물 동반은 어렵습니다.<br>※ 사이트의 백문조 로고는 마스코트이며 실제 새는 객실 내에 없습니다. 새 알레르기가 있는 분도 안심하고 이용하실 수 있습니다.</span>
+        </p>
+      </details>
     </div>
   </div>
 </section>
@@ -1288,10 +1383,16 @@
   <div class="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
     <div>
       <div class="flex items-center gap-2 mb-3">
-        <span class="w-9 h-9 rounded-full bg-amber-500 text-white grid place-items-center font-bold">K</span>
+        <span class="bunchou-logo bunchou-logo-md" role="img" aria-label="白文鳥（光明荘のマスコット）"></span>
         <span class="text-white font-bold text-xl">Komei Hotel</span>
       </div>
       <p class="text-sm">光明荘 ｜ 東京・墨田区の一棟貸し宿</p>
+      <p class="text-xs text-slate-500 mt-1">
+        <span class="lang-ja">マスコット：白文鳥 ・ 江戸下町で親しまれてきた小鳥</span>
+        <span class="lang-en">Mascot: shironbunchou — a small songbird beloved in old-Edo Tokyo</span>
+        <span class="lang-zh">吉祥物：白文鸟 — 在老东京下町广受喜爱的小鸟</span>
+        <span class="lang-ko">마스코트: 백문조 — 옛 도쿄 시타마치에서 사랑받아온 작은 새</span>
+      </p>
     </div>
     <div>
       <h4 class="text-white font-semibold mb-2"><span class="lang-ja">お問い合わせ</span><span class="lang-en">Contact</span><span class="lang-zh">联系我们</span><span class="lang-ko">문의하기</span></h4>
@@ -1314,7 +1415,39 @@
 </footer>
 
 <script>
-function setLang(lang){document.documentElement.lang=lang;document.getElementById('langSel').value=lang;}
+// Language switching.
+// - Reads ?lang=xx from the URL on first load so hreflang versions
+//   land users in the right locale (and crawlers see distinct content).
+// - When the user picks a language manually, we replaceState the URL
+//   to include ?lang=xx so the link can be shared and crawlers see
+//   a stable URL ↔ language mapping.
+(function initLang(){
+  try {
+    var m = location.search.match(/[?&]lang=([a-zA-Z-]+)/);
+    var lang = m ? m[1].toLowerCase() : '';
+    if (lang === 'zh-hans' || lang === 'zh-cn') lang = 'zh';
+    if (['ja','en','zh','ko'].indexOf(lang) === -1) return;
+    document.documentElement.lang = lang;
+    var sel = document.getElementById('langSel');
+    if (sel) sel.value = lang;
+  } catch (e) {}
+})();
+
+function setLang(lang){
+  document.documentElement.lang = lang;
+  var sel = document.getElementById('langSel');
+  if (sel) sel.value = lang;
+  // Sync URL so reload / share / crawler all see the same language.
+  try {
+    var url = new URL(location.href);
+    if (lang === 'en') {
+      url.searchParams.delete('lang');  // English is x-default → bare URL
+    } else {
+      url.searchParams.set('lang', lang === 'zh' ? 'zh' : lang);
+    }
+    history.replaceState(null, '', url.pathname + (url.search ? url.search : '') + url.hash);
+  } catch (e) {}
+}
 function toggleLang(){setLang(document.documentElement.lang==='ja'?'en':'ja');}
 </script>
 </body>
