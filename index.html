@@ -376,7 +376,10 @@
     if (sessionStorage.getItem('gw_visited')) return;
 
     var ua = (navigator.userAgent || '').toLowerCase();
-    var BOT_PATTERN = /bot|crawler|spider|crawling|googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|embedly|whatsapp|telegrambot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|chrome-lighthouse|headlesschrome/i;
+    // Bot 識別子: 一般的なクローラ + Google系の特殊ボット (Google-InspectionTool
+    // は GSC の「URL 検査 → 公開 URL をテスト」で使われる。これを除外しないと
+    // Live Test 時に gateway.html へリダイレクトされ「noindex 検出」となる)。
+    var BOT_PATTERN = /bot|crawler|spider|crawling|google-inspectiontool|google-?read-?aloud|googlebot|google-extended|googleother|adsbot-google|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot|linkedinbot|embedly|whatsapp|telegrambot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|chrome-lighthouse|headlesschrome|prerender|phantomjs/i;
     if (BOT_PATTERN.test(ua)) return;
 
     var ref = document.referrer || '';
