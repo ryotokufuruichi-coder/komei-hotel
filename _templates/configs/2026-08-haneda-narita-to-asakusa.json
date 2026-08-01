@@ -1,0 +1,91 @@
+{
+  "slug": "haneda-narita-to-asakusa",
+  "title": "Haneda & Narita to Asakusa — Airport & Tokyo Access Guide | Komei Hotel 光明荘",
+  "description": "How to get from Haneda or Narita to Asakusa / Honjo-Azumabashi with no transfers, then ride one stop to Tokyo Skytree or Asakusa. Fares, times and train tips near Komei Hotel.",
+  "keywords": "haneda to asakusa, narita to asakusa, honjo-azumabashi station, keikyu airport line, keisei access express, toei asakusa line, asakusa airport access, how to get to asakusa, tokyo skytree from asakusa, 本所吾妻橋 アクセス, 羽田 浅草, 成田 浅草",
+  "color_preset": "amber-rust",
+  "hero_eyebrow": "GETTING HERE",
+  "hero_h1": "Airports, Asakusa & Tokyo — all easy from Komei Hotel",
+  "hero_lead": "Komei Hotel sits beside <strong>Honjo-Azumabashi Station</strong> on the Toei Asakusa Line — one stop from Asakusa, one stop from Tokyo Skytree, and a no-transfer through-train from both Haneda and Narita airports. Here is exactly how to reach us, and how to get around once you do.",
+  "hero_meta": ["Haneda ~40–50 min · no transfer", "Narita ~65–80 min · no transfer", "1 stop to Asakusa & Skytree", "Toei Asakusa Line · A-19"],
+  "schema_headline": "How to get from Haneda and Narita airports to Asakusa / Honjo-Azumabashi",
+  "date_published": "2026-08-01",
+  "breadcrumb": [{"name": "Asakusa Guide", "url": "https://komei.yoshinarcorp.com/asakusa-guide.html"}],
+  "breadcrumb_self": "Airport & Tokyo Access",
+  "emoji": "🚉",
+  "card_title_ja": "空港・都心からのアクセス完全ガイド",
+  "card_title_en": "Airport & Tokyo Access Guide",
+  "card_lead": "Haneda &amp; Narita to Asakusa with no transfers — plus one-stop rides to Skytree and central Tokyo from Honjo-Azumabashi Station.",
+  "footer_label": "Airport &amp; Tokyo Access Guide",
+  "cta_h2": "Stay one stop from Asakusa & Skytree",
+  "cta_lead": "Komei Hotel is a whole-house rental beside Honjo-Azumabashi Station — sleeps up to 10, has a private rooftop, and offers the easy airport access described in this guide. Book direct and save up to 10% vs Airbnb.",
+  "cta_btn_label": "Check availability →",
+  "sections": [
+    {
+      "id": "why-easy",
+      "heading": "Why getting here is easy",
+      "blocks": [
+        {"type": "p", "text": "Komei Hotel is right beside <strong>Honjo-Azumabashi Station</strong> (本所吾妻橋), station <strong>A-19</strong> on the Toei Asakusa Line. That one detail shapes your whole trip."},
+        {"type": "p", "text": "The Toei Asakusa Line through-runs with the <strong>Keikyu Line</strong> (to Haneda) and the <strong>Keisei Line</strong> (to Narita), so you can ride from either airport toward Asakusa on a single train — often with <strong>no transfer at all</strong>. And once you are based here, Asakusa is one stop to the west and Tokyo Skytree (Oshiage) is one stop to the east."},
+        {"type": "callout", "text": "In short: one line links your front door to <strong>both airports, Asakusa, Skytree, Nihonbashi and Ginza</strong> — frequently without a single transfer."}
+      ]
+    },
+    {
+      "id": "from-haneda",
+      "heading": "From Haneda Airport (HND)",
+      "walk_time": "~40–50 min · from about ¥610",
+      "blocks": [
+        {"type": "h3", "text": "By train (recommended): Keikyu → Toei Asakusa Line, no transfer"},
+        {"type": "p", "text": "From either Haneda terminal, board a <strong>Keikyu Airport Line</strong> train that through-runs onto the Toei Asakusa Line (bound for Oshiage / Narita). It reaches Asakusa in about <strong>35–45 minutes</strong> for roughly <strong>¥610–650</strong> with an IC card, with no transfer. Trains come about every 10 minutes."},
+        {"type": "callout", "text": "One thing worth knowing: the fastest service — the <strong>Airport Ltd. Express (エアポート快特)</strong> — skips Honjo-Azumabashi and stops only at Asakusa and Oshiage. To come straight to our station, board an <strong>Airport Express (エアポート急行)</strong> or <strong>Rapid Ltd. Express (快特)</strong> instead. If you do end up on the Airport Ltd. Express, simply get off at Asakusa — Honjo-Azumabashi is one local stop back, or about a 10-minute walk to us."},
+        {"type": "h3", "text": "By bus: Airport Limousine"},
+        {"type": "p", "text": "The Airport Limousine coach to the Asakusa area (Asakusa View Hotel stop) takes about <strong>65–85 minutes</strong> for around <strong>¥1,300</strong>. You stay seated with your suitcases stowed underneath — nice with heavy bags — but it is slower and less frequent than the train, and depends on traffic."}
+      ]
+    },
+    {
+      "id": "from-narita",
+      "heading": "From Narita Airport (NRT)",
+      "walk_time": "~65–80 min · from about ¥1,290",
+      "blocks": [
+        {"type": "h3", "text": "Best value: Keisei Access Express → Toei Asakusa Line, no transfer"},
+        {"type": "p", "text": "The <strong>Keisei Access Express (アクセス特急)</strong> through-runs onto the Toei Asakusa Line and reaches Asakusa in about <strong>65–80 minutes</strong> for roughly <strong>¥1,290</strong>, with no limited-express surcharge. Many departures continue straight through to Asakusa and Honjo-Azumabashi; on a few you make a quick same-direction change at Oshiage (push across the platform)."},
+        {"type": "h3", "text": "Fastest: Keisei Skyliner (with one transfer)"},
+        {"type": "p", "text": "The <strong>Skyliner</strong> races to Nippori / Ueno in about <strong>41 minutes</strong> with reserved seats and luggage racks (around ¥2,570), then you change to a local train for Asakusa. It is the quickest and most comfortable ride into town, but it does not run directly to Asakusa."},
+        {"type": "h3", "text": "By bus: Airport Limousine"},
+        {"type": "p", "text": "The Airport Limousine coach to the Asakusa area runs about <strong>100–120 minutes</strong> for around <strong>¥3,100</strong> — the easiest with lots of luggage, but the slowest option."},
+        {"type": "callout", "text": "Rule of thumb: <strong>Access Express</strong> for value and no transfers, <strong>Skyliner</strong> for speed and a guaranteed seat, and the <strong>bus</strong> if you would rather not touch your suitcases."}
+      ]
+    },
+    {
+      "id": "getting-around",
+      "heading": "Getting around once you are here",
+      "blocks": [
+        {"type": "p", "text": "From Honjo-Azumabashi, the Toei Asakusa Line puts a lot within a few minutes — several of the best-known spots are a direct, no-transfer ride:"},
+        {"type": "ul", "items": [
+          "<strong>Asakusa &amp; Senso-ji</strong> — 1 stop (~2 min, ¥180), or about a 10-minute walk to Kaminarimon gate.",
+          "<strong>Tokyo Skytree (Oshiage)</strong> — 1 stop the other way (~2 min, ¥180); also walkable in about 15 minutes.",
+          "<strong>Nihonbashi</strong> — direct on the Asakusa Line, about 11 min, ¥220.",
+          "<strong>Higashi-Ginza / Ginza</strong> — direct, about 14 min, ¥220.",
+          "<strong>Ueno</strong> — about 14 min (change at Asakusa for the Ginza Line), ¥290.",
+          "<strong>Akihabara</strong> — about 16 min (one transfer), ¥290.",
+          "<strong>Tokyo Station</strong> — about 19 min (one transfer), ¥340.",
+          "<strong>Shibuya</strong> about 38 min · <strong>Shinjuku</strong> about 30 min (one transfer each)."
+        ]},
+        {"type": "p", "text": "Because Asakusa is one stop away and served by every train type, you are rarely waiting long for a ride."}
+      ]
+    },
+    {
+      "id": "tips",
+      "heading": "Practical tips for a smooth arrival",
+      "blocks": [
+        {"type": "ul", "items": [
+          "<strong>Get an IC card</strong> (Suica or PASMO, including the mobile versions) at the airport — tap in and out with no fare math, and it also works on buses and in convenience stores.",
+          "<strong>Mind the train type</strong> to Honjo-Azumabashi: every service stops here except the Haneda <strong>Airport Ltd. Express (エアポート快特)</strong>.",
+          "<strong>Arriving late or with big luggage?</strong> Get off at Asakusa — it is larger and every train stops there — then take one local stop or a short taxi to us.",
+          "<strong>Fares and times above are approximate</strong> and can change with fare revisions; check a route app such as Google Maps, NAVITIME or Ekitan for live times on your travel date."
+        ]},
+        {"type": "callout", "text": "Send us your arrival details after booking and we will share simple door-to-door directions before you land."}
+      ]
+    }
+  ]
+}

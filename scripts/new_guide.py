@@ -297,8 +297,6 @@ def update_sitemap(slug: str, dry_run: bool = False) -> tuple[bool, str]:
         f"    <lastmod>{today}</lastmod>\n"
         "    <changefreq>monthly</changefreq>\n"
         "    <priority>0.8</priority>\n"
-        f'    <xhtml:link rel="alternate" hreflang="en" href="{target_url}"/>\n'
-        f'    <xhtml:link rel="alternate" hreflang="x-default" href="{target_url}"/>\n'
         "  </url>\n"
     )
 
