@@ -34,12 +34,12 @@ LANGS = {
 ORDER = ["ja", "en", "zh", "ko"]
 
 
-def hreflang_block() -> str:
+def hreflang_block(slug: str) -> str:
     lines = [
-        f'<link rel="alternate" hreflang="{LANGS[c]["hreflang"]}" href="{BASE}/{c}/">'
+        f'<link rel="alternate" hreflang="{LANGS[c]["hreflang"]}" href="{BASE}/{c}/{slug}">'
         for c in ORDER
     ]
-    lines.append(f'<link rel="alternate" hreflang="x-default" href="{BASE}/en/">')
+    lines.append(f'<link rel="alternate" hreflang="x-default" href="{BASE}/en/{slug}">')
     return "\n".join(lines)
 
 
@@ -58,7 +58,7 @@ def generate(src: str, lang: str, slug: str) -> str:
     n = 0
     s, n = re.subn(r'<html lang="en">', f'<html lang="{info["html"]}">', s, count=1); assert n == 1, "html lang"
     s, n = re.subn(r'<link rel="canonical" href="[^"]*">', f'<link rel="canonical" href="{url}">', s, count=1); assert n == 1, "canonical"
-    s, n = re.subn(r'<!-- hreflang.*?-->\s*(?:<link rel="alternate"[^>]*>\s*){5}', hreflang_block() + "\n", s, count=1, flags=re.S); assert n == 1, "hreflang"
+    s, n = re.subn(r'(?:<!-- hreflang.*?-->\s*)?(?:<link rel="alternate"[^>]*>\s*){5}', hreflang_block(slug) + "\n", s, count=1, flags=re.S); assert n == 1, "hreflang"
     s, n = re.subn(r'(<meta property="og:url" content=")[^"]*(">)', rf"\g<1>{url}\g<2>", s, count=1); assert n == 1, "og:url"
     s = s.replace('<meta property="og:locale" content="en_US">', f'<meta property="og:locale" content="{info["locale"]}">', 1)
 
