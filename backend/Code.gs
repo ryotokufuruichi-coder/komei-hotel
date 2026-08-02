@@ -149,32 +149,22 @@ function handleReservationRequest(body) {
   const nights = nightsBetween_(body.checkin, body.checkout);
   if (nights < 3) return { ok:false, error:'minimum 3 nights' };
 
-  const row = HEADERS_RESERVATIONS.map(h => {
-    switch(h) {
-      case 'id': return id;
-      case 'status': return STATUS.REQUESTED;
-      case 'created_at': return now;
-      case 'updated_at': return now;
-      case 'checkin': return body.checkin;
-      case 'checkout': return body.checkout;
-      case 'nights': return nights;
-      case 'adults': return body.adults || 0;
-      case 'children': return body.children || 0;
-      case 'rep_first_name': return body.representative.first_name || '';
-      case 'rep_last_name': return body.representative.last_name || '';
-      case 'rep_email': return body.representative.email;
-      case 'rep_phone': return body.representative.phone;
-      case 'rep_country': return body.representative.country;
-      case 'estimated_total': return body.estimated_total || computeEstimatedTotal_(body.checkin, body.checkout);
-      case 'ota_price': return body.ota_price || '';
-      case 'token': return token;
-      case 'notes': return body.notes || '';
-      case 'source': return body.source || 'lp_direct';
-      case 'user_agent': return body.user_agent || '';
-      default: return '';
-    }
-  });
-  sh.appendRow(row);
+  // 値をフィールド名で用意し、シートの「実際のヘッダー順」に合わせて書き込む（列順ズレ対策）
+  const vals = {
+    id: id, status: STATUS.REQUESTED, created_at: now, updated_at: now,
+    checkin: body.checkin, checkout: body.checkout, nights: nights,
+    adults: body.adults || 0, children: body.children || 0,
+    rep_first_name: body.representative.first_name || '',
+    rep_last_name: body.representative.last_name || '',
+    rep_email: body.representative.email, rep_phone: body.representative.phone,
+    rep_country: body.representative.country,
+    estimated_total: body.estimated_total || computeEstimatedTotal_(body.checkin, body.checkout),
+    ota_price: body.ota_price || '', token: token,
+    notes: body.notes || '', source: body.source || 'lp_direct',
+    user_agent: body.user_agent || ''
+  };
+  const _headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  sh.appendRow(_headers.map(function(h){ return vals[h] !== undefined ? vals[h] : ''; }));
   log_(id, 'requested', JSON.stringify({nights:nights, total:body.estimated_total}));
   notifyAdminPendingApproval_(id, body, nights);
   notifyGuestRequestReceived_(id, body);
@@ -505,7 +495,13 @@ function notifyGuestRequestReceived_(id, body) {
 
 function notifyGuestApproved_(id, row, finalTotal) {
   const base = getProp_('SITE_BASE_URL');
-  const url = base + '/register.html?id=' + id + '&token=' + row.token;
+  let token = row.token;
+  if (!token) {                                     // 防御: tokenが空なら生成して保存
+    token = Utilities.getUuid().replace(/-/g, '');
+    const r = findReservationRow_(id);
+    if (r) updateReservation_(r.rowIndex, { token: token });
+  }
+  const url = base + '/register.html?id=' + id + '&token=' + token;
   const name = fullName_(row);
   const subject = '[Komei Hotel] ご予約が承認されました / Approved (' + id + ')';
   const html =
