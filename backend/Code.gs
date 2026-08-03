@@ -812,8 +812,12 @@ var STAY_FACTS_ = {
 function stayEmail_(kind, lang, ctx) {
   var F = STAY_FACTS_;
   var guide = ctx.guide || '';
+  var mypage = ctx.mypage || '';
   function gbtn(label) {
     return guide ? '<p><a href="' + guide + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">' + label + '</a></p><p style="font-size:12px;color:#666">' + guide + '</p>' : '';
+  }
+  function rbtn(label) {
+    return mypage ? '<p><a href="' + mypage + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">' + label + '</a></p><p style="font-size:12px;color:#666">' + mypage + '</p>' : '';
   }
   var info = '&#8505;&#65039; ' + F.addr + '<br>Map: ' + F.map + ' &#65295; TEL: ' + F.tel;
   var ci = ctx.ci, co = ctx.co, id = esc_(ctx.id);
@@ -842,7 +846,9 @@ function stayEmail_(kind, lang, ctx) {
         + '<p>ゴミは分別のうえ屋外ゴミ庫（施錠）または室内へ。<br>忘れ物は3日間保管・着払いで郵送可。<br>チェックアウト時刻が分かればお知らせください。</p>' },
       review: { s: 'ありがとうございました', b:
         '<p>この度はご滞在いただき誠にありがとうございました。素敵なゲストにお会いできて嬉しかったです。</p>'
-        + '<p>もしよろしければレビューをいただけますと今後の励みになります。またのお越しを心よりお待ちしております。</p>' }
+        + '<p>もしよろしければレビューをいただけますと今後の励みになります。下記のマイページに<b>予約ID＋メールでログイン</b>し、「レビュー」タブよりご投稿ください（予約ID: ' + id + '）。</p>'
+        + rbtn('レビューを書く')
+        + '<p>またのお越しを心よりお待ちしております。</p>' }
     },
     en: {
       welcome: { s: 'Reservation confirmed', b:
@@ -868,7 +874,9 @@ function stayEmail_(kind, lang, ctx) {
         + '<p>Separate garbage and place it in the outdoor storage (lock it) or leave it inside.<br>Lost items are kept for 3 days and can be mailed (shipping collect).<br>Please let us know your check-out time if possible.</p>' },
       review: { s: 'Thank you', b:
         '<p>Thank you very much for staying with us. It was a pleasure to host you.</p>'
-        + '<p>If you have a moment, we would be grateful for a review. We hope to welcome you again!</p>' }
+        + '<p>If you have a moment, we would be grateful for a review. Please log in to My Page below with your <b>reservation ID + email</b> and post it from the "Review" tab (Reservation ID: ' + id + ').</p>'
+        + rbtn('Write a review')
+        + '<p>We hope to welcome you again!</p>' }
     },
     zh: {
       welcome: { s: '預訂已確定', b:
@@ -894,7 +902,9 @@ function stayEmail_(kind, lang, ctx) {
         + '<p>垃圾請分類後放入室外垃圾庫（上鎖）或留在室內。<br>遺失物保管 3 天，可貨到付款寄送。<br>若已知退房時間，請告知我們。</p>' },
       review: { s: '感謝您的入住', b:
         '<p>非常感謝您這次的入住，很高興能招待您。</p>'
-        + '<p>若您方便，懇請給予評價，將是我們最大的鼓勵。期待再次為您服務！</p>' }
+        + '<p>若您方便，懇請給予評價，將是我們最大的鼓勵。請以<b>預訂編號＋電子郵件</b>登入下方會員頁面，於「評價」分頁投稿（預訂編號：' + id + '）。</p>'
+        + rbtn('撰寫評價')
+        + '<p>期待再次為您服務！</p>' }
     },
     ko: {
       welcome: { s: '예약이 확정되었습니다', b:
@@ -920,7 +930,9 @@ function stayEmail_(kind, lang, ctx) {
         + '<p>쓰레기는 분리 후 실외 보관고(잠금) 또는 실내에 두세요.<br>분실물은 3일간 보관, 착불 발송 가능.<br>체크아웃 시간을 알면 알려주세요.</p>' },
       review: { s: '감사합니다', b:
         '<p>이번에 숙박해 주셔서 진심으로 감사합니다. 모실 수 있어 기뻤습니다.</p>'
-        + '<p>괜찮으시면 리뷰를 남겨 주시면 큰 힘이 됩니다. 다시 뵙기를 기대하겠습니다!</p>' }
+        + '<p>괜찮으시면 리뷰를 남겨 주세요. 아래 마이페이지에 <b>예약번호＋이메일</b>로 로그인 후 「리뷰」 탭에서 작성해 주세요 (예약번호: ' + id + ').</p>'
+        + rbtn('리뷰 작성')
+        + '<p>다시 뵙기를 기대하겠습니다!</p>' }
     }
   };
   var t = (D[lang] || D.en)[kind] || D.en[kind];
@@ -932,10 +944,12 @@ function sendStay_(row, kind) {
   var to = row.rep_email;
   if (!to) return false;
   var lang = pickLang_(row.rep_country);
+  var base = getProp_('SITE_BASE_URL', 'https://komei.yoshinarcorp.com');
   var ctx = {
     id: row.id, ci: toYMDSafe_(row.checkin), co: toYMDSafe_(row.checkout),
     name: fullName_(row),
-    guide: getProp_('HOUSE_MANUAL_URL', 'https://drive.google.com/file/d/1hyeG_lICB7TpTTGsE-CJ-QaK6F8OHyaJ/view?usp=sharing')
+    guide: getProp_('HOUSE_MANUAL_URL', 'https://drive.google.com/file/d/1hyeG_lICB7TpTTGsE-CJ-QaK6F8OHyaJ/view?usp=sharing'),
+    mypage: base + '/mypage.html?id=' + row.id
   };
   var m = stayEmail_(kind, lang, ctx);
   var en = (lang !== 'en') ? stayEmail_(kind, 'en', ctx) : null;
