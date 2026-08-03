@@ -372,6 +372,15 @@ function addGuest(prefill) {
           <span class="lang-ko">JPG/PNG/HEIC·5MB 이하. 이름·국적·여권번호를 읽을 수 있는 이미지를 업로드하세요</span>
         </p>
         <div class="g_passport_preview mt-2"></div>
+        <label class="flex items-start gap-2 text-xs mt-2 text-amber-700">
+          <input type="checkbox" class="g_passport_later w-4 h-4 mt-0.5">
+          <span>
+            <span class="lang-ja">パスポート取得前などの場合は「後日提出」にできます（チェックイン前までのご提出が必須）</span>
+            <span class="lang-en">Not ready yet? Tick to submit this passport later (required before check-in).</span>
+            <span class="lang-zh">若護照尚未取得，可勾選「稍後提交」（入住前必須提交）。</span>
+            <span class="lang-ko">여권 미발급 등의 경우 "나중에 제출"을 선택할 수 있습니다(체크인 전까지 제출 필수).</span>
+          </span>
+        </label>
       </div>
       <div class="g_passport_field hidden">
         <label class="block text-xs font-semibold mb-1"><span class="lang-ja">旅券番号</span><span class="lang-en">Passport number</span><span class="lang-zh">护照号码</span><span class="lang-ko">여권 번호</span><span class="text-red-500">*</span></label>
@@ -380,16 +389,22 @@ function addGuest(prefill) {
     </div>
   `;
   document.getElementById('guestList').appendChild(div);
-  // Wire up nationality → passport field toggle
+  // Wire up nationality → passport field toggle (+ "submit later" option)
   const natSel = div.querySelector('.g_nationality');
   const passFields = div.querySelectorAll('.g_passport_field');
   const passInput = div.querySelector('.g_passport');
-  natSel.addEventListener('change', () => {
+  const laterChk = div.querySelector('.g_passport_later');
+  function syncPassport() {
     const isForeign = natSel.value && natSel.value !== 'JP';
+    const later = laterChk && laterChk.checked;
     passFields.forEach(f => f.classList.toggle('hidden', !isForeign));
-    div.querySelectorAll('input[name="g_passport_no"]').forEach(i => i.required = isForeign);
-    passInput.required = isForeign;
-  });
+    const need = isForeign && !later;
+    div.querySelectorAll('input[name="g_passport_no"]').forEach(i => i.required = need);
+    passInput.required = need;
+    passInput.disabled = later;
+  }
+  natSel.addEventListener('change', syncPassport);
+  if (laterChk) laterChk.addEventListener('change', syncPassport);
   // File preview
   passInput.addEventListener('change', e => {
     const file = e.target.files[0];
@@ -449,11 +464,16 @@ async function submitRegister(e) {
       const isForeign = g.nationality && g.nationality !== 'JP';
       if (isForeign) {
         g.passport_no = card.querySelector('input[name="g_passport_no"]').value;
-        const file = card.querySelector('input[name="g_passport"]').files[0];
-        if (!file) throw new Error('外国籍の方はパスポート画像が必須です / Passport image required');
-        g.passport_image = await fileToBase64(file);
-        g.passport_image_name = file.name;
-        g.passport_image_type = file.type;
+        const later = card.querySelector('.g_passport_later') && card.querySelector('.g_passport_later').checked;
+        if (later) {
+          g.passport_status = 'later';
+        } else {
+          const file = card.querySelector('input[name="g_passport"]').files[0];
+          if (!file) throw new Error('外国籍の方はパスポート画像が必須です（後日提出の場合はチェックを入れてください）/ Passport image required (or tick "submit later")');
+          g.passport_image = await fileToBase64(file);
+          g.passport_image_name = file.name;
+          g.passport_image_type = file.type;
+        }
       }
       guests.push(g);
     }
