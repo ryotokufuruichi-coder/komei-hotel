@@ -638,14 +638,9 @@ function notifyAdminBankPending_(id, row, total) {
 }
 
 function notifyGuestConfirmed_(id, row) {
-  const name = fullName_(row);
-  const html =
-    '<p>' + esc_(name) + ' 様</p>'
-    + '<p>お支払いが完了し、ご予約 <b>' + esc_(id) + '</b> が確定いたしました。<br>'
-    + 'チェックイン日が近づきましたら、入室方法等の詳細をご案内いたします。</p>'
-    + '<p>チェックイン: ' + toYMDSafe_(row.checkin) + ' 16:00<br>チェックアウト: ' + toYMDSafe_(row.checkout) + ' 10:00</p>'
-    + '<hr><p>Dear ' + esc_(name) + ',<br>Your reservation <b>' + esc_(id) + '</b> is now confirmed. We will send check-in details closer to your arrival date.</p>';
-  GmailApp.sendEmail(row.rep_email, '[Komei Hotel] ご予約確定のお知らせ / Reservation Confirmed (' + id + ')', '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
+  // A: 決済確定時のウェルカム（多言語・チェックイン概要＋ハウスルール＋前日ガイド予告）
+  try { sendStay_(row, 'welcome'); }
+  catch (e) { log_(id, 'welcome_email_error', String(e)); }
 }
 
 function notifyAdminConfirmed_(id, row) {
@@ -716,13 +711,15 @@ function sendPassportRequestEmail_(row, n, isReminder) {
   return true;
 }
 
-/** Days from today (JST) until a check-in date; negative if past. */
-function daysUntilCheckin_(ci) {
+/** Days from today (JST) until a YYYY-MM-DD date; negative if past. */
+function daysUntilDate_(ymd) {
   var todayStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
   var a = new Date(todayStr + 'T00:00:00+09:00');
-  var b = new Date(toYMDSafe_(ci) + 'T00:00:00+09:00');
+  var b = new Date(ymd + 'T00:00:00+09:00');
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
+/** Days from today (JST) until a check-in date; negative if past. */
+function daysUntilCheckin_(ci) { return daysUntilDate_(toYMDSafe_(ci)); }
 
 /** Map reservation_id -> {milestoneDays: true} already sent, from the logs sheet. */
 function passportReminderSentMap_() {
@@ -779,13 +776,230 @@ function sendPassportReminders() {
   return { checked: checked, emailed: emailed };
 }
 
-/** Run ONCE from the editor to install the daily reminder trigger. */
-function installPassportReminders() {
+/** Run ONCE from the editor: install/refresh the single daily guest-email trigger. */
+function installDailyEmails() {
+  var names = ['sendPassportReminders', 'runDailyGuestEmails'];
   ScriptApp.getProjectTriggers().forEach(function (t) {
-    if (t.getHandlerFunction() === 'sendPassportReminders') ScriptApp.deleteTrigger(t);
+    if (names.indexOf(t.getHandlerFunction()) >= 0) ScriptApp.deleteTrigger(t);
   });
-  ScriptApp.newTrigger('sendPassportReminders').timeBased().everyDays(1).atHour(10).create();
-  return 'installed: sendPassportReminders runs daily ~10:00 JST';
+  ScriptApp.newTrigger('runDailyGuestEmails').timeBased().everyDays(1).atHour(10).create();
+  return 'installed: runDailyGuestEmails daily ~10:00 JST (passport reminders + stay emails A-F)';
+}
+
+/** Daily trigger target: passport reminders (B set) + stay/check-in emails. */
+function runDailyGuestEmails() {
+  var out = {};
+  try { out.passport = sendPassportReminders(); } catch (e) { log_(null, 'passport_reminders_error', String(e)); }
+  try { out.stay = sendStayEmails(); } catch (e) { log_(null, 'stay_emails_error', String(e)); }
+  return out;
+}
+
+// ============ Stay / check-in guide emails (A-F) ============
+// A (welcome) is sent on payment by notifyGuestConfirmed_. B-F are date-based,
+// sent by sendStayEmails() from the daily trigger. Multilingual (primary + EN).
+// Sensitive entry info (smart-lock code, Wi-Fi password) lives ONLY in the
+// day-before "checkin_guide" email, behind the HOUSE_MANUAL_URL Drive guide.
+
+var STAY_FACTS_ = {
+  addr: '4-20-5 Higashikomagata, Sumida-ku, Tokyo 130-0005',
+  map: 'https://maps.app.goo.gl/jVzhawyQTeTFfkLcA',
+  tel: '03-6899-5681',
+  wifi: 'Komei-Guest',
+  transfer: 'https://tokyo-door-to-door.netlify.app',
+  tours: 'https://tokyo-experience.web.app'
+};
+
+function stayEmail_(kind, lang, ctx) {
+  var F = STAY_FACTS_;
+  var guide = ctx.guide || '';
+  function gbtn(label) {
+    return guide ? '<p><a href="' + guide + '" style="background:#f59e0b;color:#fff;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block">' + label + '</a></p><p style="font-size:12px;color:#666">' + guide + '</p>' : '';
+  }
+  var info = '&#8505;&#65039; ' + F.addr + '<br>Map: ' + F.map + ' &#65295; TEL: ' + F.tel;
+  var ci = ctx.ci, co = ctx.co, id = esc_(ctx.id);
+  var D = {
+    ja: {
+      welcome: { s: 'ご予約確定のお知らせ', b:
+        '<p>お支払いが完了し、ご予約 <b>' + id + '</b> が確定しました。ありがとうございます！</p>'
+        + '<p>チェックイン: ' + ci + ' 16:00<br>チェックアウト: ' + co + ' 10:00（レイトアウト不可）</p>'
+        + '<p>入室方法・WiFi等の詳しいチェックインガイドは、<b>チェックイン前日</b>に改めてお送りします。</p>'
+        + '<p>[ハウスルール] 全館禁煙（屋上・バルコニー含む）／住宅街のため21:00以降はお静かに・大人数のパーティー不可／ゴミは45L指定袋で分別</p>'
+        + '<p>送迎: ' + F.transfer + '<br>体験・ツアー: ' + F.tours + '</p><p>' + info + '</p>' },
+      arrival: { s: 'ご到着予定時刻について', b:
+        '<p>まもなくチェックインです。準備のため、<b>ご到着予定時刻</b>をお知らせいただけますか？（セルフチェックイン・16:00以降いつでも可）</p>'
+        + gbtn('ハウスマニュアルを見る')
+        + '<p>チェックイン: ' + ci + ' 16:00 / チェックアウト: ' + co + ' 10:00</p>' },
+      checkin_guide: { s: 'チェックインガイド（明日ご入室）', b:
+        '<p>明日 <b>' + ci + ' 16:00〜</b> チェックインです。セルフチェックインのため、<b>必ず事前に</b>チェックインガイドをご確認ください（スマートロック暗証番号・WiFi・写真付きアクセス）。</p>'
+        + gbtn('チェックインガイドを開く')
+        + '<p>住所: ' + F.addr + '<br>Map: ' + F.map + '<br>WiFi SSID: <b>' + F.wifi + '</b>（パスワードはガイド内）</p>'
+        + '<p>チェックアウト: ' + co + ' 10:00 / 全館禁煙 / 緊急連絡: ' + F.tel + '</p>' },
+      garbage: { s: 'ゴミの分別について', b:
+        '<p>おはようございます。ゴミは <b>45L指定袋</b> で分別（燃える／瓶／缶／ペットボトル）をお願いします。</p>'
+        + '<p>※未分別の場合、仕分け料 &yen;4,400 を頂戴することがあります。満杯時は屋外ゴミ庫へ（使用後は施錠）。</p>' },
+      checkout: { s: 'チェックアウトのご案内', b:
+        '<p>明日 <b>' + co + ' 10:00</b> チェックアウトです（レイトアウト不可）。</p>'
+        + '<p>ゴミは分別のうえ屋外ゴミ庫（施錠）または室内へ。<br>忘れ物は3日間保管・着払いで郵送可。<br>チェックアウト時刻が分かればお知らせください。</p>' },
+      review: { s: 'ありがとうございました', b:
+        '<p>この度はご滞在いただき誠にありがとうございました。素敵なゲストにお会いできて嬉しかったです。</p>'
+        + '<p>もしよろしければレビューをいただけますと今後の励みになります。またのお越しを心よりお待ちしております。</p>' }
+    },
+    en: {
+      welcome: { s: 'Reservation confirmed', b:
+        '<p>Your payment is complete and reservation <b>' + id + '</b> is confirmed. Thank you!</p>'
+        + '<p>Check-in: ' + ci + ' 16:00<br>Check-out: ' + co + ' 10:00 (no late check-out)</p>'
+        + '<p>We will send the full check-in guide (entry method, Wi-Fi) the day before check-in.</p>'
+        + '<p>[House rules] No smoking anywhere (incl. rooftop/balcony). Residential area, please keep quiet after 21:00, no large parties. Separate garbage into 45L bags.</p>'
+        + '<p>Transfers: ' + F.transfer + '<br>Experiences: ' + F.tours + '</p><p>' + info + '</p>' },
+      arrival: { s: 'Your estimated arrival time', b:
+        '<p>Your check-in is coming up. To prepare, could you let us know your <b>estimated arrival time</b>? (Self check-in, anytime from 16:00.)</p>'
+        + gbtn('View house manual')
+        + '<p>Check-in: ' + ci + ' 16:00 / Check-out: ' + co + ' 10:00</p>' },
+      checkin_guide: { s: 'Check-in guide (arriving tomorrow)', b:
+        '<p>You check in tomorrow from <b>' + ci + ' 16:00</b>. This is a self check-in, so please read the check-in guide in advance (smart-lock code, Wi-Fi, access map with photos).</p>'
+        + gbtn('Open check-in guide')
+        + '<p>Address: ' + F.addr + '<br>Map: ' + F.map + '<br>Wi-Fi SSID: <b>' + F.wifi + '</b> (password inside the guide)</p>'
+        + '<p>Check-out: ' + co + ' 10:00 / No smoking / Emergency: ' + F.tel + '</p>' },
+      garbage: { s: 'Garbage separation', b:
+        '<p>Good morning. Please separate garbage using the <b>45L bags</b> (burnable / glass / cans / PET bottles).</p>'
+        + '<p>A sorting fee of &yen;4,400 may apply if garbage is not separated. When bins are full, use the outdoor storage and lock it.</p>' },
+      checkout: { s: 'Check-out information', b:
+        '<p>Check-out is tomorrow by <b>' + co + ' 10:00</b> (no late check-out).</p>'
+        + '<p>Separate garbage and place it in the outdoor storage (lock it) or leave it inside.<br>Lost items are kept for 3 days and can be mailed (shipping collect).<br>Please let us know your check-out time if possible.</p>' },
+      review: { s: 'Thank you', b:
+        '<p>Thank you very much for staying with us. It was a pleasure to host you.</p>'
+        + '<p>If you have a moment, we would be grateful for a review. We hope to welcome you again!</p>' }
+    },
+    zh: {
+      welcome: { s: '預訂已確定', b:
+        '<p>您的付款已完成，預訂 <b>' + id + '</b> 已正式確定，謝謝您！</p>'
+        + '<p>入住：' + ci + ' 16:00<br>退房：' + co + ' 10:00（不可延遲退房）</p>'
+        + '<p>詳細的入住指南（進門方式、WiFi）將於入住前一天寄給您。</p>'
+        + '<p>[住宿規則] 全館禁菸（含屋頂/陽台）。位於住宅區，21:00 後請保持安靜、禁止大型派對。垃圾請以 45L 專用袋分類。</p>'
+        + '<p>接送：' + F.transfer + '<br>體驗行程：' + F.tours + '</p><p>' + info + '</p>' },
+      arrival: { s: '您的預計抵達時間', b:
+        '<p>即將入住。為方便準備，可否告知您的<b>預計抵達時間</b>？（自助入住，16:00 後皆可）</p>'
+        + gbtn('查看住宿手冊')
+        + '<p>入住：' + ci + ' 16:00 / 退房：' + co + ' 10:00</p>' },
+      checkin_guide: { s: '入住指南（明日入住）', b:
+        '<p>您將於明日 <b>' + ci + ' 16:00</b> 起入住。本館為自助入住，請務必<b>事先</b>閱讀入住指南（智慧鎖密碼、WiFi、含照片的路線圖）。</p>'
+        + gbtn('開啟入住指南')
+        + '<p>地址：' + F.addr + '<br>地圖：' + F.map + '<br>WiFi SSID：<b>' + F.wifi + '</b>（密碼在指南內）</p>'
+        + '<p>退房：' + co + ' 10:00 / 全館禁菸 / 緊急聯絡：' + F.tel + '</p>' },
+      garbage: { s: '垃圾分類', b:
+        '<p>早安。垃圾請使用 <b>45L 專用袋</b>分類（可燃/玻璃瓶/罐/寶特瓶）。</p>'
+        + '<p>※ 未分類可能收取 &yen;4,400 分類費。垃圾滿時請放入室外垃圾庫並上鎖。</p>' },
+      checkout: { s: '退房須知', b:
+        '<p>明日 <b>' + co + ' 10:00</b> 退房（不可延遲退房）。</p>'
+        + '<p>垃圾請分類後放入室外垃圾庫（上鎖）或留在室內。<br>遺失物保管 3 天，可貨到付款寄送。<br>若已知退房時間，請告知我們。</p>' },
+      review: { s: '感謝您的入住', b:
+        '<p>非常感謝您這次的入住，很高興能招待您。</p>'
+        + '<p>若您方便，懇請給予評價，將是我們最大的鼓勵。期待再次為您服務！</p>' }
+    },
+    ko: {
+      welcome: { s: '예약이 확정되었습니다', b:
+        '<p>결제가 완료되어 예약 <b>' + id + '</b> 이 확정되었습니다. 감사합니다!</p>'
+        + '<p>체크인: ' + ci + ' 16:00<br>체크아웃: ' + co + ' 10:00 (레이트 체크아웃 불가)</p>'
+        + '<p>입실 방법·Wi-Fi 등 상세 체크인 가이드는 체크인 전날 보내드립니다.</p>'
+        + '<p>[하우스 룰] 전관 금연(옥상/발코니 포함). 주택가이므로 21:00 이후 정숙, 대규모 파티 금지. 쓰레기는 45L 지정 봉투로 분리.</p>'
+        + '<p>픽업: ' + F.transfer + '<br>체험/투어: ' + F.tours + '</p><p>' + info + '</p>' },
+      arrival: { s: '예상 도착 시간 안내', b:
+        '<p>곧 체크인입니다. 준비를 위해 <b>예상 도착 시간</b>을 알려주시겠어요? (셀프 체크인, 16:00 이후 언제든 가능)</p>'
+        + gbtn('하우스 매뉴얼 보기')
+        + '<p>체크인: ' + ci + ' 16:00 / 체크아웃: ' + co + ' 10:00</p>' },
+      checkin_guide: { s: '체크인 가이드(내일 입실)', b:
+        '<p>내일 <b>' + ci + ' 16:00</b>부터 체크인입니다. 셀프 체크인이므로 <b>사전에</b> 체크인 가이드를 확인해 주세요(스마트록 번호, Wi-Fi, 사진 포함 약도).</p>'
+        + gbtn('체크인 가이드 열기')
+        + '<p>주소: ' + F.addr + '<br>지도: ' + F.map + '<br>Wi-Fi SSID: <b>' + F.wifi + '</b>(비밀번호는 가이드 안)</p>'
+        + '<p>체크아웃: ' + co + ' 10:00 / 전관 금연 / 긴급 연락: ' + F.tel + '</p>' },
+      garbage: { s: '쓰레기 분리배출', b:
+        '<p>좋은 아침입니다. 쓰레기는 <b>45L 지정 봉투</b>로 분리해 주세요(가연/유리병/캔/페트병).</p>'
+        + '<p>※ 미분리 시 분리 수수료 &yen;4,400가 부과될 수 있습니다. 가득 차면 실외 보관고에 넣고 잠가 주세요.</p>' },
+      checkout: { s: '체크아웃 안내', b:
+        '<p>내일 <b>' + co + ' 10:00</b> 체크아웃입니다(레이트 체크아웃 불가).</p>'
+        + '<p>쓰레기는 분리 후 실외 보관고(잠금) 또는 실내에 두세요.<br>분실물은 3일간 보관, 착불 발송 가능.<br>체크아웃 시간을 알면 알려주세요.</p>' },
+      review: { s: '감사합니다', b:
+        '<p>이번에 숙박해 주셔서 진심으로 감사합니다. 모실 수 있어 기뻤습니다.</p>'
+        + '<p>괜찮으시면 리뷰를 남겨 주시면 큰 힘이 됩니다. 다시 뵙기를 기대하겠습니다!</p>' }
+    }
+  };
+  var t = (D[lang] || D.en)[kind] || D.en[kind];
+  return { subject: t.s, body: t.b };
+}
+
+/** Send a stay email (kind) to the reservation guest; primary language + EN. */
+function sendStay_(row, kind) {
+  var to = row.rep_email;
+  if (!to) return false;
+  var lang = pickLang_(row.rep_country);
+  var ctx = {
+    id: row.id, ci: toYMDSafe_(row.checkin), co: toYMDSafe_(row.checkout),
+    name: fullName_(row),
+    guide: getProp_('HOUSE_MANUAL_URL', 'https://drive.google.com/file/d/1hyeG_lICB7TpTTGsE-CJ-QaK6F8OHyaJ/view?usp=sharing')
+  };
+  var m = stayEmail_(kind, lang, ctx);
+  var en = (lang !== 'en') ? stayEmail_(kind, 'en', ctx) : null;
+  var html = '<p>' + esc_(ctx.name) + ' 様 / Dear guest,</p>' + m.body + (en ? '<hr>' + en.body : '');
+  GmailApp.sendEmail(to, '[Komei Hotel] ' + m.subject + ' (' + row.id + ')', '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
+  return true;
+}
+
+/** Map reservation_id -> {kind: true} for stay emails already sent (from logs). */
+function stayEmailSentMap_() {
+  var sh = sheet_('logs');
+  ensureHeaders_(sh, HEADERS_LOGS);
+  var data = sh.getDataRange().getValues();
+  var map = {};
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][2]) !== 'stay_email') continue;
+    var id = data[i][1];
+    var m = String(data[i][3] || '').match(/kind=(\w+)/);
+    if (!m) continue;
+    if (!map[id]) map[id] = {};
+    map[id][m[1]] = true;
+  }
+  return map;
+}
+
+/**
+ * Date-based stay emails B-F for every PAID reservation (one per run, dedup via logs):
+ *   arrival: 3 days before check-in | checkin_guide: 1 day before
+ *   garbage: morning after check-in | checkout: 1 day before check-out
+ *   review: after check-out
+ */
+function sendStayEmails() {
+  var sh = sheet_('reservations');
+  ensureHeaders_(sh, HEADERS_RESERVATIONS);
+  var data = sh.getDataRange().getValues();
+  var H = data[0];
+  var iId = H.indexOf('id'), iStatus = H.indexOf('status'), iCi = H.indexOf('checkin'), iCo = H.indexOf('checkout');
+  var sent = stayEmailSentMap_();
+  var count = 0;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][iStatus]) !== STATUS.PAID) continue;
+    var id = data[i][iId];
+    if (!id) continue;
+    var ci = data[i][iCi];
+    if (!ci) continue;
+    var co = data[i][iCo];
+    var dCi = daysUntilCheckin_(ci);
+    var dCo = co ? daysUntilDate_(toYMDSafe_(co)) : null;
+    var s = sent[id] || {};
+    var kind = null;
+    if (dCi <= 3 && dCi >= 1 && !s.arrival) kind = 'arrival';
+    else if (dCi <= 1 && dCi >= 0 && !s.checkin_guide) kind = 'checkin_guide';
+    else if (dCi <= -1 && dCo !== null && dCo >= 2 && !s.garbage) kind = 'garbage';
+    else if (dCo !== null && dCo <= 1 && dCo >= 0 && !s.checkout) kind = 'checkout';
+    else if (dCo !== null && dCo <= -1 && dCo >= -3 && !s.review) kind = 'review';
+    if (!kind) continue;
+    var row = {};
+    for (var j = 0; j < H.length; j++) row[H[j]] = data[i][j];
+    try {
+      if (sendStay_(row, kind)) { log_(id, 'stay_email', 'kind=' + kind); count++; }
+    } catch (e) { log_(id, 'stay_email_error', kind + ':' + String(e)); }
+  }
+  log_(null, 'stay_emails_run', 'sent=' + count);
+  return { sent: count };
 }
 
 // ============ Drive (Passport) ============
