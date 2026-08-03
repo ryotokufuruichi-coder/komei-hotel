@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TBDRC88R6Y"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TBDRC88R6Y');
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>パスポート提出 ｜ Komei Hotel 光明荘</title>
+<meta name="description" content="Komei Hotel 光明荘のパスポート後日提出ページです。">
+<meta name="robots" content="noindex">
+<meta property="og:title" content="パスポート提出 ｜ Komei Hotel 光明荘">
+<meta property="og:url" content="https://komei.yoshinarcorp.com/passport.html">
+<link rel="stylesheet" href="css/tailwind.min.css">
+<link rel="stylesheet" href="css/brand.css">
+<link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="images/favicon-180.png">
+<meta name="theme-color" content="#B89A78">
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'Yu Gothic', 'Meiryo', sans-serif; }
+  .lang-ja { display: none; }
+  html[lang="ja"] .lang-en { display: none; }
+  html[lang="ja"] .lang-ja { display: inline; }
+  .lang-zh, .lang-ko { display: none; }
+  html[lang="zh"] .lang-en { display: none; }
+  html[lang="zh"] .lang-zh { display: inline; }
+  html[lang="ko"] .lang-en { display: none; }
+  html[lang="ko"] .lang-ko { display: inline; }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+  .guest-card { transition: all 0.2s; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- Header -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <a href="index.html" class="flex items-center gap-2">
+      <span class="bunchou-logo bunchou-logo-md" role="img" aria-label="白文鳥（光明荘のマスコット）"></span>
+      <span class="font-bold text-lg tracking-wide">Komei Hotel</span>
+      <span class="hidden sm:inline text-xs text-slate-500">光明荘</span>
+    </a>
+    <select onchange="setLang(this.value)" id="langSel" class="text-sm px-3 py-1.5 border border-slate-300 rounded-full hover:bg-slate-100 bg-white cursor-pointer"><option value="ja">日本語</option><option value="en" selected>EN</option><option value="zh">中文</option><option value="ko">한국어</option></select>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white pt-28 pb-12 px-4">
+  <div class="max-w-4xl mx-auto text-center">
+    <p class="text-emerald-100 font-semibold tracking-widest text-sm mb-2">PASSPORT SUBMISSION</p>
+    <h1 class="text-3xl md:text-5xl font-bold mb-3">
+      <span class="lang-ja">パスポート提出</span>
+      <span class="lang-en">Submit Passport</span>
+      <span class="lang-zh">提交护照</span>
+      <span class="lang-ko">여권 제출</span>
+    </h1>
+    <p class="text-emerald-50 text-sm md:text-base">
+      <span class="lang-ja">「後日提出」とされた方のパスポート画像を、チェックイン前までにご登録ください</span>
+      <span class="lang-en">Please upload the passport image for any guest marked "submit later", before check-in.</span>
+      <span class="lang-zh">请于入住前，为标记「稍后提交」的住客上传护照图片。</span>
+      <span class="lang-ko">「나중에 제출」로 표시된 숙박자의 여권 이미지를 체크인 전까지 등록해 주세요.</span>
+    </p>
+  </div>
+</section>
+
+<!-- Reservation summary -->
+<div class="max-w-3xl mx-auto px-4 -mt-4 relative z-10">
+  <div class="bg-white border border-emerald-200 rounded-2xl shadow-lg p-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">予約番号</span><span class="lang-en">Reservation ID</span><span class="lang-zh">预订编号</span><span class="lang-ko">예약 번호</span></div>
+        <div id="rsId" class="font-bold text-slate-800 font-mono">—</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">日程</span><span class="lang-en">Dates</span><span class="lang-zh">日期</span><span class="lang-ko">일정</span></div>
+        <div id="rsDates" class="font-bold text-slate-800">—</div>
+        <div id="rsNights" class="text-xs text-slate-500"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Body -->
+<section class="py-8 px-4">
+  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-8 md:p-10">
+
+    <!-- Legal note -->
+    <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm mb-6">
+      <p class="text-xs text-slate-600">
+        <span class="lang-ja">日本国籍を持たない宿泊者は、旅館業法により<strong>パスポート（顔写真ページ）の写しの提出が必須</strong>です。チェックインまでにご提出をお願いします。画像は3年間安全に保管され、行政機関の請求時のみ開示されます。</span>
+        <span class="lang-en">Guests without Japanese nationality are <strong>required by the Japanese Inn Business Act to submit a copy of their passport</strong> (photo page) before check-in. Images are stored securely for 3 years and disclosed only upon lawful government request.</span>
+        <span class="lang-zh">非日本国籍的住客，依日本《旅馆业法》<strong>必须于入住前提交护照（照片页）副本</strong>。图片将安全保存三年，仅在行政机关依法要求时开示。</span>
+        <span class="lang-ko">일본 국적이 없는 숙박자는 여관업법에 따라 <strong>체크인 전까지 여권(사진 페이지) 사본 제출이 필수</strong>입니다. 이미지는 3년간 안전하게 보관되며 행정기관의 적법한 요청 시에만 공개됩니다.</span>
+      </p>
+    </div>
+
+    <!-- State: no registration yet -->
+    <div id="stNoReg" class="hidden text-center py-10">
+      <p class="text-slate-700 mb-4">
+        <span class="lang-ja">この予約の宿泊者情報が見つかりません。先に本登録が必要です。</span>
+        <span class="lang-en">No guest details found for this reservation. Please complete guest registration first.</span>
+        <span class="lang-zh">找不到此预订的住客信息，请先完成正式登记。</span>
+        <span class="lang-ko">이 예약의 숙박자 정보를 찾을 수 없습니다. 먼저 본등록을 완료해 주세요.</span>
+      </p>
+      <a id="toRegister" href="#" class="inline-block px-6 py-3 rounded-full bg-emerald-600 text-white font-bold hover:bg-emerald-700">
+        <span class="lang-ja">本登録ページへ</span><span class="lang-en">Go to registration</span><span class="lang-zh">前往登记页面</span><span class="lang-ko">본등록 페이지로</span>
+      </a>
+    </div>
+
+    <!-- State: all done -->
+    <div id="stDone" class="hidden text-center py-10">
+      <div class="text-5xl mb-3">✅</div>
+      <p class="text-slate-700 font-bold">
+        <span class="lang-ja">すべてのパスポートを受領済みです。ありがとうございます。</span>
+        <span class="lang-en">All passports have been received. Thank you.</span>
+        <span class="lang-zh">已收到全部护照，谢谢您。</span>
+        <span class="lang-ko">모든 여권을 접수했습니다. 감사합니다.</span>
+      </p>
+    </div>
+
+    <!-- State: form -->
+    <form id="passportForm" onsubmit="return submitPassports(event)" class="hidden space-y-6">
+      <p class="text-sm text-slate-600">
+        <span class="lang-ja">下記の方が「後日提出」の状態です。パスポート画像をアップロードして送信してください。</span>
+        <span class="lang-en">The following guests are marked "submit later". Please upload each passport image and submit.</span>
+        <span class="lang-zh">以下住客为「稍后提交」状态，请上传各自的护照图片后送出。</span>
+        <span class="lang-ko">아래 숙박자가 「나중에 제출」 상태입니다. 여권 이미지를 업로드하고 제출해 주세요.</span>
+      </p>
+      <div id="pendingList" class="space-y-5"></div>
+
+      <div id="formErr" class="hidden text-sm text-red-600"></div>
+      <button type="submit" id="submitBtn" class="w-full py-4 rounded-full bg-amber-500 text-white font-bold text-lg hover:bg-amber-600 shadow-lg">
+        <span class="lang-ja">パスポートを送信</span><span class="lang-en">Submit passport(s)</span><span class="lang-zh">提交护照</span><span class="lang-ko">여권 제출</span>
+      </button>
+    </form>
+
+    <!-- State: success -->
+    <div id="stSuccess" class="hidden text-center py-10">
+      <div class="text-5xl mb-3">🎉</div>
+      <p class="text-slate-800 font-bold text-lg mb-2">
+        <span class="lang-ja">パスポートを受け付けました。</span>
+        <span class="lang-en">Passport received.</span>
+        <span class="lang-zh">已收到护照。</span>
+        <span class="lang-ko">여권을 접수했습니다.</span>
+      </p>
+      <p class="text-slate-600 text-sm">
+        <span class="lang-ja">ご協力ありがとうございました。当日お会いできるのを楽しみにしております。</span>
+        <span class="lang-en">Thank you for your cooperation. We look forward to welcoming you.</span>
+        <span class="lang-zh">感谢您的配合，期待与您见面。</span>
+        <span class="lang-ko">협조해 주셔서 감사합니다. 뵙기를 기대하겠습니다.</span>
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- Error modal -->
+<div id="errModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+  <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+    <h3 class="font-bold text-lg mb-2 text-red-600">⚠️ <span class="lang-ja">エラー</span><span class="lang-en">Error</span><span class="lang-zh">错误</span><span class="lang-ko">오류</span></h3>
+    <p id="errMsg" class="text-slate-700 text-sm"></p>
+  </div>
+</div>
+
+<script>
+const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx6JO_l8Hhb5pQCIZkBTgEkChylOcD4e32JuCcCG-XtvuaQ6I5qacd7UuyeHQ8fnOZR/exec';
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per passport image
+
+let reservationData = null;
+
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  document.getElementById('langSel').value = lang;
+}
+
+function toYMD(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (m) return m[1];
+  const d = new Date(s);
+  if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  return s;
+}
+function fmtDate(v) {
+  const ymd = toYMD(v);
+  if (!ymd) return '-';
+  const [y, mo, d] = ymd.split('-');
+  return `${y}/${parseInt(mo)}/${parseInt(d)}`;
+}
+
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showError(msg) {
+  document.getElementById('errMsg').textContent = msg;
+  const m = document.getElementById('errModal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+}
+
+function guestCard(g) {
+  return `
+    <div class="guest-card border border-slate-200 rounded-xl p-5 bg-slate-50" data-idx="${g.idx}">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-slate-800">
+          <span class="lang-ja">宿泊者 #${g.idx}</span><span class="lang-en">Guest #${g.idx}</span><span class="lang-zh">住客 #${g.idx}</span><span class="lang-ko">숙박자 #${g.idx}</span>
+          <span class="text-xs font-normal text-slate-500 ml-1">${g.name || ''} · ${g.nationality || ''}</span>
+        </h3>
+      </div>
+      <label class="block text-xs text-slate-600 mb-1"><span class="lang-ja">パスポート番号（任意）</span><span class="lang-en">Passport No. (optional)</span><span class="lang-zh">护照号码（选填）</span><span class="lang-ko">여권 번호（선택）</span></label>
+      <input type="text" class="p_no w-full mb-3 px-3 py-2 border border-slate-300 rounded-lg" placeholder="e.g. M12345678">
+      <label class="block text-xs text-slate-600 mb-1"><span class="lang-ja">パスポート画像（顔写真ページ）<span class="text-red-500">*</span></span><span class="lang-en">Passport image (photo page) <span class="text-red-500">*</span></span><span class="lang-zh">护照图片（照片页）<span class="text-red-500">*</span></span><span class="lang-ko">여권 이미지（사진 페이지）<span class="text-red-500">*</span></span></label>
+      <input type="file" accept="image/*,application/pdf" class="p_file w-full text-sm" onchange="previewFile(this)">
+      <div class="p_preview mt-2"></div>
+    </div>`;
+}
+
+function previewFile(input) {
+  const wrap = input.parentElement.querySelector('.p_preview');
+  const f = input.files[0];
+  if (!f) { wrap.innerHTML = ''; return; }
+  if (f.size > MAX_FILE_SIZE) {
+    wrap.innerHTML = '<span class="text-xs text-red-600">5MB以下のファイルを選択してください / Please choose a file under 5MB</span>';
+    input.value = '';
+    return;
+  }
+  if (f.type.startsWith('image/')) {
+    const url = URL.createObjectURL(f);
+    wrap.innerHTML = `<img src="${url}" class="h-24 rounded border border-slate-200">`;
+  } else {
+    wrap.innerHTML = `<span class="text-xs text-slate-500">${f.name}</span>`;
+  }
+}
+
+async function submitPassports(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const err = document.getElementById('formErr');
+  err.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerText = '送信中… / Sending…';
+
+  try {
+    const cards = Array.from(document.querySelectorAll('#pendingList .guest-card'));
+    const jobs = [];
+    for (const card of cards) {
+      const file = card.querySelector('.p_file').files[0];
+      if (!file) continue; // skip guests whose passport isn't ready yet
+      const b64 = await fileToBase64(file);
+      jobs.push({
+        idx: card.dataset.idx,
+        passport_no: card.querySelector('.p_no').value,
+        passport_image: b64,
+        passport_image_type: file.type || 'image/jpeg',
+      });
+    }
+    if (jobs.length === 0) {
+      err.textContent = '少なくとも1名分のパスポート画像を選択してください。 / Please select at least one passport image.';
+      err.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="lang-ja">パスポートを送信</span><span class="lang-en">Submit passport(s)</span><span class="lang-zh">提交护照</span><span class="lang-ko">여권 제출</span>';
+      return;
+    }
+
+    for (const j of jobs) {
+      const res = await fetch(GAS_ENDPOINT, {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'passport_upload',
+          reservation_id: reservationData.reservation_id,
+          token: reservationData.token,
+          guest_idx: j.idx,
+          passport_no: j.passport_no,
+          passport_image: j.passport_image,
+          passport_image_type: j.passport_image_type,
+        }),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'upload failed');
+    }
+
+    document.getElementById('passportForm').classList.add('hidden');
+    document.getElementById('stSuccess').classList.remove('hidden');
+  } catch (err2) {
+    document.getElementById('formErr').textContent = '送信に失敗しました: ' + err2.message;
+    document.getElementById('formErr').classList.remove('hidden');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="lang-ja">パスポートを送信</span><span class="lang-en">Submit passport(s)</span><span class="lang-zh">提交护照</span><span class="lang-ko">여권 제출</span>';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  const token = params.get('token');
+  const lang = params.get('lang');
+  if (lang) setLang(lang);
+
+  if (!id || !token) {
+    showError('無効なURLです。当ホテルからのリンクから再度アクセスしてください。 / Invalid URL. Please use the link we sent you.');
+    return;
+  }
+  document.getElementById('toRegister').href = `register.html?id=${id}&token=${token}`;
+
+  try {
+    const res = await fetch(`${GAS_ENDPOINT}?action=get_reservation&id=${id}&token=${token}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    const r = data.reservation || data;
+    reservationData = { reservation_id: r.reservation_id || id, token: token };
+
+    document.getElementById('rsId').textContent = reservationData.reservation_id;
+    document.getElementById('rsDates').textContent = `${fmtDate(r.checkin)} → ${fmtDate(r.checkout)}`;
+    if (r.checkin && r.checkout) {
+      const nights = Math.round((new Date(toYMD(r.checkout)+'T00:00:00Z')-new Date(toYMD(r.checkin)+'T00:00:00Z'))/86400000);
+      document.getElementById('rsNights').innerHTML = `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span><span class="lang-zh">${nights}晚</span><span class="lang-ko">${nights}박</span>`;
+    }
+
+    const guests = r.guests || [];
+    const pending = guests.filter(g => g.nationality && g.nationality !== 'JP' && !g.has_passport);
+
+    if (guests.length === 0) {
+      document.getElementById('stNoReg').classList.remove('hidden');
+    } else if (pending.length === 0) {
+      document.getElementById('stDone').classList.remove('hidden');
+    } else {
+      document.getElementById('pendingList').innerHTML = pending.map(guestCard).join('');
+      document.getElementById('passportForm').classList.remove('hidden');
+    }
+  } catch (err) {
+    showError('予約情報が取得できません: ' + err.message);
+  }
+});
+</script>
+</body>
+</html>

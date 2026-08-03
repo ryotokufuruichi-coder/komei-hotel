@@ -73,6 +73,7 @@ function doPost(e) {
     switch (body.type) {
       case 'reservation_request':   return jsonResponse(handleReservationRequest(body));
       case 'guest_registration':    return jsonResponse(handleGuestRegistration(body));
+      case 'passport_upload':       return jsonResponse(handlePassportUpload(body));
       case 'payment_init':          return jsonResponse(handlePaymentInit(body));
       // Admin API
       case 'admin_auth':            return jsonResponse(handleAdminAuth(body));
@@ -310,7 +311,8 @@ function handleGetReservation(p) {
       representative_phone: r.row.rep_phone,
       estimated_total: r.row.estimated_total,
       final_total: r.row.final_total,
-      payment_status: r.row.payment_status
+      payment_status: r.row.payment_status,
+      guests: getGuestSummary_(r.row.id)
     }
   };
 }
@@ -327,9 +329,13 @@ function handleGuestRegistration(body) {
   ensureHeaders_(sh, HEADERS_GUESTS);
   const guests = body.guests || [];
   guests.forEach((g, i) => {
+    // Frontend sends passport_image / passport_image_type; older payloads used
+    // passport_image_base64 / passport_image_mime. Read both (tolerant).
+    const b64  = g.passport_image_base64 || g.passport_image || '';
+    const mime = g.passport_image_mime   || g.passport_image_type || 'image/jpeg';
     let passportUrl = '';
-    if (g.passport_image_base64) {
-      passportUrl = savePassportImage_(id, i, g.name, g.passport_image_base64, g.passport_image_mime || 'image/jpeg');
+    if (b64) {
+      passportUrl = savePassportImage_(id, i, g.name, b64, mime);
     }
     sh.appendRow([
       id, i+1, g.name, g.nationality, g.address, g.occupation,
@@ -344,6 +350,85 @@ function handleGuestRegistration(body) {
   log_(id, 'registered', 'guests='+guests.length);
 
   return { ok:true, reservation_id: id, token: r.row.token };
+}
+
+/**
+ * Guest summary for a reservation, used by the passport re-upload page to show
+ * which guests still owe a passport. A guest "still owes" when they are foreign
+ * (nationality != JP) and passport_file_url is empty. Read-only.
+ */
+function getGuestSummary_(reservationId) {
+  const sh = sheet_('guests');
+  ensureHeaders_(sh, HEADERS_GUESTS);
+  const data = sh.getDataRange().getValues();
+  if (data.length < 2) return [];
+  const H = data[0];
+  const cIdx = H.indexOf('idx'), cName = H.indexOf('name'),
+        cNat = H.indexOf('nationality'), cUrl = H.indexOf('passport_file_url');
+  const out = [];
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) !== String(reservationId)) continue;
+    const url = cUrl >= 0 ? data[i][cUrl] : '';
+    out.push({
+      idx: data[i][cIdx],
+      name: maskName_(data[i][cName]),
+      nationality: data[i][cNat],
+      has_passport: !!url
+    });
+  }
+  return out;
+}
+
+/**
+ * Passport re-upload (後日提出): accept a passport image for one guest of an
+ * existing reservation, even after registration/payment is complete.
+ * Token-gated; rejects only cancelled/rejected reservations.
+ * body: { reservation_id, token, guest_idx,
+ *         passport_image (base64) [+ passport_image_type], passport_no? }
+ */
+function handlePassportUpload(body) {
+  const id = body.reservation_id;
+  const r = findReservationRow_(id);
+  if (!r) return { ok:false, error:'not found' };
+  if (r.row.token !== body.token) return { ok:false, error:'invalid token' };
+  if (r.row.status === STATUS.CANCELLED || r.row.status === STATUS.REJECTED)
+    return { ok:false, error:'invalid status: ' + r.row.status };
+
+  const guestIdx = Number(body.guest_idx);
+  if (!guestIdx) return { ok:false, error:'guest_idx required' };
+  const b64  = body.passport_image_base64 || body.passport_image || '';
+  const mime = body.passport_image_mime   || body.passport_image_type || 'image/jpeg';
+  if (!b64) return { ok:false, error:'passport image required' };
+
+  const sh = sheet_('guests');
+  ensureHeaders_(sh, HEADERS_GUESTS);
+  const data = sh.getDataRange().getValues();
+  const H = data[0];
+  const cIdx = H.indexOf('idx'), cName = H.indexOf('name'),
+        cNo = H.indexOf('passport_no'), cUrl = H.indexOf('passport_file_url');
+  let rowNum = -1, gname = '';
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id) && Number(data[i][cIdx]) === guestIdx) {
+      rowNum = i + 1; gname = data[i][cName]; break;
+    }
+  }
+  if (rowNum < 0) return { ok:false, error:'guest not found' };
+
+  const url = savePassportImage_(id, guestIdx - 1, gname || ('guest' + guestIdx), b64, mime);
+  sh.getRange(rowNum, cUrl + 1).setValue(url);
+  if (body.passport_no && cNo >= 0) sh.getRange(rowNum, cNo + 1).setValue(body.passport_no);
+
+  log_(id, 'passport_uploaded', 'guest_idx=' + guestIdx);
+  try { notifyAdminPassport_(id, guestIdx, gname); } catch (e) {}
+  return { ok:true, reservation_id:id, guest_idx:guestIdx };
+}
+
+function notifyAdminPassport_(id, guestIdx, gname) {
+  GmailApp.sendEmail(getProp_('ADMIN_EMAIL'),
+    '[Komei Hotel] パスポート後日提出 ' + id,
+    '',
+    { htmlBody: '<p>予約 ' + esc_(id) + ' の宿泊者 #' + esc_(String(guestIdx)) +
+      '（' + esc_(gname || '') + '）がパスポートを後日提出しました。Drive をご確認ください。</p>' });
 }
 
 function handlePaymentInit(body) {
