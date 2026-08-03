@@ -51,11 +51,16 @@ updates the **same** web-app URL (`/exec …fnOZR`). Confirm the id first with
   (`@yoshinarcorp.com`) may promote a deployment. The gmail editor account can
   `clasp push` (sync code + create a version) but gets
   "Only users in the same domain as the script owner may deploy this script."
-- **Working process**:
-  1. `clasp push` (code sync + version) — any editor with the API enabled.
-  2. Promote to `/exec` — must be the OWNER (`ryotoku…yoshinarcorp.com`): either
-     `clasp deploy -i <id>` after enabling that account's API, or the editor UI
-     (Deploy → Manage deployments → the `…fnOZR` web app → edit → New version → Deploy).
+- **External-edit notification**: pushing as the gmail editor (`ryotofuru838`, outside
+  the org) makes Google email the owner ("Someone outside your organization has edited
+  an Apps Script project attached to your document."). Use the in-org OWNER `ryotoku`
+  to avoid it.
+- **Working process (preferred, verified @40 on 2026-08-03)**:
+  Log in clasp as the OWNER `ryotoku.furuichi@yoshinarcorp.com` (Apps Script API ON) →
+  `npm run deploy:backend` does push + deploy in ONE command. No editor-UI step and no
+  external-edit notification.
+  Fallback only if ryotoku's API is unavailable: `clasp push` as `ryotofuru838`, then the
+  owner promotes via the editor UI (Deploy → Manage deployments → `…fnOZR` → New version).
 - **Filenames**: after the first `clasp push`, the main server file is `Code`
   (the old editor file `コード` was renamed by the sync). `fix` is an empty stub kept
   only for parity.
