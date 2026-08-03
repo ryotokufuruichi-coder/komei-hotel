@@ -525,6 +525,17 @@ function stripeWebhookHandler(e) {
       log_(id, 'paid', session.id);
       notifyGuestConfirmed_(id, r.row);
       notifyAdminConfirmed_(id, r.row);
+      // 後日提出パスポートがあれば、決済完了時に提出案内メールを自動送信
+      try {
+        var _pc = pendingPassportCount_(id);
+        if (_pc > 0) {
+          sendPassportRequestEmail_(r.row, _pc, false);
+          log_(id, 'passport_req_sent', 'on_paid pending=' + _pc);
+          // 決済時点で既に過ぎているマイルストーンは抑止（直後の重複リマインド防止）
+          var _d = daysUntilCheckin_(r.row.checkin);
+          [30, 21, 7, 3].forEach(function (m) { if (_d <= m) log_(id, 'passport_reminder', 'm=' + m); });
+        }
+      } catch (_e) { log_(id, 'passport_req_error', String(_e)); }
     }
   }
   return jsonResponse({ received:true });
@@ -642,6 +653,139 @@ function notifyAdminConfirmed_(id, row) {
     '[Komei Hotel] 決済完了 ' + id,
     '',
     { htmlBody: '<p>予約 ' + esc_(id) + ' が決済完了し確定しました。</p>' });
+}
+
+// ============ Passport follow-up (後日提出) ============
+// On payment: if any guest deferred their passport, email the guest a passport.html
+// link. Then a daily time-trigger (sendPassportReminders) re-sends reminders at
+// 30 / 21 / 7 / 3 days before check-in until every pending passport is submitted.
+
+/** Count guests who still owe a passport (foreign nationality + no file saved). */
+function pendingPassportCount_(reservationId) {
+  var g = getGuestSummary_(reservationId);
+  var n = 0;
+  g.forEach(function (x) {
+    if (x.nationality && String(x.nationality).toUpperCase() !== 'JP' && !x.has_passport) n++;
+  });
+  return n;
+}
+
+/** Pick an email language from the reservation's country field. */
+function pickLang_(country) {
+  var c = String(country || '').toUpperCase();
+  if (c === 'JP' || c === 'JPN' || c.indexOf('JAPAN') >= 0 || c.indexOf('日本') >= 0) return 'ja';
+  if (['TW', 'CN', 'HK', 'MO'].indexOf(c) >= 0 || /TAIWAN|CHINA|HONG|MACAU|CHINESE/.test(c)) return 'zh';
+  if (c === 'KR' || /KOREA/.test(c)) return 'ko';
+  return 'en';
+}
+
+/** Localized subject/body/button for the passport request/reminder email. */
+function passportI18n_(lang, n, ci, isReminder) {
+  var L = {
+    ja: { s: (isReminder ? '【リマインド】' : '') + 'パスポートのご提出をお願いします',
+      p: 'ご予約（チェックイン ' + ci + '）につきまして、あと <b>' + n + '名</b> のパスポート画像が未提出です。日本の法令によりチェックイン前までのご提出が必須です。下記からアップロードをお願いします（未提出の方のみ表示されます）。',
+      b: 'パスポートを提出する' },
+    en: { s: (isReminder ? 'Reminder: ' : '') + 'Passport needed before check-in',
+      p: 'For your stay (check-in ' + ci + '), <b>' + n + ' guest(s)</b> still need to submit a passport photo, required by Japanese law before check-in. Please upload it below (only the pending guest is shown).',
+      b: 'Submit passport' },
+    zh: { s: (isReminder ? '【提醒】' : '') + '請於入住前提交護照',
+      p: '關於您的預訂（入住 ' + ci + '），尚有 <b>' + n + ' 位</b> 需要提交護照照片。依日本法規，入住前為必須。請透過下方連結上傳（僅顯示尚未提交的成員）。',
+      b: '提交護照' },
+    ko: { s: (isReminder ? '【알림】' : '') + '체크인 전 여권 제출이 필요합니다',
+      p: '예약(체크인 ' + ci + ') 관련하여 <b>' + n + '분</b>의 여권 이미지가 미제출 상태입니다. 일본 법령에 따라 체크인 전까지 제출이 필수입니다. 아래에서 업로드해 주세요(미제출자만 표시됩니다).',
+      b: '여권 제출' }
+  };
+  return L[lang] || L.en;
+}
+
+/** Send the passport request/reminder email to the reservation's guest. */
+function sendPassportRequestEmail_(row, n, isReminder) {
+  var to = row.rep_email;
+  if (!to) return false;
+  var base = getProp_('SITE_BASE_URL', 'https://komei.yoshinarcorp.com');
+  var url = base + '/passport.html?id=' + row.id + '&token=' + row.token;
+  var ci = toYMDSafe_(row.checkin);
+  var lang = pickLang_(row.rep_country);
+  var t = passportI18n_(lang, n, ci, isReminder);
+  var en = passportI18n_('en', n, ci, isReminder);
+  var btn = '<p><a href="' + url + '" style="background:#f59e0b;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;display:inline-block">' + t.b + (lang !== 'en' ? ' / ' + en.b : '') + '</a></p>'
+    + '<p style="font-size:12px;color:#666">' + url + '</p>';
+  var html = '<p>' + esc_(fullName_(row)) + ' 様 / Dear guest,</p><p>' + t.p + '</p>' + btn;
+  if (lang !== 'en') html += '<hr><p>' + en.p + '</p>';
+  GmailApp.sendEmail(to, '[Komei Hotel] ' + t.s + ' (' + row.id + ')', '', { htmlBody: html, name: getProp_('FROM_NAME', 'Komei Hotel') });
+  return true;
+}
+
+/** Days from today (JST) until a check-in date; negative if past. */
+function daysUntilCheckin_(ci) {
+  var todayStr = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd');
+  var a = new Date(todayStr + 'T00:00:00+09:00');
+  var b = new Date(toYMDSafe_(ci) + 'T00:00:00+09:00');
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
+/** Map reservation_id -> {milestoneDays: true} already sent, from the logs sheet. */
+function passportReminderSentMap_() {
+  var sh = sheet_('logs');
+  ensureHeaders_(sh, HEADERS_LOGS);
+  var data = sh.getDataRange().getValues();
+  var map = {};
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][2]) !== 'passport_reminder') continue;
+    var id = data[i][1];
+    var m = String(data[i][3] || '').match(/m=(\d+)/);
+    if (!m) continue;
+    if (!map[id]) map[id] = {};
+    map[id][Number(m[1])] = true;
+  }
+  return map;
+}
+
+/**
+ * Daily time-trigger target. For every PAID reservation with a pending passport,
+ * send one reminder at each of 30 / 21 / 7 / 3 days before check-in (until submitted).
+ */
+function sendPassportReminders() {
+  var MILESTONES = [30, 21, 7, 3];
+  var sh = sheet_('reservations');
+  ensureHeaders_(sh, HEADERS_RESERVATIONS);
+  var data = sh.getDataRange().getValues();
+  var H = data[0];
+  var iId = H.indexOf('id'), iStatus = H.indexOf('status'), iCheckin = H.indexOf('checkin');
+  var sentMap = passportReminderSentMap_();
+  var checked = 0, emailed = 0;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][iStatus]) !== STATUS.PAID) continue;
+    var id = data[i][iId];
+    if (!id) continue;
+    var ci = data[i][iCheckin];
+    if (!ci) continue;
+    var d = daysUntilCheckin_(ci);
+    if (d < 0) continue;
+    var pending = pendingPassportCount_(id);
+    if (pending <= 0) continue;
+    checked++;
+    var sent = sentMap[id] || {};
+    var due = MILESTONES.filter(function (m) { return d <= m && !sent[m]; });
+    if (!due.length) continue;
+    var row = {};
+    for (var j = 0; j < H.length; j++) row[H[j]] = data[i][j];
+    try {
+      if (sendPassportRequestEmail_(row, pending, true)) emailed++;
+      due.forEach(function (m) { log_(id, 'passport_reminder', 'm=' + m); });
+    } catch (e) { log_(id, 'passport_reminder_error', String(e)); }
+  }
+  log_(null, 'passport_reminders_run', 'checked=' + checked + ' emailed=' + emailed);
+  return { checked: checked, emailed: emailed };
+}
+
+/** Run ONCE from the editor to install the daily reminder trigger. */
+function installPassportReminders() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'sendPassportReminders') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('sendPassportReminders').timeBased().everyDays(1).atHour(10).create();
+  return 'installed: sendPassportReminders runs daily ~10:00 JST';
 }
 
 // ============ Drive (Passport) ============
