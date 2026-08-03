@@ -581,7 +581,7 @@ function notifyGuestRequestReceived_(id, body) {
 function notifyGuestApproved_(id, row, finalTotal) {
   const base = getProp_('SITE_BASE_URL');
   let token = row.token;
-  if (!token) {                                     // 防御: tokenが空なら生成して保存
+  if (!token) {                                     // ★防御: tokenが空なら生成して保存
     token = Utilities.getUuid().replace(/-/g, '');
     const r = findReservationRow_(id);
     if (r) updateReservation_(r.rowIndex, { token: token });
@@ -2108,5 +2108,34 @@ function daysBetween_(a, b) {
 
 function formatDateJst_(d) {
   return Utilities.formatDate(d, 'Asia/Tokyo', 'yyyy-MM-dd');
+}
+
+/** 一度だけ実行: token列が空の全予約に token を補完し、登録リンクをログ出力 */
+function backfillTokens() {
+  var ss = SpreadsheetApp.getActive();
+  var sh = ss.getSheetByName('reservations');
+  if (!sh) { ss.getSheets().forEach(function(s){ if(!sh && s.getRange(1,1,1,s.getLastColumn()).getValues()[0].indexOf('token')>=0) sh=s; }); }
+  if (!sh) { Logger.log('reservations タブが見つかりません'); return; }
+  var data = sh.getDataRange().getValues(), H = data[0];
+  var cT=H.indexOf('token'), cId=H.indexOf('id'), cE=H.indexOf('rep_email'), cS=H.indexOf('status');
+  if (cT<0||cId<0){ Logger.log('token/id 列なし: '+H.join(',')); return; }
+  var base='https://komei.yoshinarcorp.com', n=0;
+  for (var i=1;i<data.length;i++){
+    if(!data[i][cId]) continue;
+    if(String(data[i][cT]||'').trim()===''){ var t=Utilities.getUuid().replace(/-/g,''); sh.getRange(i+1,cT+1).setValue(t); data[i][cT]=t; n++; }
+    Logger.log(data[i][cId]+' | '+(cS>=0?data[i][cS]:'')+' | '+(cE>=0?data[i][cE]:'')+' | '+base+'/register.html?id='+data[i][cId]+'&token='+data[i][cT]);
+  }
+  Logger.log('=== '+n+'件に token を補完 ===');
+}
+
+function diagnoseHeaders() {
+  var sh = SpreadsheetApp.getActive().getSheetByName('reservations');
+  var actual = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  Logger.log('実ヘッダー(' + actual.length + '列): ' + actual.join(' | '));
+  Logger.log('token列の位置: col' + (actual.indexOf('token') + 1));
+  Logger.log('期待(HEADERS_RESERVATIONS): ' + HEADERS_RESERVATIONS.join(' | '));
+  Logger.log('generateToken_() の出力: "' + generateToken_() + '"');
+  var last = sh.getLastRow(), tc = actual.indexOf('token') + 1;
+  Logger.log('最新行(テスト予約)のtoken列の値: "' + (tc > 0 ? sh.getRange(last, tc).getValue() : 'token列が無い') + '"');
 }
 
