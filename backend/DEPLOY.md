@@ -38,3 +38,27 @@ updates the **same** web-app URL (`/exec …fnOZR`). Confirm the id first with
 - Always reuse the EXISTING deployment id so the `/exec` URL never changes
   (creating a *new* deployment mints a new URL and breaks the site).
 - Commit `backend/Code.gs` to git first, then `npm run deploy:backend`.
+
+## This project's specifics (verified 2026-08-03)
+- **Script**: container-bound to the "Komei Hotel 予約管理" spreadsheet, so it does
+  NOT appear in `clasp list`. Use the Script ID directly in `.clasp.json`.
+- **Owner**: `ryotoku.furuichi@yoshinarcorp.com` (Workspace, yoshinarcorp.com domain).
+  Editor: `ryotofuru838@gmail.com`.
+- **Apps Script API** must be turned ON *per account* at
+  https://script.google.com/home/usersettings — do it for whichever account clasp
+  logs in as. Reads (pull/deployments) can succeed before writes propagate.
+- **Deploy is domain-restricted**: only an account in the SAME domain as the owner
+  (`@yoshinarcorp.com`) may promote a deployment. The gmail editor account can
+  `clasp push` (sync code + create a version) but gets
+  "Only users in the same domain as the script owner may deploy this script."
+- **Working process**:
+  1. `clasp push` (code sync + version) — any editor with the API enabled.
+  2. Promote to `/exec` — must be the OWNER (`ryotoku…yoshinarcorp.com`): either
+     `clasp deploy -i <id>` after enabling that account's API, or the editor UI
+     (Deploy → Manage deployments → the `…fnOZR` web app → edit → New version → Deploy).
+- **Filenames**: after the first `clasp push`, the main server file is `Code`
+  (the old editor file `コード` was renamed by the sync). `fix` is an empty stub kept
+  only for parity.
+- **Verify a deploy** (read path always works): 
+  `GET <exec>?action=get_reservation&id=<id>&token=<token>` → the reservation JSON
+  now includes a `guests` array when the passport-era code is live.
