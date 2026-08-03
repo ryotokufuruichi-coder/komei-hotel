@@ -1,0 +1,10 @@
+# Node / tooling
+node_modules/
+
+# clasp (Apps Script CLI) — NEVER commit the OAuth token
+.clasprc.json
+*.clasprc.json
+
+# local clasp project config (create from .clasp.json.sample)
+# scriptId is not secret, but keep it out of history until intentionally added
+.clasp.json

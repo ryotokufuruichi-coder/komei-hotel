@@ -1,0 +1,21 @@
+{
+  "name": "site",
+  "version": "1.0.0",
+  "description": "Komei Hotel site + GAS backend (clasp deploy)",
+  "scripts": {
+    "clasp:login": "clasp login",
+    "clasp:pull": "clasp pull",
+    "clasp:status": "clasp status",
+    "clasp:deployments": "clasp deployments",
+    "deploy:backend": "clasp push -f && clasp deploy -i AKfycbx6JO_l8Hhb5pQCIZkBTgEkChylOcD4e32JuCcCG-XtvuaQ6I5qacd7UuyeHQ8fnOZR -d \"backend deploy\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryotokufuruichi-coder/komei-hotel.git"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@google/clasp": "2.4.2"
+  }
+}
