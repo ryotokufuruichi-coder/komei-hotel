@@ -515,27 +515,50 @@ function stripeWebhookHandler(e) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const id = session.client_reference_id;
-    const r = findReservationRow_(id);
-    if (r) {
-      updateReservation_(r.rowIndex, {
-        status: STATUS.PAID,
-        payment_status: 'paid',
-        updated_at: new Date().toISOString()
-      });
-      log_(id, 'paid', session.id);
-      notifyGuestConfirmed_(id, r.row);
-      notifyAdminConfirmed_(id, r.row);
-      // 後日提出パスポートがあれば、決済完了時に提出案内メールを自動送信
-      try {
-        var _pc = pendingPassportCount_(id);
-        if (_pc > 0) {
-          sendPassportRequestEmail_(r.row, _pc, false);
-          log_(id, 'passport_req_sent', 'on_paid pending=' + _pc);
-          // 決済時点で既に過ぎているマイルストーンは抑止（直後の重複リマインド防止）
-          var _d = daysUntilCheckin_(r.row.checkin);
-          [30, 21, 7, 3].forEach(function (m) { if (_d <= m) log_(id, 'passport_reminder', 'm=' + m); });
+    // Idempotency: Stripe delivers each event at-least-once and RETRIES whenever the
+    // endpoint is slow to acknowledge (sending several emails below makes it slow).
+    // Without a guard the same event re-runs and the guest receives duplicate
+    // confirmation emails. Serialize with a script lock, mark paid + flush, then
+    // no-op on any later delivery whose reservation is already paid.
+    var lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(20000);
+    } catch (_lockErr) {
+      // Another execution is already handling this reservation — ack so Stripe stops
+      // retrying; that execution sends exactly one confirmation email.
+      return jsonResponse({ received: true });
+    }
+    try {
+      const r = findReservationRow_(id);
+      if (r) {
+        if (r.row.status === STATUS.PAID || r.row.payment_status === 'paid') {
+          // Already processed by an earlier delivery of this event — send nothing.
+          log_(id, 'paid_duplicate_ignored', session.id);
+        } else {
+          updateReservation_(r.rowIndex, {
+            status: STATUS.PAID,
+            payment_status: 'paid',
+            updated_at: new Date().toISOString()
+          });
+          SpreadsheetApp.flush(); // commit paid status before the (slow) email sends so retries see it
+          log_(id, 'paid', session.id);
+          notifyGuestConfirmed_(id, r.row);
+          notifyAdminConfirmed_(id, r.row);
+          // 後日提出パスポートがあれば、決済完了時に提出案内メールを自動送信
+          try {
+            var _pc = pendingPassportCount_(id);
+            if (_pc > 0) {
+              sendPassportRequestEmail_(r.row, _pc, false);
+              log_(id, 'passport_req_sent', 'on_paid pending=' + _pc);
+              // 決済時点で既に過ぎているマイルストーンは抑止（直後の重複リマインド防止）
+              var _d = daysUntilCheckin_(r.row.checkin);
+              [30, 21, 7, 3].forEach(function (m) { if (_d <= m) log_(id, 'passport_reminder', 'm=' + m); });
+            }
+          } catch (_e) { log_(id, 'passport_req_error', String(_e)); }
         }
-      } catch (_e) { log_(id, 'passport_req_error', String(_e)); }
+      }
+    } finally {
+      lock.releaseLock();
     }
   }
   return jsonResponse({ received:true });
