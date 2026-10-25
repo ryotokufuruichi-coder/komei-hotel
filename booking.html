@@ -65,13 +65,13 @@
 <!-- Header -->
 <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur shadow-sm">
   <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-    <a href="index.html" class="flex items-center gap-2">
-      <span class="bunchou-logo bunchou-logo-md" role="img" aria-label="白文鳥（光明荘のマスコット）"></span>
-      <span class="font-bold text-lg tracking-wide">Komei Hotel</span>
-      <span class="hidden sm:inline text-xs text-slate-500">光明荘</span>
+    <a href="index.html" class="js-home flex items-center gap-2">
+      <span id="logoMascot" class="bunchou-logo bunchou-logo-md" role="img" aria-label="白文鳥（光明荘のマスコット）"></span>
+      <span id="logoName" class="font-bold text-lg tracking-wide">Komei Hotel</span>
+      <span id="logoSub" class="hidden sm:inline text-xs text-slate-500">光明荘</span>
     </a>
     <nav class="hidden md:flex items-center gap-6 text-sm">
-      <a href="index.html" class="hover:text-amber-600">
+      <a href="index.html" class="js-home hover:text-amber-600">
         <span class="lang-ja">← トップへ戻る</span><span class="lang-en">← Back to home</span><span class="lang-zh">← 返回首页</span><span class="lang-ko">← 홈으로 돌아가기</span>
       </a>
       <a href="mailto:komei.hotel@gmail.com" class="text-slate-600 hover:text-amber-600">✉ komei.hotel@gmail.com</a>
@@ -439,7 +439,7 @@
       <span class="lang-ko">입력하신 이메일로 접수 확인 메일을 발송했습니다. 승인 후 24시간 이내에 본등록 페이지 안내를 보내드립니다.</span>
     </p>
     <p class="text-xs text-slate-400 mb-5" id="modalRefId"></p>
-    <a href="index.html" class="inline-block px-6 py-2 rounded-full bg-slate-900 text-white font-semibold">
+    <a href="index.html" class="js-home inline-block px-6 py-2 rounded-full bg-slate-900 text-white font-semibold">
       <span class="lang-ja">トップへ戻る</span><span class="lang-en">Back to home</span>
       <span class="lang-zh">返回首页</span><span class="lang-ko">홈으로 돌아가기</span>
     </a>
@@ -494,7 +494,7 @@ const PROPERTIES = {
     roomDesc: '<p class="font-semibold mb-1"><span class="lang-ja">📍 一棟まるごと貸切（3階建て・最大10名様まで）</span><span class="lang-en">📍 Whole house rental (3 floors, sleeps up to 10)</span><span class="lang-zh">📍 整栋独享（3层・最多可住10人）</span><span class="lang-ko">📍 건물 전체 대여（3층·최대 10명）</span></p><p class="text-xs text-slate-600"><span class="lang-ja">向島・曳舟駅徒歩約6分。寝室3・ベッド/布団計10・バスルーム1・トイレ2、3階にテラス。フルキッチン・洗濯乾燥機・無料無制限Wi-Fi完備。最大10名様までご宿泊可能。</span><span class="lang-en">Mukojima, 6-min walk from Hikifune Stn. 3 bedrooms, 10 beds/futons, 1 bathroom, 2 toilets, rooftop terrace. Full kitchen, washer/dryer, free unlimited Wi-Fi. Sleeps up to 10 guests.</span><span class="lang-zh">向岛・曳舟站步行约6分钟。3间卧室·床/被褥共10套·浴室1·卫生间2·3楼露台。设全套厨房·洗衣烘干机·免费无限Wi-Fi。最多可住10人。</span><span class="lang-ko">무코지마·히키후네역 도보 약 6분. 침실 3·침대/이불 총 10·욕실 1·화장실 2·3층 테라스. 풀키친·세탁건조기·무료 무제한 Wi-Fi. 최대 10명 숙박 가능.</span></p>'
   }
 };
-const MIN_NIGHTS = 2;
+const MIN_NIGHTS = 2;try{sessionStorage.setItem('gw_visited','1');}catch(e){}
 let currentProperty = (new URLSearchParams(location.search).get('property') === 'tenmian') ? 'tenmian' : 'komei';
 let OCCUPIED = new Set(PROPERTIES[currentProperty].occupied);
 
@@ -559,7 +559,7 @@ function applyProperty(){
   var rd=document.getElementById('roomDescBox');if(rd)rd.innerHTML=p.roomDesc;
   var ad=document.getElementById('adults');
   if(ad){var cur=Math.min(parseInt(ad.value)||2,p.maxGuests);ad.innerHTML='';for(var g=1;g<=p.maxGuests;g++){var o=document.createElement('option');o.value=g;o.textContent=g;if(g===cur)o.selected=true;ad.appendChild(o);}}
-  bkSel.ci=null;bkSel.co=null;bkRenderCal();bkApplyToInputs();
+  var _dir=location.pathname.replace(/[^/]*$/,'');var _home=(currentProperty==='tenmian')?_dir+'tenmian.html':_dir;document.querySelectorAll('.js-home').forEach(function(a){a.setAttribute('href',_home);});var _ln=document.getElementById('logoName'),_ls=document.getElementById('logoSub'),_lm=document.getElementById('logoMascot');if(currentProperty==='tenmian'){if(_ln)_ln.textContent='天見庵';if(_ls)_ls.textContent='Tenmian';if(_lm)_lm.style.display='none';}else{if(_ln)_ln.textContent='Komei Hotel';if(_ls)_ls.textContent='光明荘';if(_lm)_lm.style.display='';} bkSel.ci=null;bkSel.co=null;bkRenderCal();bkApplyToInputs();
 }
 
 function setLang(lang) {
