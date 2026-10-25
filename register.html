@@ -96,6 +96,10 @@
   <div id="resSummary" class="bg-white border border-emerald-200 rounded-2xl shadow-lg p-5">
     <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
+        <div class="text-xs text-slate-500"><span class="lang-ja">宿泊施設</span><span class="lang-en">Property</span><span class="lang-zh">住宿设施</span><span class="lang-ko">숙박 시설</span></div>
+        <div id="rsProperty" class="font-bold text-slate-800">—</div>
+      </div>
+      <div>
         <div class="text-xs text-slate-500"><span class="lang-ja">予約番号</span><span class="lang-en">Reservation ID</span><span class="lang-zh">预订编号</span><span class="lang-ko">예약 번호</span></div>
         <div id="rsId" class="font-bold text-slate-800 font-mono">—</div>
       </div>
@@ -577,6 +581,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     reservationData = { reservation_id: r.reservation_id || id, token: token, adults: r.adults, children: r.children, representative: rep, total: total };
 
     document.getElementById('rsId').textContent = reservationData.reservation_id;
+    const _PROP_NAMES = { komei:'光明荘 / Komei Hotel', tenmian:'天見庵 / Tenmian' };
+    const _rsp = document.getElementById('rsProperty'); if (_rsp) _rsp.textContent = _PROP_NAMES[r.property] || _PROP_NAMES.komei;
     document.getElementById('rsDates').textContent = `${fmtDate(r.checkin)} → ${fmtDate(r.checkout)}`;
     const nights = Math.round((new Date(toYMD(r.checkout)+'T00:00:00Z')-new Date(toYMD(r.checkin)+'T00:00:00Z'))/86400000);
     document.getElementById('rsNights').innerHTML = `<span class="lang-ja">${nights}泊</span><span class="lang-en">${nights} nights</span><span class="lang-zh">${nights}晚</span><span class="lang-ko">${nights}박</span>`;

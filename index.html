@@ -435,6 +435,7 @@
       <a href="#availability" class="hover:text-amber-600 transition"><span class="lang-ja">空室</span><span class="lang-en">Availability</span><span class="lang-zh">空房</span><span class="lang-ko">예약 가능</span></a>
       <a href="#reviews" class="hover:text-amber-600 transition"><span class="lang-ja">レビュー</span><span class="lang-en">Reviews</span><span class="lang-zh">评价</span><span class="lang-ko">리뷰</span></a>
       <a href="#faq" class="hover:text-amber-600 transition">FAQ</a>
+      <a href="tenmian.html" style="color:#0d9488;font-weight:600" class="hover:opacity-70 transition"><span class="lang-ja">天見庵</span><span class="lang-en">Tenmian</span><span class="lang-zh">天见庵</span><span class="lang-ko">天見庵</span></a>
       <span class="w-px h-4 bg-slate-300"></span>
       <a href="mypage.html" class="hover:text-amber-600 transition"><span class="lang-ja">マイページ</span><span class="lang-en">My Page</span><span class="lang-zh">我的页面</span><span class="lang-ko">마이페이지</span></a>
       <a href="partner.html" class="text-blue-600 hover:text-blue-700 transition"><span class="lang-ja">パートナー</span><span class="lang-en">Partners</span><span class="lang-zh">合作伙伴</span><span class="lang-ko">파트너</span></a>
@@ -717,7 +718,7 @@
       <div class="p-5 rounded-xl border border-slate-200 hover:border-amber-400 transition">
         <div class="text-4xl mb-2">🚭</div>
         <h3 class="font-bold mb-1"><span class="lang-ja">全室禁煙</span><span class="lang-en">Non-smoking</span><span class="lang-zh">禁烟</span><span class="lang-ko">금연</span></h3>
-        <p class="text-sm text-slate-500"><span class="lang-ja">屋外喫煙可</span><span class="lang-en">Outdoor smoking ok</span><span class="lang-zh">室外吸烟可以</span><span class="lang-ko">야외 흡연 허용</span></p>
+        <p class="text-sm text-slate-500"><span class="lang-ja">敷地内全面禁煙</span><span class="lang-en">No smoking anywhere on site</span><span class="lang-zh">全场所禁烟</span><span class="lang-ko">전 구역 금연</span></p>
       </div>
     </div>
   </div>
@@ -782,8 +783,8 @@
       </div>
     </div>
     <p class="text-center text-sm text-slate-500 mb-4">
-      <span class="lang-ja">空室日をクリックしてチェックイン日とチェックアウト日を選択してください（3泊以上）</span>
-      <span class="lang-en">Click vacant dates to select check-in and check-out (3 nights minimum)</span><span class="lang-zh">单击空闲日期选择入住和退房时间（最少3晚）</span><span class="lang-ko">체크인 및 체크아웃 시간을 선택하려면 공실 날짜를 클릭하세요(최소 3박).</span>
+      <span class="lang-ja">空室日をクリックしてチェックイン日とチェックアウト日を選択してください（2泊以上）</span>
+      <span class="lang-en">Click vacant dates to select check-in and check-out (2 nights minimum)</span><span class="lang-zh">单击空闲日期选择入住和退房时间（最少2晚）</span><span class="lang-ko">체크인 및 체크아웃 시간을 선택하려면 공실 날짜를 클릭하세요(최소 2박).</span>
     </p>
     <div id="calGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     <div id="calSelection" class="mt-6 hidden bg-amber-50 border border-amber-200 rounded-xl p-5 max-w-2xl mx-auto">
@@ -898,8 +899,8 @@
     grid.innerHTML = html;
   }
 
-  // --- Click selection with 3-night minimum ---
-  var MIN_NIGHTS = 3;
+  // --- Click selection with 2-night minimum ---
+  var MIN_NIGHTS = 2;
   var sel = { ci: null, co: null };
   var selBox = document.getElementById('calSelection');
   var selText = document.getElementById('calSelText');
@@ -989,7 +990,7 @@
       pb.classList.add('hidden');
       selBox.classList.remove('hidden');
       selText.innerHTML = '<span class="lang-ja">チェックイン: </span><span class="lang-en">Check-in: </span>'+fmtLabel(sel.ci, sel.ci).split(' → ')[0];
-      selNights.innerHTML = '<span class="lang-ja">チェックアウト日を選択してください（3泊以上）</span><span class="lang-en">Please select check-out (min 3 nights)</span><span class="lang-zh">请选择退房时间(最少3晚)</span><span class="lang-ko">체크아웃을 선택하세요(최소 3박)</span>';
+      selNights.innerHTML = '<span class="lang-ja">チェックアウト日を選択してください（2泊以上）</span><span class="lang-en">Please select check-out (min 2 nights)</span><span class="lang-zh">请选择退房时间(最少2晚)</span><span class="lang-ko">체크아웃을 선택하세요(최소 2박)</span>';
       goBtn.classList.add('pointer-events-none','opacity-50');
       goBtn.removeAttribute('href');
     } else {
@@ -1010,7 +1011,7 @@
       } else {
         var nights = dateDiff(sel.ci, d);
         if (nights < MIN_NIGHTS) {
-          alert((document.documentElement.lang === 'en' ? '' : '最短3泊からご予約いただけます。\n') + 'Minimum stay is 3 nights.');
+          alert((document.documentElement.lang === 'en' ? '' : '最短2泊からご予約いただけます。\n') + 'Minimum stay is 2 nights.');
           return;
         }
         if (rangeHasOccupied(sel.ci, d)) {

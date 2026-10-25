@@ -140,8 +140,8 @@
         </p>
         <div class="flex items-center gap-2 mb-2">
           <div class="shrink-0 text-xs space-y-1">
-            <a href="https://www.airbnb.jp/rooms/1039805188907481877" target="_blank" class="block text-blue-600 underline hover:text-blue-800">Airbnbで確認→</a>
-            <a href="https://www.booking.com/hotel/jp/komei-5min-to-station-direct-access-to-narita-and-haneda-asakusa-sky-tree.ja.html" target="_blank" class="block text-blue-600 underline hover:text-blue-800">Booking.comで確認→</a>
+            <a id="otaAirbnbLink" href="https://www.airbnb.jp/rooms/1039805188907481877" target="_blank" class="block text-blue-600 underline hover:text-blue-800"><span class="lang-ja">Airbnbで確認→</span><span class="lang-en">Check on Airbnb →</span><span class="lang-zh">在Airbnb查看→</span><span class="lang-ko">Airbnb에서 확인→</span></a>
+            <a id="otaBookingLink" href="https://www.booking.com/hotel/jp/komei-5min-to-station-direct-access-to-narita-and-haneda-asakusa-sky-tree.ja.html" target="_blank" class="block text-blue-600 underline hover:text-blue-800"><span class="lang-ja">Booking.comで確認→</span><span class="lang-en">Check on Booking.com →</span><span class="lang-zh">在Booking.com查看→</span><span class="lang-ko">Booking.com에서 확인→</span></a>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -173,8 +173,8 @@
     </div>
 
     <div class="mt-3 text-xs text-slate-500 leading-relaxed">
-      <span class="lang-ja">※ こちらの料金は<a href="https://www.airbnb.jp/rooms/1039805188907481877" target="_blank" class="text-amber-600 underline">Airbnb</a>・<a href="https://www.booking.com/hotel/jp/komei-5min-to-station-direct-access-to-narita-and-haneda-asakusa-sky-tree.ja.html" target="_blank" class="text-amber-600 underline">Booking.com</a>掲載価格から最大10%オフの目安です。最終金額は管理者の確認後に確定されるため、実際の料金が上下する場合がございます。</span>
-      <span class="lang-en">※ This is an estimate of up to 10% off our <a href="https://www.airbnb.jp/rooms/1039805188907481877" target="_blank" class="text-amber-600 underline">Airbnb</a> / <a href="https://www.booking.com/hotel/jp/komei-5min-to-station-direct-access-to-narita-and-haneda-asakusa-sky-tree.ja.html" target="_blank" class="text-amber-600 underline">Booking.com</a> listing price. The final amount is confirmed upon admin approval and may vary.</span>
+      <span class="lang-ja">※ こちらの料金は<a href="https://www.airbnb.jp/rooms/1039805188907481877" target="_blank" class="otaAirbnbRef text-amber-600 underline">Airbnb</a>・<a href="https://www.booking.com/hotel/jp/komei-5min-to-station-direct-access-to-narita-and-haneda-asakusa-sky-tree.ja.html" target="_blank" class="otaBookingRef text-amber-600 underline">Booking.com</a>掲載価格から最大10%オフの目安です。最終金額は管理者の確認後に確定されるため、実際の料金が上下する場合がございます。</span>
+      <span class="lang-en">※ This is an estimate of up to 10% off our <a href="https://www.airbnb.jp/rooms/1039805188907481877" target="_blank" class="otaAirbnbRef text-amber-600 underline">Airbnb</a> / <a href="https://www.booking.com/hotel/jp/komei-5min-to-station-direct-access-to-narita-and-haneda-asakusa-sky-tree.ja.html" target="_blank" class="otaBookingRef text-amber-600 underline">Booking.com</a> listing price. The final amount is confirmed upon admin approval and may vary.</span>
       <span class="lang-zh">※ 此价格为Airbnb / Booking.com标价最高优惠10%的预估价。最终金额将在管理员确认后确定，实际费用可能有所变动。</span>
       <span class="lang-ko">※ 이 가격은 Airbnb / Booking.com 게재 가격에서 최대 10% 할인된 예상 가격입니다. 최종 금액은 관리자 확인 후 확정되며 실제 요금이 변동될 수 있습니다.</span>
     </div>
@@ -192,20 +192,49 @@
           <span class="w-7 h-7 rounded-full bg-amber-500 text-white grid place-items-center text-sm">1</span>
           <span class="lang-ja">ご滞在情報</span><span class="lang-en">Stay Information</span><span class="lang-zh">住宿信息</span><span class="lang-ko">숙박 정보</span>
         </h2>
+
+        <!-- Property selector -->
+        <div class="mb-4">
+          <label class="block text-sm font-semibold mb-1">
+            <span class="lang-ja">ご予約の宿</span><span class="lang-en">Property</span><span class="lang-zh">预订房源</span><span class="lang-ko">예약 숙소</span>
+            <span class="text-red-500">*</span>
+          </label>
+          <select id="property" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-white">
+            <option value="komei">光明荘 / Komei Hotel（東駒形・本所吾妻橋）</option>
+            <option value="tenmian">天見庵 / Tenmian（向島・曳舟）</option>
+          </select>
+        </div>
+
+        <!-- Availability calendar (click to pick dates) -->
+        <div class="mb-5">
+          <p class="text-sm font-semibold mb-1">
+            <span class="lang-ja">空室カレンダーから日程を選択（2泊以上）</span>
+            <span class="lang-en">Pick your dates from the availability calendar (min 2 nights)</span>
+            <span class="lang-zh">请从空房日历选择日期（最少2晚）</span>
+            <span class="lang-ko">예약 가능 달력에서 날짜를 선택하세요(최소 2박)</span>
+          </p>
+          <div class="flex items-center gap-4 mb-2 text-xs text-slate-500">
+            <span class="inline-flex items-center gap-1"><span class="w-3.5 h-3.5 rounded bg-emerald-400 inline-block"></span><span class="lang-ja">空室</span><span class="lang-en">Vacant</span><span class="lang-zh">空房</span><span class="lang-ko">예약 가능</span></span>
+            <span class="inline-flex items-center gap-1"><span class="w-3.5 h-3.5 rounded bg-slate-300 inline-block"></span><span class="lang-ja">予約済</span><span class="lang-en">Booked</span><span class="lang-zh">已预订</span><span class="lang-ko">예약됨</span></span>
+            <button type="button" id="bkCalClear" class="ml-auto underline hover:text-amber-600"><span class="lang-ja">選択をクリア</span><span class="lang-en">Clear</span><span class="lang-zh">清除</span><span class="lang-ko">지우기</span></button>
+          </div>
+          <div id="bkCalGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[28rem] overflow-y-auto p-1 border border-slate-100 rounded-lg bg-slate-50/40"></div>
+        </div>
+
         <div class="grid md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-semibold mb-1">
               <span class="lang-ja">チェックイン日</span><span class="lang-en">Check-in date</span><span class="lang-zh">入住日期</span><span class="lang-ko">체크인 날짜</span>
               <span class="text-red-500">*</span>
             </label>
-            <input type="date" id="checkin" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
+            <input type="date" id="checkin" required readonly class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50 cursor-not-allowed" title="上の空室カレンダーから選択 / Select from the availability calendar above">
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">
               <span class="lang-ja">チェックアウト日</span><span class="lang-en">Check-out date</span><span class="lang-zh">退房日期</span><span class="lang-ko">체크아웃 날짜</span>
               <span class="text-red-500">*</span>
             </label>
-            <input type="date" id="checkout" required class="w-full px-4 py-2.5 border border-slate-300 rounded-lg">
+            <input type="date" id="checkout" required readonly class="w-full px-4 py-2.5 border border-slate-300 rounded-lg bg-slate-50 cursor-not-allowed" title="上の空室カレンダーから選択 / Select from the availability calendar above">
           </div>
           <div>
             <label class="block text-sm font-semibold mb-1">
@@ -229,7 +258,7 @@
               <option value="2">2</option><option value="3">3</option><option value="4">4+</option>
             </select>
           </div>
-          <div class="md:col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-slate-700">
+          <div id="roomDescBox" class="md:col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-slate-700">
             <p class="font-semibold mb-1">
               <span class="lang-ja">📍 一棟まるごと貸切（最大10名様まで）</span>
               <span class="lang-en">📍 Whole house rental (sleeps up to 10)</span>
@@ -446,6 +475,93 @@ const GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx6JO_l8Hhb5pQCIZk
 const DEMO = location.hostname !== 'komei.yoshinarcorp.com' && new URLSearchParams(location.search).get('demo') === '1';
 function demoReservationId(){ return 'R' + new Date().toISOString().slice(0,10).replace(/-/g,'') + Math.floor(Math.random()*9000+1000); }
 
+// ===== Multi-property config =====
+const PROPERTIES = {
+  komei: {
+    name: {ja:'光明荘', en:'Komei Hotel', zh:'光明庄', ko:'코메이 하우스'},
+    airbnb: 'https://www.airbnb.jp/rooms/1039805188907481877',
+    booking: 'https://www.booking.com/hotel/jp/komei-5min-to-station-direct-access-to-narita-and-haneda-asakusa-sky-tree.ja.html',
+    maxGuests: 10,
+    occupied: ["2026-11-01","2026-11-02","2026-11-03","2026-11-04","2026-11-05","2026-11-06","2026-11-07","2026-11-08","2026-11-09","2026-11-10","2026-11-11","2026-11-12","2026-11-13","2026-11-14","2026-11-15","2026-11-16","2026-11-17","2026-11-22","2026-11-23","2026-11-24","2026-11-28","2026-11-29","2026-11-30","2026-12-01","2026-12-02","2026-12-06","2026-12-07","2026-12-08","2026-12-09","2026-12-10","2026-12-11","2026-12-12","2026-12-13","2026-12-14","2026-12-15","2026-12-16","2026-12-17","2026-12-18","2026-12-19","2026-12-20","2026-12-21","2026-12-22","2026-12-23","2026-12-24","2026-12-25","2026-12-26","2026-12-27","2026-12-28","2026-12-29","2026-12-30","2026-12-31","2027-01-01","2027-01-02","2027-01-11","2027-01-12","2027-01-13","2027-01-14","2027-01-15","2027-01-16","2027-01-17","2027-01-18","2027-01-19","2027-01-20","2027-01-21","2027-01-22","2027-01-23","2027-01-24","2027-01-25","2027-01-26","2027-02-02","2027-02-03","2027-02-04","2027-02-22","2027-02-23","2027-02-24","2027-02-25","2027-02-26","2027-03-05","2027-03-06","2027-03-07","2027-03-13","2027-03-14","2027-03-15","2027-05-22","2027-05-23","2027-05-24","2027-05-25","2027-05-26","2027-05-27","2027-05-28","2027-05-29","2027-05-30","2027-05-31"],
+    roomDesc: '<p class="font-semibold mb-1"><span class="lang-ja">📍 一棟まるごと貸切（最大10名様まで）</span><span class="lang-en">📍 Whole house rental (sleeps up to 10)</span><span class="lang-zh">📍 整栋独享（最多可住10人）</span><span class="lang-ko">📍 건물 전체 대여（최대 10명）</span></p><p class="text-xs text-slate-600"><span class="lang-ja">1階：ダブル1・シングル2・ソファーベッド(ダブル)1 / 2階：ダブル2・シングル2。最大10名様までご宿泊可能。各階にキッチン・バスルーム・トイレ・洗面台完備。</span><span class="lang-en">1F: 1 double + 2 singles + 1 double sofa bed / 2F: 2 doubles + 2 singles. Sleeps up to 10 guests. Each floor has its own kitchen, bathroom, toilet and washbasin.</span><span class="lang-zh">1楼：双人床1张·单人床2张·沙发床（双人）1张 / 2楼：双人床2张·单人床2张。最多可容纳10位客人。每层配有独立厨房、浴室、卫生间及洗手台。</span><span class="lang-ko">1층: 더블 1·싱글 2·소파베드(더블) 1 / 2층: 더블 2·싱글 2. 최대 10명 숙박 가능. 각 층에 주방·욕실·화장실·세면대 완비.</span></p>'
+  },
+  tenmian: {
+    name: {ja:'天見庵', en:'Tenmian', zh:'天见庵', ko:'아마미안'},
+    airbnb: 'https://www.airbnb.jp/rooms/1780284052759431464',
+    booking: 'https://www.booking.com/hotel/jp/tian-jian-an-amamian.ja.html',
+    maxGuests: 10,
+    occupied: ["2026-11-02","2026-11-03","2026-11-04","2026-11-05","2026-11-06","2026-11-07","2026-11-08","2026-11-09","2026-11-10","2026-11-11","2026-11-21","2026-11-22","2026-11-23","2026-11-24","2026-11-25"],
+    roomDesc: '<p class="font-semibold mb-1"><span class="lang-ja">📍 一棟まるごと貸切（3階建て・最大10名様まで）</span><span class="lang-en">📍 Whole house rental (3 floors, sleeps up to 10)</span><span class="lang-zh">📍 整栋独享（3层・最多可住10人）</span><span class="lang-ko">📍 건물 전체 대여（3층·최대 10명）</span></p><p class="text-xs text-slate-600"><span class="lang-ja">向島・曳舟駅徒歩約6分。寝室3・ベッド/布団計10・バスルーム1・トイレ2、3階にテラス。フルキッチン・洗濯乾燥機・無料無制限Wi-Fi完備。最大10名様までご宿泊可能。</span><span class="lang-en">Mukojima, 6-min walk from Hikifune Stn. 3 bedrooms, 10 beds/futons, 1 bathroom, 2 toilets, rooftop terrace. Full kitchen, washer/dryer, free unlimited Wi-Fi. Sleeps up to 10 guests.</span><span class="lang-zh">向岛・曳舟站步行约6分钟。3间卧室·床/被褥共10套·浴室1·卫生间2·3楼露台。设全套厨房·洗衣烘干机·免费无限Wi-Fi。最多可住10人。</span><span class="lang-ko">무코지마·히키후네역 도보 약 6분. 침실 3·침대/이불 총 10·욕실 1·화장실 2·3층 테라스. 풀키친·세탁건조기·무료 무제한 Wi-Fi. 최대 10명 숙박 가능.</span></p>'
+  }
+};
+const MIN_NIGHTS = 2;
+let currentProperty = (new URLSearchParams(location.search).get('property') === 'tenmian') ? 'tenmian' : 'komei';
+let OCCUPIED = new Set(PROPERTIES[currentProperty].occupied);
+
+// ===== Booking availability calendar =====
+const bkSel = { ci:null, co:null };
+const MONTHS_JA_B=["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+const MONTHS_EN_B=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DOW_EN_B=["S","M","T","W","T","F","S"];
+function bkKey(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d);}
+function bkNights(a,b){return Math.round((new Date(b+'T00:00:00Z')-new Date(a+'T00:00:00Z'))/86400000);}
+function bkRangeHasOccupied(ci,co){var d=new Date(ci+'T00:00:00Z'),e=new Date(co+'T00:00:00Z');while(d<e){if(OCCUPIED.has(bkKey(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())))return true;d.setUTCDate(d.getUTCDate()+1);}return false;}
+function bkBuildMonth(year,month){
+  var first=new Date(Date.UTC(year,month,1));var startDow=first.getUTCDay();var dim=new Date(Date.UTC(year,month+1,0)).getUTCDate();
+  var h='<div class="bg-white rounded-lg border border-slate-200 p-3"><div class="font-bold text-sm mb-2"><span class="lang-ja">'+year+'年'+MONTHS_JA_B[month]+'</span><span class="lang-en">'+MONTHS_EN_B[month]+' '+year+'</span><span class="lang-zh">'+year+'年'+(month+1)+'月</span><span class="lang-ko">'+year+'년 '+(month+1)+'월</span></div><div class="grid grid-cols-7 gap-0.5 text-center text-[10px] text-slate-400 mb-0.5">';
+  for(var i=0;i<7;i++)h+='<div>'+DOW_EN_B[i]+'</div>';
+  h+='</div><div class="grid grid-cols-7 gap-0.5">';
+  for(var j=0;j<startDow;j++)h+='<div></div>';
+  for(var dd=1;dd<=dim;dd++){var k=bkKey(year,month,dd);if(OCCUPIED.has(k)){h+='<div class="aspect-square rounded grid place-items-center text-xs bg-slate-300 text-slate-500">'+dd+'</div>';}else{h+='<button type="button" data-date="'+k+'" class="bkcal-day aspect-square rounded grid place-items-center text-xs bg-emerald-400 text-white font-semibold hover:bg-emerald-500">'+dd+'</button>';}}
+  h+='</div></div>';return h;
+}
+function bkRenderCal(){
+  var g=document.getElementById('bkCalGrid');if(!g)return;var html='';
+  for(var m=10;m<=11;m++)html+=bkBuildMonth(2026,m);
+  for(var m2=0;m2<=4;m2++)html+=bkBuildMonth(2027,m2);
+  g.innerHTML=html;bkRefresh();
+}
+function bkRefresh(){
+  document.querySelectorAll('.bkcal-day').forEach(function(b){
+    b.classList.remove('ring-2','ring-amber-500','bg-amber-500');b.classList.add('bg-emerald-400');
+    var d=b.getAttribute('data-date');
+    if(bkSel.ci&&bkSel.co){if(d>=bkSel.ci&&d<bkSel.co){b.classList.remove('bg-emerald-400');b.classList.add('bg-amber-500');}if(d===bkSel.ci||d===bkSel.co)b.classList.add('ring-2','ring-amber-500');}
+    else if(bkSel.ci&&d===bkSel.ci)b.classList.add('ring-2','ring-amber-500');
+  });
+}
+function bkApplyToInputs(){
+  var ci=document.getElementById('checkin'),co=document.getElementById('checkout');
+  if(ci)ci.value=bkSel.ci||'';if(co)co.value=bkSel.co||'';
+  updatePriceSummary();
+}
+document.addEventListener('click',function(e){
+  var btn=e.target.closest('.bkcal-day');if(!btn)return;
+  var d=btn.getAttribute('data-date');var lang=document.documentElement.lang;
+  if(!bkSel.ci||(bkSel.ci&&bkSel.co)){bkSel.ci=d;bkSel.co=null;}
+  else{
+    if(d<=bkSel.ci){bkSel.ci=d;bkSel.co=null;}
+    else{
+      var n=bkNights(bkSel.ci,d);
+      if(n<MIN_NIGHTS){alert(lang==='en'?'Minimum stay is 2 nights.':'最短2泊からご予約いただけます。');return;}
+      if(bkRangeHasOccupied(bkSel.ci,d)){alert(lang==='en'?'Selection includes booked dates.':'選択範囲に予約済みの日が含まれています。');bkSel.ci=d;bkSel.co=null;bkRefresh();bkApplyToInputs();return;}
+      bkSel.co=d;
+    }
+  }
+  bkRefresh();bkApplyToInputs();
+});
+function applyProperty(){
+  var p=PROPERTIES[currentProperty];
+  OCCUPIED=new Set(p.occupied);
+  var a1=document.getElementById('otaAirbnbLink');if(a1)a1.href=p.airbnb;
+  var b1=document.getElementById('otaBookingLink');if(b1)b1.href=p.booking;
+  document.querySelectorAll('.otaAirbnbRef').forEach(function(a){a.href=p.airbnb;});
+  document.querySelectorAll('.otaBookingRef').forEach(function(a){a.href=p.booking;});
+  var rd=document.getElementById('roomDescBox');if(rd)rd.innerHTML=p.roomDesc;
+  var ad=document.getElementById('adults');
+  if(ad){var cur=Math.min(parseInt(ad.value)||2,p.maxGuests);ad.innerHTML='';for(var g=1;g<=p.maxGuests;g++){var o=document.createElement('option');o.value=g;o.textContent=g;if(g===cur)o.selected=true;ad.appendChild(o);}}
+  bkSel.ci=null;bkSel.co=null;bkRenderCal();bkApplyToInputs();
+}
+
 function setLang(lang) {
   document.documentElement.lang = lang;
   document.getElementById('langSel').value = lang;
@@ -509,7 +625,7 @@ function updatePriceSummary() {
     return;
   }
   const nights = Math.round((new Date(coVal) - new Date(ciVal)) / 86400000);
-  if (nights < 3) {
+  if (nights < MIN_NIGHTS) {
     currentEstimatedTotal = 0;
     document.getElementById('priceSummaryWrap').classList.add('hidden');
     return;
@@ -574,9 +690,9 @@ async function submitForm(e) {
     const ci = new Date(ciVal + 'T00:00:00');
     const co = new Date(coVal + 'T00:00:00');
     const nights = Math.round((co - ci) / 86400000);
-    if (nights < 3) {
+    if (nights < MIN_NIGHTS) {
       const lang = document.documentElement.lang;
-      const msgs = { ja:'最低3泊からご予約いただけます。', en:'Minimum stay is 3 nights.', zh:'最少入住3晚。', ko:'최소 3박부터 예약 가능합니다.' };
+      const msgs = { ja:'最低2泊からご予約いただけます。', en:'Minimum stay is 2 nights.', zh:'最少入住2晚。', ko:'최소 2박부터 예약 가능합니다.' };
       alert(msgs[lang] || msgs.ja);
       return false;
     }
@@ -590,6 +706,7 @@ async function submitForm(e) {
   const params = new URLSearchParams(window.location.search);
   const payload = {
     type: 'reservation_request',
+    property: currentProperty,
     checkin: f('checkin'),
     checkout: f('checkout'),
     adults: parseInt(f('adults')),
@@ -620,6 +737,7 @@ async function submitForm(e) {
       demoStore[id] = {
         reservation_id: id,
         status: 'approved',
+        property: payload.property,
         checkin: payload.checkin,
         checkout: payload.checkout,
         adults: payload.adults,
@@ -676,38 +794,20 @@ function fmtDateLabel(s) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const today = new Date();
-  const fourDays = new Date(); fourDays.setDate(today.getDate()+4);
-  const fmt = d => d.toISOString().split('T')[0];
   const params = new URLSearchParams(window.location.search);
-  const qci = params.get('checkin');
-  const qco = params.get('checkout');
-  const qtotal = parseInt(params.get('total') || '0');
+  // Property selector
+  const psel = document.getElementById('property');
+  if (psel) {
+    psel.value = currentProperty;
+    psel.addEventListener('change', () => { currentProperty = psel.value; applyProperty(); });
+  }
+  applyProperty();
+  // Pre-select dates from URL params (if valid & available for this property)
+  const qci = params.get('checkin'), qco = params.get('checkout');
   const isValid = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
-  document.getElementById('checkin').min = fmt(today);
-  document.getElementById('checkout').min = fmt(fourDays);
-  if (isValid(qci) && isValid(qco) && qci < qco) {
-    document.getElementById('checkin').value = qci;
-    document.getElementById('checkout').value = qco;
-  } else {
-    document.getElementById('checkin').value = fmt(today);
-    document.getElementById('checkout').value = fmt(fourDays);
+  if (isValid(qci) && isValid(qco) && qci < qco && bkNights(qci, qco) >= MIN_NIGHTS && !bkRangeHasOccupied(qci, qco)) {
+    bkSel.ci = qci; bkSel.co = qco; bkRefresh(); bkApplyToInputs();
   }
-  // Enforce 3-night minimum on date change
-  const ci = document.getElementById('checkin');
-  const co = document.getElementById('checkout');
-  function enforceMin(){
-    if (!ci.value) return;
-    const min = new Date(ci.value);
-    min.setDate(min.getDate()+3);
-    co.min = fmt(min);
-    if (co.value && new Date(co.value) < min) co.value = fmt(min);
-  }
-  ci.addEventListener('change', () => { enforceMin(); updatePriceSummary(); });
-  co.addEventListener('change', updatePriceSummary);
-  enforceMin();
-  // Initial price calculation (works with or without URL params)
-  updatePriceSummary();
 });
 </script>
 </body>

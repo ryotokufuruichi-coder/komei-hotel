@@ -106,7 +106,7 @@
 <div class="card-row" style="display:flex;gap:32px;align-items:stretch;">
 
   <!-- Guest Card -->
-  <a href="index.html" class="gateway-card card-guest">
+  <a href="select.html" class="gateway-card card-guest">
     <div class="icon-circle">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </div>
@@ -152,6 +152,7 @@ sessionStorage.setItem('gw_visited', '1');
 function setLang(lang) {
   document.documentElement.lang = lang;
   document.getElementById('langSel').value = lang;
+  try { sessionStorage.setItem('sel_lang', lang); } catch(e) {}
 }
 // Auto-detect browser language (default: en)
 (function() {

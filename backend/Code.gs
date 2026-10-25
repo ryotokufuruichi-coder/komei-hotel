@@ -33,7 +33,7 @@ const HEADERS_RESERVATIONS = [
   'id','status','created_at','updated_at','checkin','checkout','nights',
   'adults','children','rep_first_name','rep_last_name','rep_email','rep_phone','rep_country',
   'estimated_total','final_total','ota_price','payment_method','payment_status',
-  'stripe_session_id','token','notes','source','user_agent'
+  'stripe_session_id','token','notes','source','user_agent','property'
 ];
 const HEADERS_GUESTS = [
   'reservation_id','idx','name','nationality','address','occupation',
@@ -58,6 +58,11 @@ const STATUS = {
   CANCELLED:  'cancelled',
   REJECTED:   'rejected'
 };
+
+// 物件表示名（台帳 property 列: 'komei' | 'tenmian'）
+function propertyName_(key) {
+  return key === 'tenmian' ? '天見庵 / Tenmian' : '光明荘 / Komei Hotel';
+}
 
 // ============ Entry Points ============
 
@@ -148,7 +153,7 @@ function handleReservationRequest(body) {
   const token = generateToken_();
   const now = new Date().toISOString();
   const nights = nightsBetween_(body.checkin, body.checkout);
-  if (nights < 3) return { ok:false, error:'minimum 3 nights' };
+  if (nights < 2) return { ok:false, error:'minimum 2 nights' };
 
   // 値をフィールド名で用意し、シートの「実際のヘッダー順」に合わせて書き込む（列順ズレ対策）
   const vals = {
@@ -162,7 +167,8 @@ function handleReservationRequest(body) {
     estimated_total: body.estimated_total || computeEstimatedTotal_(body.checkin, body.checkout),
     ota_price: body.ota_price || '', token: token,
     notes: body.notes || '', source: body.source || 'lp_direct',
-    user_agent: body.user_agent || ''
+    user_agent: body.user_agent || '',
+    property: body.property || 'komei'
   };
   const _headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   sh.appendRow(_headers.map(function(h){ return vals[h] !== undefined ? vals[h] : ''; }));
@@ -300,6 +306,7 @@ function handleGetReservation(p) {
     reservation: {
       reservation_id: r.row.id,
       status: r.row.status,
+      property: r.row.property || 'komei',
       checkin: toYMDSafe_(r.row.checkin),
       checkout: toYMDSafe_(r.row.checkout),
       adults: r.row.adults,
@@ -474,12 +481,14 @@ function createStripeCheckoutSession_(id, amount, email) {
   if (!key) throw new Error('STRIPE_SECRET_KEY not set');
   const base = getProp_('SITE_BASE_URL');
   const successPath = getProp_('STRIPE_SUCCESS_PATH', '/thanks.html');
+  const _rowForName = findReservationRow_(id);
+  const _propName = propertyName_(_rowForName ? _rowForName.row.property : '');
   const payload = {
     'mode': 'payment',
     'payment_method_types[0]': 'card',
     'line_items[0][price_data][currency]': 'jpy',
     'line_items[0][price_data][unit_amount]': String(amount),
-    'line_items[0][price_data][product_data][name]': 'Komei Hotel - Reservation ' + id,
+    'line_items[0][price_data][product_data][name]': _propName + ' - Reservation ' + id,
     'line_items[0][quantity]': '1',
     'customer_email': email,
     'client_reference_id': id,
@@ -573,11 +582,12 @@ function notifyAdminPendingApproval_(id, body, nights) {
   const approveFormUrl = baseUrl + '?action=approve_form&id=' + id + '&t=' + adminToken;
   const rejectUrl  = baseUrl + '?action=reject&id='  + id + '&t=' + adminToken;
   const guestName = esc_((body.representative.first_name || '') + ' ' + (body.representative.last_name || ''));
-  const subject = '[Komei Hotel] 新規仮予約 ' + id + ' (' + body.checkin + ' ～ ' + body.checkout + ')';
+  const subject = '[Komei Hotel] 新規仮予約 ' + id + '【' + propertyName_(body.property) + '】(' + body.checkin + ' ～ ' + body.checkout + ')';
   const html = ''
     + '<h2>新規予約申込</h2>'
     + '<table cellpadding="6">'
     + '<tr><td>予約ID</td><td><b>' + esc_(id) + '</b></td></tr>'
+    + '<tr><td>物件</td><td><b>' + esc_(propertyName_(body.property)) + '</b></td></tr>'
     + '<tr><td>期間</td><td>' + esc_(body.checkin) + ' ～ ' + esc_(body.checkout) + ' (' + nights + '泊)</td></tr>'
     + '<tr><td>人数</td><td>大人' + parseInt(body.adults) + ' / 子供' + parseInt(body.children) + '</td></tr>'
     + '<tr><td>代表者</td><td>' + guestName.trim() + ' (' + esc_(body.representative.country) + ')</td></tr>'
@@ -601,6 +611,7 @@ function notifyGuestRequestReceived_(id, body) {
     + '<p>この度は Komei Hotel 光明荘へのお申込みをいただき、誠にありがとうございます。<br>'
     + '以下の内容でお申込みを承りました。担当者の確認後、24時間以内に承認のご連絡をお送りします。</p>'
     + '<table cellpadding="6"><tr><td>予約ID</td><td>' + esc_(id) + '</td></tr>'
+    + '<tr><td>物件 / Property</td><td>' + esc_(propertyName_(body.property)) + '</td></tr>'
     + '<tr><td>チェックイン</td><td>' + esc_(body.checkin) + '</td></tr>'
     + '<tr><td>チェックアウト</td><td>' + esc_(body.checkout) + '</td></tr>'
     + '<tr><td>人数</td><td>大人' + parseInt(body.adults) + ' / 子供' + parseInt(body.children) + '</td></tr>'

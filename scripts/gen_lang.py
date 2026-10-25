@@ -32,6 +32,9 @@ LANGS = {
     "ko": {"html": "ko", "hreflang": "ko",      "locale": "ko_KR"},
 }
 ORDER = ["ja", "en", "zh", "ko"]
+# Pages that have per-language subdirectory versions: their refs become /<lang>/<page>.
+# All other .html refs (mypage, partner, terms, register, …) are root-only -> /<page>.
+LANG_PAGES = {"index.html", "booking.html", "tenmian.html"}
 
 
 def hreflang_block(slug: str) -> str:
@@ -64,11 +67,14 @@ def generate(src: str, lang: str, slug: str) -> str:
 
     # rewrite relative asset/page refs in attributes, then in JS strings
     s = re.sub(r'(href|src)="([^"]+)"', _abs_attr, s)
-    s = re.sub(r"""(['"])([a-z][a-z0-9_\-]*\.html)""", r"\1/\2", s)
+    def _page_ref(m):
+        q, page = m.group(1), m.group(2)
+        return f'{q}/{lang}/{page}' if page in LANG_PAGES else f'{q}/{page}'
+    s = re.sub(r"""(['"])([a-z][a-z0-9_\-]*\.html)""", _page_ref, s)
 
     # language switcher -> navigate to /<lang>/<slug>
     target = "'/'+this.value+'/'" if slug == "" else "'/'+this.value+'/" + slug + "'"
-    s, n = re.subn(r'onchange="setLang\(this\.value\)"', f'onchange="location.href={target}"', s); assert n >= 1, "switcher"
+    s, n = re.subn(r'onchange="(?:setLang\(this\.value\)|location\.href=[^"]*)"', f'onchange="location.href={target}"', s); assert n >= 1, "switcher"
     s = s.replace('value="en" selected', 'value="en"')
     s, n = re.subn(rf'(<option value="{lang}")>', r"\1 selected>", s, count=1); assert n == 1, "selected option"
     return s
